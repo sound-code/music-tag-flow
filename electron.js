@@ -47,7 +47,7 @@ let musicLibrary = null;
 app.whenReady().then(async () => {
   try {
     // Import the MusicLibraryFacade
-    const MusicLibraryFacade = require('./test-modules/scanner-test/components/MusicLibraryFacade');
+    const MusicLibraryFacade = require('./js/core/music-library/components/MusicLibraryFacade');
     
     // Initialize the music library system
     musicLibrary = new MusicLibraryFacade();

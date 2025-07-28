@@ -1,12 +1,9 @@
-const IRepository = require('./IRepository');
-
 /**
  * Track Repository Interface
  * Defines the contract for track-related operations
  */
-class ITrackRepository extends IRepository {
+class ITrackRepository {
     constructor() {
-        super();
         if (this.constructor === ITrackRepository) {
             throw new Error("Cannot instantiate abstract class ITrackRepository");
         }
