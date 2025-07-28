@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Tree Flow</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <h3>Music Library</h3>
+            
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-field" placeholder="Search tags, tracks, artists, albums..." id="searchField">
+                <button class="clear-search" id="clearSearch">×</button>
+            </div>
+            
+            <div class="search-results" id="searchResults">
+                <div class="search-results-header">Search Results</div>
+                <div id="searchResultsList">
+                    <!-- Search results will be populated here -->
+                </div>
+            </div>
+            
+            <div class="music-library" id="musicLibrary">
+                <!-- Music library will be populated dynamically by DataSourceAdapter -->
+                <div class="library-loading">
+                    <p>Loading music library...</p>
+                </div>
+            </div>
+
+            <!-- Color Legend -->
+            <div class="color-legend">
+                <h4>Node Colors</h4>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color legend-emotion"></div>
+                        <span>Emotion</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-energy"></div>
+                        <span>Energy</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-mood"></div>
+                        <span>Mood</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-style"></div>
+                        <span>Style</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-occasion"></div>
+                        <span>Occasion</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-weather"></div>
+                        <span>Weather</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-intensity"></div>
+                        <span>Intensity</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-rating"></div>
+                        <span>Rating</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-tempo"></div>
+                        <span>Tempo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-vibe"></div>
+                        <span>Vibe</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist Phases Link -->
+            <div class="playlist-phases-link">
+                <button class="phases-btn" id="playlistPhasesBtn" onclick="togglePlaylistPhases()">
+                    🕐 Playlist Phases
+                </button>
+            </div>
+        </div>
+
+        <div class="mindmap-canvas">
+            <div class="canvas-content">
+                <!-- Background watermark sempre visibile -->
+                <div class="canvas-watermark">
+                    <img src="albero_note.png" alt="Musical Tree" class="watermark-bg">
+                </div>
+                
+                <div class="drop-zone">
+                    <img src="albero_note.png" alt="Musical Tree" class="drop-zone-bg">
+                </div>
+                
+                <!-- Playlist Phases View -->
+                <div class="playlist-phases-view" id="playlistPhasesView" style="display: none;">
+                    <svg class="phases-svg" id="phasesSvg" width="100%" height="100%">
+                        <!-- Concentric circles for playlist phases -->
+                        <g class="phases-circles" id="phasesCircles">
+                            <!-- Phase 1: 0-2h -->
+                            <circle class="phase-circle phase-1" cx="50%" cy="50%" r="100" fill="none" stroke="#ff6b6b" stroke-width="4" opacity="0.8"/>
+                            <text class="phase-label" x="50%" y="50%" text-anchor="middle" dy="-85" fill="#ff6b6b">0-2h</text>
+                            
+                            <!-- Phase 2: 2-4h -->
+                            <circle class="phase-circle phase-2" cx="50%" cy="50%" r="200" fill="none" stroke="#4ecdc4" stroke-width="4" opacity="0.8"/>
+                            <text class="phase-label" x="50%" y="50%" text-anchor="middle" dy="-185" fill="#4ecdc4">2-4h</text>
+                            
+                            <!-- Phase 3: 4-6h -->
+                            <circle class="phase-circle phase-3" cx="50%" cy="50%" r="300" fill="none" stroke="#45b7d1" stroke-width="4" opacity="0.8"/>
+                            <text class="phase-label" x="50%" y="50%" text-anchor="middle" dy="-285" fill="#45b7d1">4-6h</text>
+                            
+                            <!-- Phase 4: 6-8h -->
+                            <circle class="phase-circle phase-4" cx="50%" cy="50%" r="400" fill="none" stroke="#96ceb4" stroke-width="4" opacity="0.8"/>
+                            <text class="phase-label" x="50%" y="50%" text-anchor="middle" dy="-385" fill="#96ceb4">6-8h</text>
+                        </g>
+                        
+                        <!-- Time Progress Line -->
+                        <g class="time-progress" id="timeProgress">
+                            <line class="progress-line" id="progressLine" x1="50%" y1="50%" x2="50%" y2="50%" stroke="#ff6b6b" stroke-width="4" stroke-linecap="round"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="breadcrumb" id="breadcrumb">
+            <span class="breadcrumb-item">🎵 Playlist</span>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="clearMindmap()">Clear Tree</button>
+            <button class="control-btn" onclick="savePlaylist()">Save Playlist</button>
+        </div>
+
+        <!-- Real-time Clock -->
+        <div class="real-time-clock" id="realTimeClock" style="display: none;">
+            <div class="clock-display">
+                <span class="clock-time" id="clockTime">00:00:00</span>
+                <span class="clock-label">Playlist Duration</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <!-- Core Infrastructure -->
+    <script src="js/core/EventBus.js"></script>
+    <script src="js/core/StateManager.js"></script>
+    <script src="js/core/AppStateProxy.js"></script>
+    
+    <!-- Service Layer -->
+    <script src="js/core/ServiceBase.js"></script>
+    <script src="js/core/SearchService.js"></script>
+    <script src="js/core/PlaylistService.js"></script>
+    <script src="js/core/TagService.js"></script>
+    <script src="js/core/TreeService.js"></script>
+    <script src="js/core/PhasesService.js"></script>
+    <script src="js/core/UIService.js"></script>
+    <script src="js/core/DragDropService.js"></script>
+    <script src="js/core/ServiceManager.js"></script>
+    
+    <!-- Application State -->
+    <script src="js/state.js"></script>
+    <script src="js/dataSourceAdapter.js"></script>
+    <script src="js/dataLoader.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/tree.js"></script>
+    <script src="js/dragDrop.js"></script>
+    <script src="js/trackNodes.js"></script>
+    <script src="js/containers.js"></script>
+    <script src="js/tags.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/playlist.js"></script>
+    <script src="js/phases.js"></script>
+    <script src="js/realTimeClock.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+    
+</body>
+</html> 

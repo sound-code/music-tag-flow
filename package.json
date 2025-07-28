@@ -1,0 +1,17 @@
+{
+  "name": "music-tag-flow",
+  "version": "1.0.0",
+  "description": "MusicTagFlow - Interactive mind maps from music tracks",
+  "main": "electron.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --devtools",
+    "serve": "python -m http.server 8000"
+  },
+  "keywords": ["music", "mindmap", "playlist", "visualization"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}

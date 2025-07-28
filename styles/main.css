@@ -1,0 +1,2159 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    height: 100vh;
+    overflow: hidden;
+    color: #e1e5e9;
+}
+
+/* Main App Container */
+.app-container {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: rgba(15, 15, 35, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 24px 20px;
+    z-index: 100;
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar h3 {
+    color: #ffffff;
+    margin-bottom: 16px;
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+/* Search Styles */
+.search-container {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.search-field {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #e1e5e9;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.search-field::placeholder {
+    color: #9ca3af;
+}
+
+.search-field:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.clear-search {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.clear-search:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #e1e5e9;
+}
+
+.clear-search.active {
+    display: flex;
+}
+
+/* Search Results */
+.search-results {
+    display: none;
+    margin-bottom: 16px;
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-results-header {
+    color: #a5b4fc;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 2px 0;
+    cursor: grab;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-result-item:hover {
+    background: rgba(99, 102, 241, 0.15);
+    transform: translateX(2px);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.search-result-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.search-result-item::before {
+    content: "🔍";
+    margin-right: 8px;
+    font-size: 10px;
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-title {
+    color: #e1e5e9;
+    font-weight: 500;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-meta {
+    color: #9ca3af;
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-tags {
+    color: #6366f1;
+    font-size: 9px;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+}
+
+/* Music Library */
+.music-library {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.artist-folder {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.artist-header {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.artist-header:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.artist-icon {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+    color: #9ca3af;
+}
+
+.artist-folder.expanded .artist-icon {
+    transform: rotate(90deg);
+}
+
+.artist-name {
+    flex: 1;
+    color: #e1e5e9;
+    font-weight: 500;
+}
+
+.artist-count {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.albums-container {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.artist-folder.expanded .albums-container {
+    max-height: 400px;
+}
+
+.album-folder {
+    margin-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.album-header {
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.album-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.album-icon {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+    color: #6b7280;
+}
+
+.album-folder.expanded .album-icon {
+    transform: rotate(90deg);
+}
+
+.album-name {
+    flex: 1;
+    color: #d1d5db;
+    font-weight: 400;
+}
+
+.album-count {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.tracks-container {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.album-folder.expanded .tracks-container {
+    max-height: 300px;
+}
+
+.track-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    margin: 2px 0;
+    cursor: grab;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    position: relative;
+}
+
+.track-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(2px);
+}
+
+.track-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.track-item::before {
+    content: "♪";
+    color: #6366f1;
+    margin-right: 8px;
+    font-size: 10px;
+}
+
+.track-title {
+    color: #d1d5db;
+    font-weight: 400;
+    margin-bottom: 1px;
+}
+
+.track-duration {
+    color: #6b7280;
+    font-size: 10px;
+    margin-left: auto;
+}
+
+/* Canvas Styles */
+.canvas-content {
+    position: relative;
+    min-width: 100%;
+    min-height: 100%;
+    overflow: visible;
+}
+
+/* Tree SVG Styles */
+.tree-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.tree-branch {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Add organic pulsing animation to nodes */
+@keyframes organicPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.track-node.active {
+    animation: organicPulse 2s ease-in-out infinite;
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    border-color: rgba(99, 102, 241, 0.8);
+}
+
+/* Growing animation for auto-generated nodes */
+@keyframes nodeGrow {
+    0% { 
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.track-node.growing {
+    animation: nodeGrow 0.6s ease-out;
+}
+
+/* Enhanced drop zone styling for auto-tree */
+.drop-zone {
+    background: linear-gradient(45deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    border: 2px dashed rgba(139, 92, 246, 0.3);
+    position: relative;
+}
+
+.drop-zone::before {
+    content: "";
+}
+
+.mindmap-canvas {
+    position: absolute;
+    left: 280px;
+    top: 0;
+    width: calc(100% - 280px);
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.02);
+    overflow: auto;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.canvas-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 400px;
+    pointer-events: none;
+    z-index: 0;
+    background: transparent;
+    border-radius: 12px;
+}
+
+.watermark-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.15;
+}
+
+.drop-zone {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 400px;
+    border: none;
+    border-radius: 12px;
+    display: flex; /* Visibile inizialmente */
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: transparent;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.drop-zone-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.drop-zone-icon {
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    object-fit: cover;
+    filter: brightness(0.8) contrast(1.1);
+}
+
+.drop-zone-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.drop-zone.drag-over {
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.drop-zone.drag-over .drop-zone-bg {
+    opacity: 1;
+    transform: scale(1.02);
+    filter: brightness(1) contrast(1.2);
+}
+
+.drop-zone.drag-over .drop-zone-text {
+    color: #a5b4fc;
+}
+
+/* Track Node Styles */
+.track-node {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), rgba(15, 15, 35, 0.95));
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 8px;
+    backdrop-filter: blur(20px);
+    z-index: 10;
+}
+
+.track-node:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8), inset 0 2px 6px rgba(255, 255, 255, 0.2);
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+.track-node .title {
+    font-size: 8px;
+    font-weight: 700;
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 2px;
+    line-height: 1.1;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-node .artist {
+    font-size: 6px;
+    color: #9ca3af;
+    text-align: center;
+    margin-bottom: 4px;
+    line-height: 1.1;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Tag Styles */
+.tags-container {
+    display: none; /* Hide tags by default */
+}
+
+.track-node:hover .tags-container {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 35, 0.95);
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 100;
+    margin-top: 8px;
+    min-width: 200px;
+    max-width: 280px;
+}
+
+.track-node .tags-container .tooltip-title {
+    color: #e1e5e9;
+    font-weight: 500;
+    font-size: 12px;
+    margin-bottom: 6px;
+    line-height: 1.2;
+}
+
+.track-node .tags-container .tooltip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.track-node .tags-container .tooltip-add-tag-input {
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 500;
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    outline: none;
+    transition: all 0.2s ease;
+    cursor: text;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.track-node .tags-container .tooltip-add-tag-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.track-node .tags-container .tooltip-add-tag-input:focus {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* Add same glow effect as .track-tooltip */
+.track-node:hover .tags-container::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+    border-radius: 14px;
+    z-index: -1;
+    opacity: 0.5;
+}
+
+/* Tooltip CSS disabilitato - ora gestito dal sistema JavaScript in ui.js per evitare duplicazioni */
+/*
+.track-node:hover .tags-container {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 35, 0.95);
+    border-radius: 8px;
+    padding: 8px;
+    flex-wrap: wrap;
+    gap: 3px;
+    max-width: 200px;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 8px;
+}
+*/
+
+.tag {
+    padding: 2px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 7px;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    line-height: 1;
+    min-width: 20px;
+    text-align: center;
+    position: relative;
+}
+
+.tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tag.selected {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(99, 102, 241, 0.5);
+    transform: scale(1.1);
+}
+
+.tag.selected::after {
+    content: "✓";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #ffffff;
+    color: #1a1a2e;
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Tag Colors - Aligned with centralized color system */
+.tag.tag-emotion { background: linear-gradient(135deg, #ec4899, #be185d); }
+.tag.tag-energy { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.tag.tag-mood { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.tag.tag-style { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.tag.tag-occasion { background: linear-gradient(135deg, #10b981, #059669); }
+.tag.tag-weather { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+.tag.tag-intensity { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.tag.tag-rating { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+.tag.tag-tempo { background: linear-gradient(135deg, #a855f7, #9333ea); }
+.tag.tag-vibe { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+
+/* Legacy support for tags without 'tag-' prefix */
+.tag.emotion { background: linear-gradient(135deg, #ec4899, #be185d); }
+.tag.energy { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.tag.mood { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.tag.style { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.tag.occasion { background: linear-gradient(135deg, #10b981, #059669); }
+.tag.weather { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+.tag.intensity { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.tag.rating { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+.tag.tempo { background: linear-gradient(135deg, #a855f7, #9333ea); }
+.tag.vibe { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+
+/* Play Button Styles */
+.play-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.play-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    transform: scale(1.1);
+}
+
+.play-btn.playing {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    animation: playingPulse 2s infinite;
+}
+
+.play-btn.playing:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+@keyframes playingPulse {
+    0%, 100% {
+        box-shadow: 0 3px 12px rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 6px 24px rgba(239, 68, 68, 0.8);
+    }
+}
+
+.play-btn::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 4px solid white;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    margin-left: 1px;
+}
+
+.play-btn.playing::before {
+    content: "";
+    width: 3px;
+    height: 8px;
+    background: white;
+    border: none;
+    margin: 0 1px 0 0;
+    box-shadow: 4px 0 0 white;
+}
+
+/* Container Styles */
+.track-list-container {
+    position: absolute;
+    width: 380px;
+    height: 820px;
+    background: rgba(15, 15, 35, 0.95);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 50;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.track-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.refresh-btn {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    transform: scale(1.1) rotate(90deg);
+}
+
+.refresh-btn::before {
+    content: "↻";
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.track-list-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.025em;
+}
+
+.close-btn {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: scale(1.1) translateZ(0);
+}
+
+/* Optimized animations */
+.track-node.growing {
+    animation: nodeGrow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes nodeGrow {
+    from {
+        transform: scale(0) translateZ(0);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateZ(0);
+        opacity: 1;
+    }
+}
+
+.track-node.active {
+    animation: nodePulse 0.3s ease-out;
+}
+
+@keyframes nodePulse {
+    0%, 100% {
+        transform: scale(1) translateZ(0);
+    }
+    50% {
+        transform: scale(1.05) translateZ(0);
+    }
+}
+
+.track-list-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 14px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+    min-height: 85px;
+    position: relative;
+}
+
+.track-list-item:hover {
+    background: rgba(99, 102, 241, 0.15);
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.track-info {
+    flex: 1;
+    margin-right: 12px;
+    min-width: 0;
+    padding-bottom: 35px;
+    display: flex;
+    flex-direction: column;
+}
+
+.track-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.track-info .title {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.track-info .artist {
+    color: #9ca3af;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+
+.track-info .artist::before {
+    content: "by ";
+    color: #6b7280;
+    font-size: 9px;
+}
+
+.track-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    max-width: 250px;
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    right: 50px;
+}
+
+.track-tags .tag {
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 500;
+    color: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.list-play-btn {
+    width: 26px;
+    height: 26px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.list-play-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    transform: scale(1.1);
+}
+
+.list-play-btn::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 6px solid white;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    margin-left: 1px;
+}
+
+.list-play-btn.playing {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.list-play-btn.playing::before {
+    border: none;
+    width: 2px;
+    height: 8px;
+    background: white;
+    margin-left: 0;
+    box-shadow: 3px 0 0 white;
+}
+
+/* Breadcrumb Styles */
+.breadcrumb {
+    position: fixed;
+    top: 20px;
+    left: 300px;
+    width: 320px;
+    max-height: 50vh;
+    background: rgba(15, 15, 35, 0.95);
+    backdrop-filter: blur(20px);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.breadcrumb.active {
+    display: flex;
+}
+
+.breadcrumb-item {
+    display: block;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    font-size: 13px;
+}
+
+.breadcrumb-item:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-left-color: #6366f1;
+}
+
+.breadcrumb-item:first-child {
+    color: #a5b4fc;
+    font-weight: 600;
+    font-size: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: default;
+    margin-bottom: 8px;
+}
+
+.breadcrumb-item:first-child:hover {
+    background: none;
+    border-left-color: transparent;
+}
+
+.breadcrumb-item.playlist-entry {
+    background: rgba(99, 102, 241, 0.1);
+    border-left-color: #6366f1;
+}
+
+.breadcrumb-item.playlist-entry:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.playlist-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.remove-track {
+    background: rgba(99, 102, 241, 0.1); /* Stesso colore della riga */
+    color: rgba(255, 255, 255, 0.4); /* Testo leggermente bianco ma discreto */
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    opacity: 0; /* Invisibile di default */
+}
+
+/* Mostra il tasto solo quando si fa hover sulla riga */
+.breadcrumb-item.playlist-entry:hover .remove-track {
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.8); /* Più visibile al hover */
+}
+
+.remove-track:hover {
+    background: rgba(99, 102, 241, 0.2); /* Leggermente più scuro al hover del tasto */
+    color: rgba(255, 255, 255, 1); /* Bianco pieno al hover diretto */
+    transform: scale(1.05);
+}
+
+/* Control Styles */
+.controls {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+}
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+} 
+
+/* Track Tooltip Styles */
+.track-tooltip {
+    background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(30, 30, 60, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 320px;
+    min-width: 200px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(99, 102, 241, 0.1);
+    pointer-events: auto; /* Permettere l'interazione con i tag */
+    transition: opacity 0.2s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tooltip-title {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 12px;
+    line-height: 1.3;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.tooltip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tooltip-tag {
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 500;
+    color: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.tooltip-tag:hover {
+    opacity: 0.8;
+}
+
+.tooltip-tag.selected {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(99, 102, 241, 0.5);
+    transform: scale(1.1);
+}
+
+/* Add tag interface in tooltip */
+.tooltip-add-tag-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tooltip-add-tag-input {
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 500;
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    outline: none;
+    transition: all 0.2s ease;
+    cursor: text;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.tooltip-add-tag-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tooltip-add-tag-input:focus {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.tooltip-add-tag-btn {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.tooltip-add-tag-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #3730a3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.tooltip-add-tag-btn:active {
+    transform: translateY(0);
+}
+
+/* Tag category colors for tooltips */
+.tooltip-tag.tag-emotion {
+    background: #ec4899;
+}
+
+.tooltip-tag.tag-energy {
+    background: #f59e0b;
+}
+
+.tooltip-tag.tag-mood {
+    background: #8b5cf6;
+}
+
+.tooltip-tag.tag-style {
+    background: #06b6d4;
+}
+
+.tooltip-tag.tag-occasion {
+    background: #10b981;
+}
+
+.tooltip-tag.tag-weather {
+    background: #6366f1;
+}
+
+.tooltip-tag.tag-intensity {
+    background: #ef4444;
+}
+
+.tooltip-tag.tag-rating {
+    background: #fbbf24;
+}
+
+.tooltip-tag.tag-tempo {
+    background: #a855f7;
+}
+
+.tooltip-tag.tag-vibe {
+    background: #14b8a6;
+}
+
+/* Default tag style for unknown categories */
+.tooltip-tag:not([class*="tag-"]) {
+    background: #6b7280;
+}
+
+/* Add subtle glow effect to tooltip */
+.track-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+    border-radius: 14px;
+    z-index: -1;
+    opacity: 0.5;
+} 
+
+/* Tag-based Node Styling */
+.track-node.node-tag-emotion {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(190, 24, 93, 0.9));
+    border: 2px solid rgba(236, 72, 153, 0.6);
+    box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+}
+
+.track-node.node-tag-emotion:hover {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 1), rgba(190, 24, 93, 1));
+    box-shadow: 0 6px 24px rgba(236, 72, 153, 0.4);
+}
+
+.track-node.node-tag-energy {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
+    border: 2px solid rgba(245, 158, 11, 0.6);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+}
+
+.track-node.node-tag-energy:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 1), rgba(217, 119, 6, 1));
+    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.4);
+}
+
+.track-node.node-tag-mood {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(124, 58, 237, 0.9));
+    border: 2px solid rgba(139, 92, 246, 0.6);
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+
+.track-node.node-tag-mood:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 1), rgba(124, 58, 237, 1));
+    box-shadow: 0 6px 24px rgba(139, 92, 246, 0.4);
+}
+
+.track-node.node-tag-style {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(8, 145, 178, 0.9));
+    border: 2px solid rgba(6, 182, 212, 0.6);
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+}
+
+.track-node.node-tag-style:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 1), rgba(8, 145, 178, 1));
+    box-shadow: 0 6px 24px rgba(6, 182, 212, 0.4);
+}
+
+.track-node.node-tag-occasion {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9));
+    border: 2px solid rgba(16, 185, 129, 0.6);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.track-node.node-tag-occasion:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 1), rgba(5, 150, 105, 1));
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
+}
+
+.track-node.node-tag-weather {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.9));
+    border: 2px solid rgba(99, 102, 241, 0.6);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.track-node.node-tag-weather:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 1), rgba(79, 70, 229, 1));
+    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+}
+
+.track-node.node-tag-intensity {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+    border: 2px solid rgba(239, 68, 68, 0.6);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+}
+
+.track-node.node-tag-intensity:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 1), rgba(220, 38, 38, 1));
+    box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4);
+}
+
+.track-node.node-tag-rating {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.9), rgba(245, 158, 11, 0.9));
+    border: 2px solid rgba(251, 191, 36, 0.6);
+    box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+}
+
+.track-node.node-tag-rating:hover {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 1), rgba(245, 158, 11, 1));
+    box-shadow: 0 6px 24px rgba(251, 191, 36, 0.4);
+}
+
+.track-node.node-tag-tempo {
+    background: linear-gradient(135deg, rgba(67, 56, 202, 0.9), rgba(55, 48, 163, 0.9));
+    border: 2px solid rgba(67, 56, 202, 0.6);
+    box-shadow: 0 4px 20px rgba(67, 56, 202, 0.3);
+}
+
+.track-node.node-tag-tempo:hover {
+    background: linear-gradient(135deg, rgba(67, 56, 202, 1), rgba(55, 48, 163, 1));
+    box-shadow: 0 6px 24px rgba(67, 56, 202, 0.4);
+}
+
+.track-node.node-tag-vibe {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.9), rgba(13, 148, 136, 0.9));
+    border: 2px solid rgba(20, 184, 166, 0.6);
+    box-shadow: 0 4px 20px rgba(20, 184, 166, 0.3);
+}
+
+.track-node.node-tag-vibe:hover {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 1), rgba(13, 148, 136, 1));
+    box-shadow: 0 6px 24px rgba(20, 184, 166, 0.4);
+}
+
+/* Default styling for nodes without specific tag categories */
+/* Neutral gray style for all nodes */
+.track-node.node-neutral {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.9), rgba(75, 85, 99, 0.9));
+    border: 2px solid rgba(107, 114, 128, 0.6);
+    box-shadow: 0 4px 20px rgba(107, 114, 128, 0.3);
+}
+
+.track-node.node-neutral:hover {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 1), rgba(75, 85, 99, 1));
+    box-shadow: 0 6px 24px rgba(107, 114, 128, 0.4);
+}
+
+/* Legacy fallback for nodes without specific styling */
+.track-node:not([class*="node-tag-"]):not(.node-neutral) {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.9), rgba(75, 85, 99, 0.9));
+    border: 2px solid rgba(107, 114, 128, 0.6);
+    box-shadow: 0 4px 20px rgba(107, 114, 128, 0.3);
+}
+
+.track-node:not([class*="node-tag-"]):not(.node-neutral):hover {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 1), rgba(75, 85, 99, 1));
+    box-shadow: 0 6px 24px rgba(107, 114, 128, 0.4);
+} 
+
+/* Color Legend Styles */
+.color-legend {
+    margin-top: 24px;
+    padding: 20px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.color-legend h4 {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    text-align: center;
+    letter-spacing: -0.025em;
+}
+
+.legend-items {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #ffffff !important;
+}
+
+/* Force white text in legend items at all times - ULTRA SPECIFIC */
+.color-legend .legend-items .legend-item,
+.color-legend .legend-items .legend-item span,
+.color-legend .legend-items .legend-item:hover,
+.color-legend .legend-items .legend-item:hover span,
+.color-legend .legend-items .legend-item:active,
+.color-legend .legend-items .legend-item:active span,
+.color-legend .legend-items .legend-item:focus,
+.color-legend .legend-items .legend-item:focus span {
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Extra specific for any possible state */
+div.color-legend div.legend-items div.legend-item {
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Catch-all for any dynamic classes that might be added */
+.legend-item[class*="legend-"] {
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Nuclear option - force text color on ALL children of legend items */
+.legend-item * {
+    color: inherit !important;
+}
+
+/* TARGET EXACT HTML STRUCTURE - force white text on spans */
+.color-legend .legend-items .legend-item span {
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9) !important;
+    font-weight: 500 !important;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+}
+
+/* Legend color definitions matching node colors */
+.legend-emotion {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(190, 24, 93, 0.9));
+}
+
+.legend-energy {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
+}
+
+.legend-mood {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(124, 58, 237, 0.9));
+}
+
+.legend-style {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(8, 145, 178, 0.9));
+}
+
+.legend-occasion {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9));
+}
+
+.legend-weather {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.9));
+}
+
+.legend-intensity {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+}
+
+.legend-rating {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.9), rgba(245, 158, 11, 0.9));
+}
+
+.legend-tempo {
+    background: linear-gradient(135deg, rgba(67, 56, 202, 0.9), rgba(55, 48, 163, 0.9));
+}
+
+.legend-vibe {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.9), rgba(13, 148, 136, 0.9));
+} 
+
+/* Legend Popup Styles */
+.legend-popup {
+    background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(30, 30, 60, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 280px;
+    min-width: 200px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(99, 102, 241, 0.1);
+    pointer-events: auto;
+    transition: opacity 0.2s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.legend-popup-title {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 12px;
+    line-height: 1.3;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    text-align: center;
+}
+
+.legend-popup-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.legend-popup-tag {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    color: white;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Use existing tag category colors for legend popup tags */
+.legend-popup-tag.tag-emotion {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    border-color: rgba(236, 72, 153, 0.3);
+}
+
+.legend-popup-tag.tag-energy {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.legend-popup-tag.tag-mood {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.legend-popup-tag.tag-style {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+.legend-popup-tag.tag-occasion {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.legend-popup-tag.tag-weather {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.legend-popup-tag.tag-intensity {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.legend-popup-tag.tag-rating {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.legend-popup-tag.tag-tempo {
+    background: linear-gradient(135deg, #4338ca, #3730a3);
+    border-color: rgba(67, 56, 202, 0.3);
+}
+
+.legend-popup-tag.tag-vibe {
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    border-color: rgba(20, 184, 166, 0.3);
+}
+
+/* Add subtle glow effect to legend popup */
+.legend-popup::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+    border-radius: 14px;
+    z-index: -1;
+    opacity: 0.5;
+}
+
+/* Add hover effect to legend items */
+.legend-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.legend-item:hover .legend-color {
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+/* Stili per l'interattività della legenda */
+.legend-item {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.legend-item.legend-active {
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+}
+
+.legend-item.legend-active .legend-color {
+    transform: scale(1.25);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.4);
+    border: 3px solid rgba(255, 255, 255, 1);
+}
+
+.legend-item.legend-active span {
+    color: #ffffff !important;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Stili per selezioni multiple della legenda */
+.legend-item.legend-active.multi-selection {
+    background: rgba(74, 222, 128, 0.35);
+    border: 2px solid rgba(74, 222, 128, 0.9);
+    animation: pulse-multi 1.5s ease-in-out infinite;
+}
+
+.legend-item.legend-active.multi-selection .legend-color {
+    border: 3px solid rgba(74, 222, 128, 1);
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.8), 0 0 40px rgba(74, 222, 128, 0.4);
+}
+
+.legend-item.legend-active.multi-selection span {
+    color: #dcfce7 !important;
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.8);
+}
+
+/* Animazione per selezioni multiple */
+@keyframes pulse-multi {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(74, 222, 128, 1), 0 0 50px rgba(74, 222, 128, 0.4);
+    }
+}
+
+/* Stili per i nodi evidenziati */
+.track-node.category-highlighted {
+    background: #ffffff !important;
+    background-image: none !important;
+    transform: scale(1.2) !important;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 60px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.3) !important;
+    border: 4px solid #ffffff !important;
+    z-index: 100 !important;
+    animation: pulse-highlight-white 1.5s ease-in-out infinite;
+    filter: brightness(1.2) saturate(0) drop-shadow(0 0 15px #ffffff) !important;
+    color: #000000 !important;
+}
+
+@keyframes pulse-highlight-white {
+    0%, 100% {
+        background: #ffffff !important;
+        box-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 60px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.3);
+        transform: scale(1.2);
+    }
+    50% {
+        background: #ffffff !important;
+        box-shadow: 0 0 50px rgba(255, 255, 255, 1), 0 0 100px rgba(255, 255, 255, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.5);
+        transform: scale(1.25);
+    }
+}
+
+/* Stili per i nodi smussati */
+.track-node.category-dimmed {
+    opacity: 0.15 !important;
+    filter: grayscale(90%) blur(1px) !important;
+    transform: scale(0.9) !important;
+    transition: all 0.4s ease !important;
+}
+
+/* Stili per i rami evidenziati */
+.tree-branch.branch-highlighted {
+    stroke: #ffffff !important;
+    stroke-width: 6px !important;
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 8px #ffffff) drop-shadow(0 0 16px rgba(255, 255, 255, 0.6)) !important;
+    animation: pulse-branch 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-branch {
+    0%, 100% {
+        stroke-width: 6px;
+        filter: drop-shadow(0 0 8px #ffffff) drop-shadow(0 0 16px rgba(255, 255, 255, 0.6));
+    }
+    50% {
+        stroke-width: 8px;
+        filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 24px rgba(255, 255, 255, 0.8));
+    }
+}
+
+/* Stili per i rami smussati */
+.tree-branch.branch-dimmed {
+    opacity: 0.1 !important;
+    filter: grayscale(100%) blur(0.5px) !important;
+    stroke-width: 1px !important;
+    transition: all 0.4s ease !important;
+}
+
+/* Stili per il testo dei rami evidenziati */
+.branch-text-highlighted {
+    fill: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    filter: drop-shadow(0 0 4px #ffffff) !important;
+    opacity: 1 !important;
+}
+
+/* Stili per il testo dei rami smussati */
+.branch-text-dimmed {
+    opacity: 0.1 !important;
+    filter: grayscale(100%) !important;
+    transition: all 0.4s ease !important;
+}
+
+/* Stili per il feedback della categoria */
+.category-feedback {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 1), rgba(22, 163, 74, 1));
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.6);
+    backdrop-filter: blur(15px);
+    animation: slide-in-feedback 0.3s ease-out;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slide-in-feedback {
+    from {
+        transform: translateX(100%) scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+} 
+
+/* Playlist Phases Styles */
+.playlist-phases-link {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.phases-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 8px;
+    color: #e1e5e9;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.phases-btn:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+    border-color: rgba(139, 92, 246, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.phases-btn.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8));
+    border-color: rgba(139, 92, 246, 1);
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+}
+
+/* Playlist Phases View */
+.playlist-phases-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 30, 0.95);
+    backdrop-filter: blur(20px);
+    z-index: 50;
+}
+
+.phases-svg {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(20, 20, 60, 0.3) 0%, rgba(10, 10, 30, 0.8) 70%);
+}
+
+/* Phase Circles */
+.phase-circle {
+    stroke-dasharray: 5, 5;
+    filter: drop-shadow(0 0 8px currentColor);
+    animation: pulse-circle 4s ease-in-out infinite;
+}
+
+.phase-1 { stroke: #ff6b6b; }
+.phase-2 { stroke: #4ecdc4; }
+.phase-3 { stroke: #45b7d1; }
+.phase-4 { stroke: #96ceb4; }
+
+/* Time Progress Line */
+.progress-line {
+    filter: drop-shadow(0 0 8px currentColor);
+    transition: all 0.5s ease;
+}
+
+/* Phase Labels */
+.phase-label {
+    font-size: 16px;
+    font-weight: 600;
+    text-shadow: 0 0 10px currentColor;
+    opacity: 0.9;
+}
+
+/* Current Time Indicator */
+.current-time-indicator {
+    /* Removed animation */
+}
+
+.time-line {
+    filter: drop-shadow(0 0 8px #fff);
+    transform-origin: 50% 50%;
+}
+
+.time-display {
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px #fff;
+    filter: drop-shadow(0 0 4px #fff);
+}
+
+/* Background dimming for tree view */
+.canvas-content.phases-active .drop-zone,
+.canvas-content.phases-active .track-node,
+.canvas-content.phases-active .track-list-container {
+    opacity: 0.2;
+    filter: blur(2px) grayscale(50%);
+    transition: all 0.5s ease;
+}
+
+/* Animations */
+@keyframes pulse-indicator {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+
+@keyframes pulse-circle {
+    0%, 100% { 
+        opacity: 0.7; 
+        stroke-width: 2; 
+    }
+    50% { 
+        opacity: 0.9; 
+        stroke-width: 3; 
+    }
+}
+
+/* Real-time Clock Styles */
+.real-time-clock {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    background: linear-gradient(135deg, rgba(15, 15, 35, 0.95), rgba(30, 30, 60, 0.95));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 12px 20px;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slide-in-clock 0.5s ease-out;
+}
+
+.clock-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.clock-time {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+}
+
+.clock-label {
+    font-size: 10px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@keyframes slide-in-clock {
+    from {
+        transform: translateY(-20px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+
+
+/* Node Tooltip Styles */
+.node-tooltip {
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    max-width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    font-size: 13px;
+    color: white;
+    pointer-events: none;
+    animation: fadeInTooltip 0.2s ease-out;
+}
+
+.node-tooltip-title {
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.node-tooltip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.node-tooltip-tag {
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+/* Category-specific colors for node tooltip tags */
+.node-tooltip-tag.tag-emotion { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+.node-tooltip-tag.tag-energy { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4); }
+.node-tooltip-tag.tag-mood { background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4); }
+.node-tooltip-tag.tag-style { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4); }
+.node-tooltip-tag.tag-occasion { background: rgba(236, 72, 153, 0.2); border-color: rgba(236, 72, 153, 0.4); }
+.node-tooltip-tag.tag-weather { background: rgba(14, 165, 233, 0.2); border-color: rgba(14, 165, 233, 0.4); }
+.node-tooltip-tag.tag-intensity { background: rgba(220, 38, 127, 0.2); border-color: rgba(220, 38, 127, 0.4); }
+.node-tooltip-tag.tag-rating { background: rgba(251, 191, 36, 0.2); border-color: rgba(251, 191, 36, 0.4); }
+.node-tooltip-tag.tag-tempo { background: rgba(67, 56, 202, 0.2); border-color: rgba(67, 56, 202, 0.4); }
+.node-tooltip-tag.tag-vibe { background: rgba(20, 184, 166, 0.2); border-color: rgba(20, 184, 166, 0.4); }
+
+@keyframes fadeInTooltip {
+    from {
+        opacity: 0;
+        transform: translateY(5px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Simple Node Tooltip */
+.simple-node-tooltip {
+    position: fixed;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    max-width: 250px;
+    z-index: 1500;
+    pointer-events: none;
+    animation: fadeInTooltip 0.2s ease-out;
+}
+
+.simple-node-tooltip .tooltip-title {
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.simple-node-tooltip .tooltip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.simple-node-tooltip .tooltip-tag {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.9);
+}

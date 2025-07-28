@@ -1,0 +1,37 @@
+{
+  "name": "musictag-flow-test-modules",
+  "version": "1.0.0",
+  "description": "Electron test modules for MusicTagFlow application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "scanner": "cd scanner-test && npm start",
+    "scanner-dev": "cd scanner-test && npm run dev",
+    "install-all": "npm install && cd scanner-test && npm install",
+    "rebuild": "electron-rebuild"
+  },
+  "keywords": [
+    "electron",
+    "music",
+    "mindmap",
+    "playlist",
+    "testing"
+  ],
+  "author": "Gianpiero Fiorelli",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-rebuild": "^3.2.9"
+  },
+  "dependencies": {
+    "electron-is-dev": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GianpaMX/MindMapPlaylistApp"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
