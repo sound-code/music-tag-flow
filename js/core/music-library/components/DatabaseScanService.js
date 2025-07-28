@@ -1,6 +1,6 @@
 const IScanService = require('../interfaces/IScanService');
 
-class ScanService extends IScanService {
+class DatabaseScanService extends IScanService {
     constructor(trackRepository, fileScanner, metadataExtractor) {
         super();
         this.trackRepository = trackRepository;
@@ -10,7 +10,7 @@ class ScanService extends IScanService {
 
     async scanDirectory(directory, progressCallback = null) {
         if (!this.trackRepository || !this.fileScanner || !this.metadataExtractor) {
-            throw new Error('ScanService dependencies not properly initialized');
+            throw new Error('DatabaseScanService dependencies not properly initialized');
         }
 
         // Scan for audio files
@@ -98,4 +98,4 @@ class ScanService extends IScanService {
     }
 }
 
-module.exports = ScanService; 
+module.exports = DatabaseScanService; 

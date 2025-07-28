@@ -2,10 +2,10 @@
  * Search Engine Interface
  * Defines the contract for search operations
  */
-class ISearchEngine {
+class ISearchService {
     constructor() {
-        if (this.constructor === ISearchEngine) {
-            throw new Error("Cannot instantiate abstract class ISearchEngine");
+        if (this.constructor === ISearchService) {
+            throw new Error("Cannot instantiate abstract class ISearchService");
         }
     }
 
@@ -46,4 +46,4 @@ class ISearchEngine {
     }
 }
 
-module.exports = ISearchEngine; 
+module.exports = ISearchService; 

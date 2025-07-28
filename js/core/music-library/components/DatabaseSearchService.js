@@ -1,6 +1,6 @@
-const ISearchEngine = require('../interfaces/ISearchEngine');
+const ISearchService = require('../interfaces/ISearchService');
 
-class SearchEngine extends ISearchEngine {
+class DatabaseSearchService extends ISearchService {
     constructor(databaseManager) {
         super();
         this.db = databaseManager;
@@ -93,4 +93,4 @@ class SearchEngine extends ISearchEngine {
     }
 }
 
-module.exports = SearchEngine; 
+module.exports = DatabaseSearchService; 
