@@ -27,8 +27,25 @@ const Search = {
             }
         }
         
-        // Fallback to DataLoader
-        return await DataLoader.getAllTracks();
+        // Fallback to DataSourceAdapter
+        if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.getAllTracks) {
+            const result = await DataSourceAdapter.getAllTracks();
+            // Convert artist/album structure to flat track array
+            const tracks = [];
+            if (result && result.artists) {
+                result.artists.forEach(artist => {
+                    if (artist.albums) {
+                        artist.albums.forEach(album => {
+                            if (album.tracks) {
+                                tracks.push(...album.tracks);
+                            }
+                        });
+                    }
+                });
+            }
+            return tracks;
+        }
+        return [];
     },
 
     /**

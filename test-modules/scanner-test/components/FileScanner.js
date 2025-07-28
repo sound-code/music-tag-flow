@@ -1,4 +1,4 @@
-const { glob } = require('glob');
+const glob = require('glob');
 
 class FileScanner {
     constructor() {
@@ -11,11 +11,16 @@ class FileScanner {
             let files = [];
             
             for (const pattern of this.audioExtensions) {
-                const found = await glob(pattern, { 
-                    cwd: directory, 
-                    absolute: true,
-                    ignore: this.ignorePatterns,
-                    nocase: true  // Case insensitive matching
+                const found = await new Promise((resolve, reject) => {
+                    glob(pattern, { 
+                        cwd: directory, 
+                        absolute: true,
+                        ignore: this.ignorePatterns,
+                        nocase: true  // Case insensitive matching
+                    }, (err, matches) => {
+                        if (err) reject(err);
+                        else resolve(matches);
+                    });
                 });
                 files = files.concat(found);
             }

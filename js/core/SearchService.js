@@ -279,12 +279,26 @@ class SearchService extends ServiceBase {
     }
 
     /**
-     * Get all tracks from DataLoader
+     * Get all tracks from DataSourceAdapter (database)
      * @returns {Promise<Array>} Array of track objects
      */
     async getAllTracks() {
-        if (typeof DataLoader !== 'undefined' && DataLoader.getAllTracks) {
-            return await DataLoader.getAllTracks();
+        if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.getAllTracks) {
+            const result = await DataSourceAdapter.getAllTracks();
+            // Convert artist/album structure to flat track array
+            const tracks = [];
+            if (result && result.artists) {
+                result.artists.forEach(artist => {
+                    if (artist.albums) {
+                        artist.albums.forEach(album => {
+                            if (album.tracks) {
+                                tracks.push(...album.tracks);
+                            }
+                        });
+                    }
+                });
+            }
+            return tracks;
         }
         return [];
     }
