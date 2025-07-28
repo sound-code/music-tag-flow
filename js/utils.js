@@ -239,75 +239,134 @@ const Utils = {
      */
     async renderMusicLibrary() {
         try {
-            
             const libraryStructure = await DataSourceAdapter.getLibraryStructure();
-            
             const musicLibrary = document.querySelector('.music-library');
             
             if (!musicLibrary) {
                 return;
             }
 
- 
-            // Clear existing hardcoded content
+            // Clear existing content
             musicLibrary.innerHTML = `
                 <div class="library-header">
                     <button class="refresh-library" onclick="Utils.refreshMusicLibrary()">⟳</button>
                 </div>
             `;
 
- 
-            // Render artists dynamically
-            libraryStructure.forEach(artist => {
-                const artistFolder = document.createElement('div');
-                artistFolder.className = 'artist-folder';
-                
-                artistFolder.innerHTML = `
-                    <div class="artist-header" onclick="toggleArtist(this)">
+            // Check if we have data
+            if (!libraryStructure || !Array.isArray(libraryStructure) || libraryStructure.length === 0) {
+                musicLibrary.innerHTML += '<div class="no-data">No music library data available</div>';
+                return;
+            }
+
+            // Render artists one by one safely
+            for (const artist of libraryStructure) {
+                try {
+                    if (!artist || !artist.name || !artist.albums) continue;
+                    
+                    const artistFolder = document.createElement('div');
+                    artistFolder.className = 'artist-folder';
+                    
+                    // Create artist header
+                    const artistHeader = document.createElement('div');
+                    artistHeader.className = 'artist-header';
+                    artistHeader.onclick = function() { toggleArtist(this); };
+                    artistHeader.innerHTML = `
                         <span class="artist-icon">▶</span>
                         <span class="artist-name">${artist.name}</span>
                         <span class="artist-count">${artist.albums.length} albums</span>
-                    </div>
-                    <div class="albums-container">
-                        ${artist.albums.map(album => `
-                            <div class="album-folder">
-                                <div class="album-header" onclick="toggleAlbum(this)">
-                                    <span class="album-icon">▶</span>
-                                    <span class="album-name">${album.name}</span>
-                                    <span class="album-count">${album.tracks.length} tracks</span>
-                                </div>
-                                <div class="tracks-container">
-                                    ${album.tracks.map(track => `
-                                        <div class="track-item" draggable="true" data-track='${JSON.stringify(track)}'>
-                                            <div class="track-title">${track.title}</div>
-                                            <div class="track-duration">${track.duration}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                
-                musicLibrary.appendChild(artistFolder);
-            });
-
-            // Add drag & drop functionality to all dynamically created track items
-            const trackItems = musicLibrary.querySelectorAll('.track-item[draggable="true"]');
-            
-            trackItems.forEach(trackItem => {
-                DragDrop.addDragToElement(trackItem);
-            });
-
-            // Emit event to notify that data loading is complete
-            if (window.EventBus) {
-                window.EventBus.emit('data:loading:complete', {
-                    trackCount: trackItems.length,
-                    artistCount: libraryStructure.length
-                });
+                    `;
+                    
+                    artistFolder.appendChild(artistHeader);
+                    
+                    // Create albums container
+                    const albumsContainer = document.createElement('div');
+                    albumsContainer.className = 'albums-container';
+                    
+                    // Add albums
+                    for (const album of artist.albums) {
+                        if (!album || !album.name || !album.tracks) continue;
+                        
+                        const albumFolder = document.createElement('div');
+                        albumFolder.className = 'album-folder';
+                        
+                        const albumHeader = document.createElement('div');
+                        albumHeader.className = 'album-header';
+                        albumHeader.onclick = function() { toggleAlbum(this); };
+                        albumHeader.innerHTML = `
+                            <span class="album-icon">▶</span>
+                            <span class="album-name">${album.name}</span>
+                            <span class="album-count">${album.tracks.length} tracks</span>
+                        `;
+                        
+                        const tracksContainer = document.createElement('div');
+                        tracksContainer.className = 'tracks-container';
+                        
+                        // Add tracks
+                        for (const track of album.tracks) {
+                            if (!track || !track.title) continue;
+                            
+                            // Sanitize track data for JSON serialization
+                            const safeTrack = {
+                                title: track.title || 'Unknown Track',
+                                artist: track.artist || artist.name,
+                                album: track.album || album.name,
+                                duration: track.duration || '',
+                                tags: Array.isArray(track.tags) ? track.tags : [],
+                                source: track.source || 'database'
+                            };
+                            
+                            const trackItem = document.createElement('div');
+                            trackItem.className = 'track-item';
+                            trackItem.draggable = true;
+                            
+                            try {
+                                const trackJson = JSON.stringify(safeTrack);
+                                trackItem.setAttribute('data-track', trackJson);
+                            } catch (jsonError) {
+                                console.error('🎯 Error serializing track:', track, jsonError);
+                                // Fallback with minimal data
+                                trackItem.setAttribute('data-track', JSON.stringify({
+                                    title: safeTrack.title,
+                                    artist: safeTrack.artist,
+                                    album: safeTrack.album,
+                                    tags: []
+                                }));
+                            }
+                            
+                            trackItem.innerHTML = `
+                                <div class="track-title">${safeTrack.title}</div>
+                                <div class="track-duration">${safeTrack.duration}</div>
+                            `;
+                            
+                            tracksContainer.appendChild(trackItem);
+                        }
+                        
+                        albumFolder.appendChild(albumHeader);
+                        albumFolder.appendChild(tracksContainer);
+                        albumsContainer.appendChild(albumFolder);
+                    }
+                    
+                    artistFolder.appendChild(albumsContainer);
+                    musicLibrary.appendChild(artistFolder);
+                    
+                } catch (artistError) {
+                    console.error('Error rendering artist:', artist?.name, artistError);
+                    continue;
+                }
             }
 
+            // Add drag & drop functionality
+            const trackItems = musicLibrary.querySelectorAll('.track-item[draggable="true"]');
+            trackItems.forEach(trackItem => {
+                if (typeof DragDrop !== 'undefined' && DragDrop.addDragToElement) {
+                    DragDrop.addDragToElement(trackItem);
+                }
+            });
+
+
         } catch (error) {
+            console.error('🎵 Error in renderMusicLibrary:', error);
             this.showNotification('Error loading music library', 'error');
         }
     },

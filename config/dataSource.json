@@ -1,23 +1,18 @@
 {
   "dataSources": {
+    "database": {
+      "enabled": true,
+      "type": "database",
+      "config": {
+        "source": "electron_ipc",
+        "priority": 1
+      }
+    },
     "primary": {
       "enabled": true,
       "type": "json",
       "config": {
         "tracksFile": "./data/tracks.json"
-      }
-    },
-    "backup": {
-      "enabled": false,
-      "type": "rest_api",
-      "config": {
-        "baseUrl": "https://api.example.com/music",
-        "apiKey": "",
-        "endpoints": {
-          "tracks": "/tracks",
-          "artists": "/artists",
-          "albums": "/albums"
-        }
       }
     }
   },

@@ -108,6 +108,7 @@ class DragDropService extends ServiceBase {
      * Setup drag listeners for track items
      */
     setupDragListeners() {
+        
         // Use event delegation for dynamically added track items
         document.addEventListener('dragstart', (e) => {
             const trackItem = e.target.closest('.track-item, .track-list-item');
@@ -122,6 +123,7 @@ class DragDropService extends ServiceBase {
                 this.handleDragEnd(e, trackItem);
             }
         });
+        
     }
 
     /**
@@ -153,15 +155,22 @@ class DragDropService extends ServiceBase {
      * @param {HTMLElement} element - The dragged element
      */
     handleDragStart(e, element) {
+        
         if (!this.validate({ dragEvent: e }, { dragEvent: this.validationRules.dragEvent })) {
             return;
         }
 
         element.classList.add('dragging');
         this.isDragActive = true;
-        this.setState('dragdrop.isDragActive', true);
+        
+        try {
+            this.setState('dragdrop.isDragActive', true);
+        } catch (stateError) {
+            console.error('🎯 DragDropService: Error setting state:', stateError);
+        }
         
         const trackData = element.dataset.track;
+        
         if (!trackData) {
             this.emitEvent('notification:show', {
                 message: 'No track data found',
@@ -174,15 +183,25 @@ class DragDropService extends ServiceBase {
         const decodedTrackData = trackData.replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
         
         this.currentDragData = decodedTrackData;
-        this.setState('dragdrop.currentDragData', decodedTrackData);
+        
+        try {
+            this.setState('dragdrop.currentDragData', decodedTrackData);
+        } catch (stateError) {
+            console.error('🎯 DragDropService: Error setting drag data state:', stateError);
+        }
         
         e.dataTransfer.setData('text/plain', decodedTrackData);
         e.dataTransfer.effectAllowed = 'copy';
 
-        this.emitEvent('dragdrop:started', {
-            trackData: decodedTrackData,
-            element
-        });
+        try {
+            this.emitEvent('dragdrop:started', {
+                trackData: decodedTrackData,
+                element
+            });
+        } catch (eventError) {
+            console.error('🎯 DragDropService: Error emitting event:', eventError);
+        }
+        
     }
 
     /**
@@ -310,6 +329,7 @@ class DragDropService extends ServiceBase {
      * @param {Object} rootTrackData - The root track data
      */
     async createAutoTree(rootTrackData) {
+        
         if (!this.validate({ trackData: rootTrackData }, { trackData: this.validationRules.trackData })) {
             return;
         }
@@ -342,7 +362,10 @@ class DragDropService extends ServiceBase {
      * @param {number} maxLevels - Maximum levels to build
      */
     async buildTreeLevel(parentNode, parentTrack, currentLevel, maxLevels) {
-        if (currentLevel > maxLevels) return;
+        
+        if (currentLevel > maxLevels) {
+            return;
+        }
         
         const { branchesPerTag, animationDelay, branchDelay, levelConfigs } = this.config;
         

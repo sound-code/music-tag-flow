@@ -24,6 +24,34 @@
                 </div>
             </div>
             
+            <!-- Scan Library Section -->
+            <div class="scan-section">
+                <button class="scan-button" id="scanButton">
+                    <span class="scan-icon">📁</span>
+                    <span class="scan-text">Scan Music Library</span>
+                </button>
+                <div class="scan-progress" id="scanProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Scanning...</div>
+                </div>
+                <div class="scan-stats" id="scanStats" style="display: none;">
+                    <div class="stat-item">
+                        <span class="stat-label">Tracks:</span>
+                        <span class="stat-value" id="tracksCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Artists:</span>
+                        <span class="stat-value" id="artistsCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Albums:</span>
+                        <span class="stat-value" id="albumsCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="music-library" id="musicLibrary">
                 <!-- Music library will be populated dynamically by DataSourceAdapter -->
                 <div class="library-loading">
@@ -146,6 +174,9 @@
         </div>
     </div>
 
+    <!-- Crash Monitor - Disabled temporarily -->
+    <!-- <script src="crash-monitor.js"></script> -->
+    
     <!-- JavaScript Modules -->
     <!-- Core Infrastructure -->
     <script src="js/core/EventBus.js"></script>
@@ -161,6 +192,7 @@
     <script src="js/core/PhasesService.js"></script>
     <script src="js/core/UIService.js"></script>
     <script src="js/core/DragDropService.js"></script>
+    <script src="js/core/ScanService.js"></script>
     <script src="js/core/ServiceManager.js"></script>
     
     <!-- Application State -->

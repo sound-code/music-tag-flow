@@ -32,7 +32,6 @@ const Tags = {
         let trackNode = tagElement.closest('.track-node');
         if (trackNode) {
             // DISABLED - now handled by EventBus system
-            console.log('🚫 Tags.js legacy createBranchesForTag disabled - handled by EventBus');
             
             tagElement.classList.add('selected');
             setTimeout(() => {

@@ -39,15 +39,21 @@ const DragDrop = {
         // Fallback implementation (should not be reached if DragDropService is available)
         const { dropZone } = AppState;
         
-        document.querySelectorAll('.track-item').forEach(item => {
+        const trackItems = document.querySelectorAll('.track-item');
+        
+        trackItems.forEach(item => {
             item.addEventListener('dragstart', this.handleDragStart.bind(this));
             item.addEventListener('dragend', this.handleDragEnd.bind(this));
         });
 
-        dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
-        dropZone.addEventListener('dragenter', this.handleDragEnter.bind(this));
-        dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
-        dropZone.addEventListener('drop', this.handleDrop.bind(this));
+        if (dropZone) {
+            dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
+            dropZone.addEventListener('dragenter', this.handleDragEnter.bind(this));
+            dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            dropZone.addEventListener('drop', this.handleDrop.bind(this));
+        } else {
+            console.error('Drop zone not found!');
+        }
     },
 
     /**
@@ -87,13 +93,11 @@ const DragDrop = {
 
             // Bridge tag click events to create additional branches - DISABLED
             window.EventBus.on('tag:click-from-node', (data) => {
-                console.log('🚫 tag:click-from-node disabled - use tag:click instead');
                 // DISABLED - use the new tag:click event instead
             });
 
             // Bridge TagService tree:create-branches events to NEW TrackNodes method
             window.EventBus.on('tree:create-branches', (data) => {
-                console.log('🌿 EventBus received tree:create-branches:', data);
                 if (typeof TrackNodes !== 'undefined' && TrackNodes.createBranchesDirectly) {
                     TrackNodes.createBranchesDirectly(data.tagValue, data.sourceNode);
                 } else {
@@ -103,7 +107,6 @@ const DragDrop = {
 
             // Bridge tag:click events to TagService
             window.EventBus.on('tag:click', (data) => {
-                console.log('🏷️ EventBus received tag:click:', data);
                 if (window.App && window.App.getService) {
                     const tagService = window.App.getService('tags');
                     if (tagService && typeof tagService.handleTagClick === 'function') {
@@ -144,7 +147,10 @@ const DragDrop = {
         }
         
         // Fallback implementation
-        if (!trackItem) return;
+        if (!trackItem) {
+            return;
+        }
+        
         
         trackItem.addEventListener('dragstart', this.handleDragStart.bind(this));
         trackItem.addEventListener('dragend', this.handleDragEnd.bind(this));
@@ -177,6 +183,7 @@ const DragDrop = {
         e.target.classList.add('dragging');
         
         const trackData = e.target.dataset.track;
+        
         if (!trackData) {
             Utils.showNotification('No track data found');
             return;
@@ -187,6 +194,7 @@ const DragDrop = {
         
         e.dataTransfer.setData('text/plain', decodedTrackData);
         e.dataTransfer.effectAllowed = 'copy';
+        
     },
 
     /**
@@ -226,35 +234,72 @@ const DragDrop = {
      * @param {DragEvent} e - The drag event
      */
     async handleDrop(e) {
-        e.preventDefault();
-        const { dropZone, canvas } = AppState;
+        // Global safety wrapper
+        const originalOnError = window.onerror;
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('🎯 GLOBAL ERROR during drop:', {message, source, lineno, colno, error});
+            return false; // Let default handler run too
+        };
         
-        dropZone.classList.remove('drag-over');
+        // Setup timeout safety
+        const dropTimeout = setTimeout(() => {
+            console.error('🎯 DROP TIMEOUT - operation took too long');
+        }, 10000); // 10 second timeout
         
         try {
-            const trackDataString = e.dataTransfer.getData('text/plain');
+            e.preventDefault();
+            e.stopPropagation();
             
+            const { dropZone } = AppState;
+            dropZone.classList.remove('drag-over');
+            
+            const trackDataString = e.dataTransfer.getData('text/plain');
             
             if (!trackDataString?.trim()) {
                 Utils.showNotification('No track data found');
                 return;
             }
             
-                        const trackData = JSON.parse(trackDataString);
-     
-            // Set flag that tree is being built
-            Playlist.isTreeBuilding = true;
+            let trackData;
+            try {
+                trackData = JSON.parse(trackDataString);
+            } catch (parseError) {
+                console.error('🎯 JSON parse failed:', parseError.message);
+                Utils.showNotification('Invalid track data format');
+                return;
+            }
             
-            await this.createAutoTree(trackData);
+            // ULTRA SIMPLE TEST - just show notification without creating anything
+            try {
+                Utils.showNotification(`🎵 Dropped: ${trackData.title} by ${trackData.artist}`);
+                
+            } catch (simpleError) {
+                console.error('🎯 Error in simple test:', simpleError);
+                throw simpleError;
+            }
+            
             dropZone.style.display = 'none';
             
-            // Reset flag after tree is built (give it time to complete)
-            setTimeout(() => {
-                Playlist.isTreeBuilding = false;
-            }, 3000);
         } catch (error) {
-            Utils.showNotification('Error loading track data');
+            console.error('🎯 CRITICAL DROP ERROR:', error);
+            console.error('🎯 Error name:', error.name);
+            console.error('🎯 Error message:', error.message);
+            console.error('🎯 Error stack:', error.stack);
+            
+            // Try to show notification even if there's an error
+            try {
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('❌ Drop failed: ' + error.message);
+                }
+            } catch (notificationError) {
+                console.error('🎯 Even notification failed:', notificationError);
+            }
         }
+        
+        // Cleanup
+        clearTimeout(dropTimeout);
+        window.onerror = originalOnError;
+        
     },
 
     /**

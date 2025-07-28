@@ -200,7 +200,6 @@ const UI = {
         // TOOLTIP HANDLING DISABLED - now handled by UIService to avoid conflicts
         // UIService handles all tooltips for track-item and track-list-item
         // CSS hover handles track-node tooltips
-        console.log('UI.js: Tooltip handling delegated to UIService');
 
         document.addEventListener('mouseout', (e) => {
             const trackItem = e.target.closest('.track-item, .track-list-item, .track-node');

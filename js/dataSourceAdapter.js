@@ -40,12 +40,6 @@ const DataSourceAdapter = {
                 case 'json':
                     adapter = new JsonDataAdapter(config.config);
                     break;
-                case 'rest_api':
-                    adapter = new RestApiAdapter(config.config);
-                    break;
-                case 'filesystem':
-                    adapter = new FilesystemAdapter(config.config);
-                    break;
                 case 'database':
                     adapter = new DatabaseAdapter(config.config);
                     break;
@@ -64,8 +58,7 @@ const DataSourceAdapter = {
      */
     initializeFallbackAdapter() {
         const fallbackConfig = {
-            tracksFile: './data/tracks.json',
-            sampleDataFile: './data/sample-data.json'
+            tracksFile: './data/tracks.json'
         };
         const adapter = new JsonDataAdapter(fallbackConfig);
         this.activeAdapters.set('fallback', adapter);
@@ -80,14 +73,144 @@ const DataSourceAdapter = {
     },
 
     /**
-     * Get all tracks from the primary data source
+     * Organize flat database tracks into artist/album structure
+     */
+    organizeDatabaseTracks(tracks, allTracks, trackMap) {
+        tracks.forEach(track => {
+            const trackKey = `${track.artist}-${track.title}`;
+            if (trackMap.has(trackKey)) return; // Skip duplicates
+            
+            trackMap.set(trackKey, track);
+            
+            // Find or create artist
+            let artist = allTracks.artists.find(a => a.name === track.artist);
+            if (!artist) {
+                artist = {
+                    name: track.artist,
+                    albums: []
+                };
+                allTracks.artists.push(artist);
+            }
+            
+            // Find or create album
+            let album = artist.albums.find(a => a.name === track.album);
+            if (!album) {
+                album = {
+                    name: track.album,
+                    year: track.year,
+                    tracks: []
+                };
+                artist.albums.push(album);
+            }
+            
+            // Add track to album
+            album.tracks.push(track);
+        });
+    },
+
+    /**
+     * Merge JSON-structured tracks
+     */
+    mergeJsonTracks(tracksData, allTracks, trackMap) {
+        if (!tracksData.artists) return;
+        
+        tracksData.artists.forEach(jsonArtist => {
+            // Find or create artist
+            let artist = allTracks.artists.find(a => a.name === jsonArtist.name);
+            if (!artist) {
+                artist = {
+                    name: jsonArtist.name,
+                    albums: []
+                };
+                allTracks.artists.push(artist);
+            }
+            
+            jsonArtist.albums.forEach(jsonAlbum => {
+                // Find or create album
+                let album = artist.albums.find(a => a.name === jsonAlbum.name);
+                if (!album) {
+                    album = {
+                        name: jsonAlbum.name,
+                        year: jsonAlbum.year,
+                        tracks: []
+                    };
+                    artist.albums.push(album);
+                }
+                
+                // Add tracks, checking for duplicates
+                if (jsonAlbum.tracks) {
+                    jsonAlbum.tracks.forEach(track => {
+                        const trackKey = `${jsonArtist.name}-${track.title}`;
+                        if (!trackMap.has(trackKey)) {
+                            trackMap.set(trackKey, track);
+                            album.tracks.push({
+                                ...track,
+                                artist: jsonArtist.name,
+                                album: jsonAlbum.name
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    },
+
+    /**
+     * Get all tracks from all data sources and combine them
      */
     async getAllTracks() {
-        const adapter = this.getPrimaryAdapter();
-        if (!adapter) {
-            throw new Error('No data adapter available');
+        // If we have a database adapter, use it exclusively
+        if (this.activeAdapters.has('database')) {
+            const databaseAdapter = this.activeAdapters.get('database');
+            try {
+                const result = await databaseAdapter.getAllTracks();
+                return result;
+            } catch (error) {
+                console.error(`❌ Error loading tracks from database:`, error);
+                // Fall back to other adapters if database fails
+            }
         }
-        return await adapter.getAllTracks();
+        
+        // Fallback: combine all adapters (original behavior)
+        const allTracks = { artists: [] };
+        const trackMap = new Map(); // To avoid duplicates
+        
+        // Get tracks from all active adapters
+        for (const [name, adapter] of this.activeAdapters) {
+            try {
+                const tracks = await adapter.getAllTracks();
+                
+                if (name === 'database') {
+                    // Database tracks are already organized
+                    this.mergeJsonTracks(tracks, allTracks, trackMap);
+                } else {
+                    // JSON tracks are already organized
+                    this.mergeJsonTracks(tracks, allTracks, trackMap);
+                }
+            } catch (error) {
+                console.error(`❌ Error loading tracks from ${name}:`, error);
+            }
+        }
+        
+        return allTracks;
+    },
+
+    /**
+     * Clear cache and force refresh
+     */
+    clearCache() {
+        // Clear cache for JSON adapter if it exists
+        const primaryAdapter = this.getPrimaryAdapter();
+        if (primaryAdapter && primaryAdapter.cache) {
+            primaryAdapter.cache = {};
+        }
+        
+        // Clear cache for all adapters
+        for (const [name, adapter] of this.activeAdapters) {
+            if (adapter.cache) {
+                adapter.cache = {};
+            }
+        }
     },
 
     /**
@@ -127,6 +250,18 @@ const DataSourceAdapter = {
      * Get library structure for UI
      */
     async getLibraryStructure() {
+        // If we have a database adapter, use it exclusively
+        if (this.activeAdapters.has('database')) {
+            const databaseAdapter = this.activeAdapters.get('database');
+            try {
+                return await databaseAdapter.getLibraryStructure();
+            } catch (error) {
+                console.error(`❌ Error getting library structure from database:`, error);
+                // Fall back to other adapters if database fails
+            }
+        }
+        
+        // Fallback to primary adapter
         const adapter = this.getPrimaryAdapter();
         if (!adapter) {
             throw new Error('No data adapter available');
@@ -236,35 +371,6 @@ class JsonDataAdapter {
         }
     }
 
-    async loadSampleData() {
-        if (this.cache.sampleData) {
-            return this.cache.sampleData;
-        }
-
-        try {
-            const response = await fetch(this.config.sampleDataFile);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            this.cache.sampleData = await response.json();
-            return this.cache.sampleData;
-        } catch (error) {
-            return this.getFallbackSampleData();
-        }
-    }
-
-    getFallbackSampleData() {
-        return {
-            sampleTrackNames: ["Midnight Dreams", "Electric Pulse", "Ocean Waves"],
-            sampleArtists: ["Luna Martinez", "Alex Rivers", "Maya Chen"],
-            tagTypes: ["emotion", "energy", "mood"],
-            tagValues: {
-                emotion: ["happy", "sad", "excited"],
-                energy: ["high", "low", "explosive"],
-                mood: ["bright", "dark", "cheerful"]
-            }
-        };
-    }
 
     async getAllTracks() {
         const tracksData = await this.loadTracks();
@@ -621,53 +727,6 @@ class JsonDataAdapter {
     }
 }
 
-/**
- * REST API Data Adapter (for future API integrations)
- */
-class RestApiAdapter {
-    constructor(config) {
-        this.config = config;
-        this.cache = new Map();
-    }
-
-    async initialize() {
-        // Test API connection
-        try {
-            const response = await fetch(`${this.config.baseUrl}/health`);
-        } catch (error) {
-        }
-    }
-
-    async getAllTracks() {
-        // Implementation for API calls
-        // This would make HTTP requests to your music library API
-        return [];
-    }
-
-    async searchTracks(query, searchType) {
-        return [];
-    }
-
-    // ... other methods would implement API calls
-}
-
-/**
- * Filesystem Data Adapter (for future local file scanning)
- */
-class FilesystemAdapter {
-    constructor(config) {
-        this.config = config;
-    }
-
-    async initialize() {
-    }
-
-    async getAllTracks() {
-        return [];
-    }
-
-    // ... other methods would scan filesystem
-}
 
 /**
  * Database Data Adapter (for future database integration)
@@ -675,16 +734,375 @@ class FilesystemAdapter {
 class DatabaseAdapter {
     constructor(config) {
         this.config = config;
+        this.initialized = false;
     }
 
     async initialize() {
+        // Check if we're running in Electron
+        if (!window.electronAPI) {
+            console.warn('DatabaseAdapter: electronAPI not available, skipping initialization');
+            return false;
+        }
+        
+        try {
+            const stats = await window.electronAPI.getStats();
+            this.initialized = true;
+            return true;
+        } catch (error) {
+            console.error('❌ DatabaseAdapter initialization failed:', error);
+            this.initialized = false;
+            return false;
+        }
     }
 
-    async getAllTracks() {
-        return [];
+    async getAllTracks(limit = 1000) {
+        if (!this.initialized || !window.electronAPI) {
+            return { artists: [] };
+        }
+
+        try {
+            const tracks = await window.electronAPI.getAllTracks(limit);
+            
+            // Transform database tracks and organize by artist/album
+            const transformedTracks = tracks.map(track => this.transformTrack(track));
+            const organizedData = this.organizeTracksIntoStructure(transformedTracks);
+            
+            return organizedData;
+        } catch (error) {
+            console.error('Error loading tracks from database:', error);
+            return { artists: [] };
+        }
     }
 
-    // ... other methods would query database
+    /**
+     * Organize flat tracks into artist/album structure for UI
+     */
+    organizeTracksIntoStructure(tracks) {
+        const artistMap = new Map();
+        
+        tracks.forEach(track => {
+            // Get or create artist
+            if (!artistMap.has(track.artist)) {
+                artistMap.set(track.artist, {
+                    name: track.artist,
+                    albums: new Map()
+                });
+            }
+            
+            const artist = artistMap.get(track.artist);
+            
+            // Get or create album
+            if (!artist.albums.has(track.album)) {
+                artist.albums.set(track.album, {
+                    name: track.album,
+                    year: track.year,
+                    tracks: []
+                });
+            }
+            
+            const album = artist.albums.get(track.album);
+            album.tracks.push(track);
+        });
+        
+        // Convert maps to arrays
+        const artists = Array.from(artistMap.values()).map(artist => ({
+            name: artist.name,
+            albums: Array.from(artist.albums.values())
+        }));
+        
+        return { artists };
+    }
+
+    async searchTracks(query, limit = 100) {
+        if (!this.initialized || !window.electronAPI) {
+            return [];
+        }
+
+        try {
+            const tracks = await window.electronAPI.searchTracks(query, { limit });
+            return tracks.map(track => this.transformTrack(track));
+        } catch (error) {
+            console.error('Error searching tracks in database:', error);
+            return [];
+        }
+    }
+
+    async getStats() {
+        if (!this.initialized || !window.electronAPI) {
+            return { tracks: 0, artists: 0, albums: 0 };
+        }
+
+        try {
+            return await window.electronAPI.getStats();
+        } catch (error) {
+            console.error('Error getting database stats:', error);
+            return { tracks: 0, artists: 0, albums: 0 };
+        }
+    }
+
+    async getLibraryStructure() {
+        if (!this.initialized || !window.electronAPI) {
+            return [];
+        }
+
+        try {
+            const result = await this.getAllTracks();
+            return result.artists;
+        } catch (error) {
+            console.error('Error getting library structure:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Generate tracks with a specific tag
+     */
+    async generateTracksWithTag(tagValue, excludeTrack = null) {
+        if (!this.initialized || !window.electronAPI) {
+            return [];
+        }
+
+        try {
+            // Get all tracks from database
+            const allTracks = await window.electronAPI.getAllTracks();
+            const transformedTracks = allTracks.map(track => this.transformTrack(track));
+            
+            // Find tracks that have the requested tag
+            let matchingTracks = transformedTracks.filter(track => 
+                track.tags && track.tags.includes(tagValue)
+            );
+            
+            // Exclude parent track to avoid direct repetition
+            if (excludeTrack) {
+                matchingTracks = matchingTracks.filter(track => 
+                    !(track.title === excludeTrack.title && 
+                      track.artist === excludeTrack.artist && 
+                      track.album === excludeTrack.album)
+                );
+            }
+            
+            const requestedCount = 7; // Default count
+            
+            if (matchingTracks.length === 0) {
+                // Fallback: find tracks with same tag category
+                const [tagCategory] = tagValue.split(':');
+                let similarTracks = transformedTracks.filter(track => 
+                    track.tags && track.tags.some(tag => tag.startsWith(tagCategory + ':'))
+                );
+                
+                if (excludeTrack) {
+                    similarTracks = similarTracks.filter(track => 
+                        !(track.title === excludeTrack.title && 
+                          track.artist === excludeTrack.artist && 
+                          track.album === excludeTrack.album)
+                    );
+                }
+                
+                if (similarTracks.length > 0) {
+                    return this.selectRandomTracks(similarTracks, requestedCount);
+                }
+                
+                // Last fallback: return random tracks
+                let randomTracks = [...transformedTracks];
+                if (excludeTrack) {
+                    randomTracks = randomTracks.filter(track => 
+                        !(track.title === excludeTrack.title && 
+                          track.artist === excludeTrack.artist && 
+                          track.album === excludeTrack.album)
+                    );
+                }
+                
+                return this.selectRandomTracks(randomTracks, requestedCount);
+            }
+            
+            return this.selectRandomTracks(matchingTracks, requestedCount);
+        } catch (error) {
+            console.error('Error generating tracks with tag:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Generate tracks with multiple tags
+     */
+    async generateTracksWithMultipleTags(selectedTagsArray) {
+        if (!this.initialized || !window.electronAPI) {
+            return [];
+        }
+
+        try {
+            // Get all tracks from database
+            const allTracks = await window.electronAPI.getAllTracks();
+            const transformedTracks = allTracks.map(track => this.transformTrack(track));
+            
+            // Find tracks that have ALL the requested tags
+            const exactMatches = transformedTracks.filter(track => 
+                track.tags && selectedTagsArray.every(tag => track.tags.includes(tag))
+            );
+            
+            // Find tracks that have SOME of the requested tags
+            const partialMatches = transformedTracks.filter(track => 
+                track.tags && selectedTagsArray.some(tag => track.tags.includes(tag))
+            );
+            
+            const requestedCount = 7;
+            
+            // Prefer exact matches, then partial matches, then random
+            if (exactMatches.length >= requestedCount) {
+                return this.selectRandomTracks(exactMatches, requestedCount);
+            } else if (partialMatches.length > 0) {
+                // Mix exact matches with partial matches
+                const result = [...exactMatches];
+                const remaining = requestedCount - exactMatches.length;
+                const additionalTracks = this.selectRandomTracks(
+                    partialMatches.filter(track => !exactMatches.includes(track)), 
+                    remaining
+                );
+                return [...result, ...additionalTracks];
+            } else {
+                // Fallback to random tracks
+                return this.selectRandomTracks(transformedTracks, requestedCount);
+            }
+        } catch (error) {
+            console.error('Error generating tracks with multiple tags:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Select random tracks from an array
+     */
+    selectRandomTracks(tracks, count) {
+        if (tracks.length === 0) {
+            return [];
+        }
+        
+        // Always shuffle the tracks first for better randomness
+        const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+        
+        if (tracks.length <= count) {
+            return shuffled;
+        }
+        
+        // Take the requested number from shuffled tracks
+        return shuffled.slice(0, count);
+    }
+
+    /**
+     * Transform database track to match UI expectations
+     */
+    transformTrack(dbTrack) {
+        // Parse tags JSON if it's a string
+        let tags = [];
+        if (dbTrack.tags) {
+            try {
+                tags = typeof dbTrack.tags === 'string' ? JSON.parse(dbTrack.tags) : dbTrack.tags;
+            } catch (e) {
+                tags = [];
+            }
+        }
+
+        // Create tags in the format expected by the UI
+        const uiTags = [];
+        
+        // Add source and quality tags
+        if (tags.includes('source:ffprobe')) {
+            uiTags.push('source:database');
+        }
+        if (tags.includes('quality:lossless')) {
+            uiTags.push('quality:lossless');
+        }
+        
+        // Add genre if available
+        if (dbTrack.genre) {
+            uiTags.push(`genre:${dbTrack.genre.toLowerCase()}`);
+            uiTags.push(`style:${dbTrack.genre.toLowerCase()}`);
+        }
+        
+        // Add year/era if available
+        if (dbTrack.year) {
+            if (dbTrack.year >= 2020) uiTags.push('era:modern');
+            else if (dbTrack.year >= 2010) uiTags.push('era:2010s');
+            else if (dbTrack.year >= 2000) uiTags.push('era:2000s');
+            else if (dbTrack.year >= 1990) uiTags.push('era:90s');
+            else uiTags.push('era:classic');
+        }
+        
+        // Add synthetic tags based on track characteristics for better tree generation
+        const trackTitle = (dbTrack.title || '').toLowerCase();
+        const trackArtist = (dbTrack.artist || '').toLowerCase();
+        
+        // Energy tags based on genre patterns
+        if (dbTrack.genre) {
+            const genre = dbTrack.genre.toLowerCase();
+            if (['rock', 'metal', 'punk', 'electronic', 'dance'].includes(genre)) {
+                uiTags.push('energy:high');
+                uiTags.push('intensity:powerful');
+            } else if (['classical', 'ambient', 'folk', 'acoustic'].includes(genre)) {
+                uiTags.push('energy:low');
+                uiTags.push('intensity:gentle');
+            } else {
+                uiTags.push('energy:medium');
+                uiTags.push('intensity:moderate');
+            }
+        }
+        
+        // Mood tags based on title/artist patterns
+        if (trackTitle.includes('dark') || trackTitle.includes('night') || trackTitle.includes('shadow')) {
+            uiTags.push('mood:dark');
+            uiTags.push('weather:night');
+        } else if (trackTitle.includes('light') || trackTitle.includes('bright') || trackTitle.includes('sun')) {
+            uiTags.push('mood:bright');
+            uiTags.push('weather:sunny');
+        } else if (trackTitle.includes('love') || trackTitle.includes('heart')) {
+            uiTags.push('emotion:romantic');
+            uiTags.push('vibe:emotional');
+        } else {
+            uiTags.push('mood:neutral');
+            uiTags.push('vibe:chill');
+        }
+        
+        // Tempo tags based on duration (rough estimation)
+        if (dbTrack.duration && typeof dbTrack.duration === 'number') {
+            if (dbTrack.duration < 180) { // Less than 3 minutes
+                uiTags.push('tempo:upbeat');
+            } else if (dbTrack.duration > 300) { // More than 5 minutes
+                uiTags.push('tempo:slow');
+            } else {
+                uiTags.push('tempo:mid');
+            }
+        }
+        
+        // Occasion tags based on year
+        if (dbTrack.year) {
+            if (dbTrack.year >= 2000) {
+                uiTags.push('occasion:modern');
+            } else {
+                uiTags.push('occasion:retro');
+            }
+        }
+        
+        // Rating tags (all database tracks are "discovered")
+        uiTags.push('rating:discovered');
+
+        // Convert duration to string format like JSON tracks
+        let durationStr = '';
+        if (dbTrack.duration && typeof dbTrack.duration === 'number') {
+            const minutes = Math.floor(dbTrack.duration / 60);
+            const seconds = Math.floor(dbTrack.duration % 60);
+            durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        return {
+            id: `${dbTrack.artist}-${dbTrack.title}`.toLowerCase().replace(/[^\w-]/g, '-'),
+            title: dbTrack.title || 'Unknown Title',
+            artist: dbTrack.artist || 'Unknown Artist',
+            album: dbTrack.album || 'Unknown Album',
+            duration: durationStr || '0:00',
+            tags: uiTags,
+            source: 'database'
+        };
+    }
 }
 
 // Make DataSourceAdapter available globally

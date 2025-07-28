@@ -165,13 +165,9 @@ const TrackNodes = {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                console.log('🏷️ TAG CLICKED!');
-                console.log('🏷️ tagValue:', tagWithValue);
-                console.log('🏷️ node.id:', node.id);
                 
                 // Emit event through EventBus (single path)
                 if (window.EventBus) {
-                    console.log('🏷️ Emitting tag:click event...');
                     window.EventBus.emit('tag:click', {
                         element: tag,
                         tagValue: tagWithValue,
@@ -180,7 +176,6 @@ const TrackNodes = {
                     });
                 } else {
                     // Fallback if EventBus not available
-                    console.log('🏷️ EventBus not available, calling createBranchesDirectly fallback...');
                     TrackNodes.createBranchesDirectly(tagWithValue, node);
                 }
             }, true);
@@ -239,7 +234,6 @@ const TrackNodes = {
      */
     async createBranchesDirectly(tagValue, sourceNode) {
         const callId = Date.now();
-        console.log(`🌿 [${callId}] createBranchesDirectly called:`, tagValue, sourceNode.id);
         console.trace('🌿 Call stack trace');
         
         // Prevent multiple calls for the same tag+node combination
@@ -267,7 +261,6 @@ const TrackNodes = {
                 return;
             }
             
-            console.log(`🌿 [${callId}] Found`, relatedTracks.length, 'related tracks');
             
             // Filter out identical tracks and take EXACTLY 5
             const filteredTracks = relatedTracks.filter(track => 
@@ -276,12 +269,10 @@ const TrackNodes = {
             
             // Take EXACTLY 5 tracks, no more, no less
             const tracksToCreate = filteredTracks.slice(0, 5);
-            console.log(`🌿 [${callId}] Will create exactly`, tracksToCreate.length, 'nodes');
             
             // Create each node with proper delay
             tracksToCreate.forEach((track, i) => {
                 setTimeout(() => {
-                    console.log(`🌿 [${callId}] Creating node`, i + 1, 'of', tracksToCreate.length, ':', track.title);
                     
                     // Create new node positioned around the source
                     const newNode = this.create(track, 0, 0, sourceNode, tagValue);
@@ -384,8 +375,6 @@ const TrackNodes = {
      * @param {HTMLElement} sourceNode - The source node
      */
     async createBranchesForTag(tag, sourceNode) {
-        console.log('🚫 createBranchesForTag called - DISABLED to prevent duplication');
-        console.log('🚫 Use createBranchesDirectly instead');
         return; // DISABLED
         // Get the source track to exclude it from generated tracks
         let sourceTrack = null;

@@ -119,41 +119,49 @@ class Application {
      */
     async initializeServices() {
         
-        // Register services with dependencies
+        // Register services with database fallback support
+        
+        // Essential services
         this.serviceManager.registerService('search', SearchService, [], {
-            required: true,
+            required: false,
             autoStart: true
         });
         
         this.serviceManager.registerService('playlist', PlaylistService, [], {
-            required: true,
+            required: false,
             autoStart: true
         });
         
         this.serviceManager.registerService('tags', TagService, [], {
-            required: true,
+            required: false,
             autoStart: true
         });
         
         this.serviceManager.registerService('tree', TreeService, ['playlist', 'tags'], {
-            required: true,
+            required: false,
             autoStart: true
         });
         
         this.serviceManager.registerService('phases', PhasesService, [], {
-            required: true,
+            required: false,
             autoStart: true
         });
         
         this.serviceManager.registerService('ui', UIService, [], {
-            required: true,
+            required: false,
             autoStart: true
         });
         
         this.serviceManager.registerService('dragdrop', DragDropService, [], {
-            required: true,
+            required: false,
             autoStart: true
         });
+        
+        this.serviceManager.registerService('scan', ScanService, [], {
+            required: false,
+            autoStart: true
+        });
+        
         
         // Initialize all services
         await this.serviceManager.initializeServices();
