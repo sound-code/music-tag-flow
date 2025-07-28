@@ -254,6 +254,164 @@ class DatabaseManager {
         });
     }
 
+    /**
+     * Search tracks by multiple fields
+     * @param {string} query - Search query
+     * @param {Object} options - Search options
+     * @returns {Promise<Array>} Search results
+     */
+    searchTracks(query, options = {}) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve([]);
+                return;
+            }
+
+            const { 
+                limit = 50,
+                searchFields = ['title', 'artist', 'album', 'tags'],
+                exact = false
+            } = options;
+
+            try {
+                const conditions = searchFields.map(field => `${field} LIKE ?`).join(' OR ');
+                const sql = `
+                    SELECT * FROM tracks 
+                    WHERE ${conditions}
+                    ORDER BY artist, album, track_number
+                    LIMIT ?
+                `;
+
+                const searchTerm = exact ? query : `%${query}%`;
+                const params = new Array(searchFields.length).fill(searchTerm);
+                params.push(limit);
+
+                this.db.all(sql, params, (err, rows) => {
+                    if (err) {
+                        console.error('Error searching tracks:', err);
+                        resolve([]);
+                    } else {
+                        resolve(rows || []);
+                    }
+                });
+            } catch (error) {
+                console.error('Error searching tracks:', error);
+                resolve([]);
+            }
+        });
+    }
+
+    /**
+     * Search tracks by tag
+     * @param {string} tagName - Tag name
+     * @param {string} tagValue - Optional tag value
+     * @returns {Promise<Array>} Search results
+     */
+    searchTracksByTag(tagName, tagValue = null) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve([]);
+                return;
+            }
+
+            try {
+                let searchTerm;
+                if (tagValue) {
+                    searchTerm = `%${tagName}:${tagValue}%`;
+                } else {
+                    searchTerm = `%${tagName}%`;
+                }
+
+                const sql = `
+                    SELECT * FROM tracks 
+                    WHERE tags LIKE ?
+                    ORDER BY artist, album, track_number
+                    LIMIT 50
+                `;
+
+                this.db.all(sql, [searchTerm], (err, rows) => {
+                    if (err) {
+                        console.error('Error searching by tag:', err);
+                        resolve([]);
+                    } else {
+                        resolve(rows || []);
+                    }
+                });
+            } catch (error) {
+                console.error('Error searching by tag:', error);
+                resolve([]);
+            }
+        });
+    }
+
+    /**
+     * Get unique values for a field
+     * @param {string} field - Field name
+     * @returns {Promise<Array>} Unique values
+     */
+    getUniqueValues(field) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve([]);
+                return;
+            }
+
+            try {
+                const sql = `SELECT DISTINCT ${field} FROM tracks WHERE ${field} IS NOT NULL ORDER BY ${field}`;
+                this.db.all(sql, [], (err, rows) => {
+                    if (err) {
+                        console.error('Error getting unique values:', err);
+                        resolve([]);
+                    } else {
+                        resolve((rows || []).map(row => row[field]));
+                    }
+                });
+            } catch (error) {
+                console.error(`Error getting unique values for ${field}:`, error);
+                resolve([]);
+            }
+        });
+    }
+
+    /**
+     * Get all available tags from tracks
+     * @returns {Promise<Array>} Available tags
+     */
+    getAvailableTags() {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve([]);
+                return;
+            }
+
+            try {
+                const sql = `SELECT tags FROM tracks WHERE tags IS NOT NULL`;
+                this.db.all(sql, [], (err, results) => {
+                    if (err) {
+                        console.error('Error getting available tags:', err);
+                        resolve([]);
+                        return;
+                    }
+                    
+                    const allTags = new Set();
+                    (results || []).forEach(row => {
+                        try {
+                            const tags = JSON.parse(row.tags);
+                            tags.forEach(tag => allTags.add(tag));
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    });
+                    
+                    resolve(Array.from(allTags));
+                });
+            } catch (error) {
+                console.error('Error getting available tags:', error);
+                resolve([]);
+            }
+        });
+    }
+
     clearDatabase() {
         if (!this.db) return false;
         

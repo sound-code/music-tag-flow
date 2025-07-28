@@ -6,83 +6,30 @@ class SearchEngine extends ISearchEngine {
         this.db = databaseManager;
     }
 
-    search(query, options = {}) {
-        return new Promise((resolve, reject) => {
-            if (!this.db.isReady()) {
-                resolve([]);
-                return;
-            }
+    async search(query, options = {}) {
+        if (!this.db.isReady()) {
+            return [];
+        }
 
-            const { 
-                limit = 50,
-                searchFields = ['title', 'artist', 'album', 'tags'],
-                exact = false
-            } = options;
-
-            try {
-                // Build WHERE clause based on search fields
-                const conditions = searchFields.map(field => `${field} LIKE ?`).join(' OR ');
-                const sql = `
-                    SELECT * FROM tracks 
-                    WHERE ${conditions}
-                    ORDER BY artist, album, track_number
-                    LIMIT ?
-                `;
-
-                const searchTerm = exact ? query : `%${query}%`;
-                const params = new Array(searchFields.length).fill(searchTerm);
-                params.push(limit);
-
-                this.db.db.all(sql, params, (err, rows) => {
-                    if (err) {
-                        console.error('Error searching tracks:', err);
-                        resolve([]);
-                    } else {
-                        resolve(rows || []);
-                    }
-                });
-            } catch (error) {
-                console.error('Error searching tracks:', error);
-                resolve([]);
-            }
-        });
+        try {
+            return await this.db.searchTracks(query, options);
+        } catch (error) {
+            console.error('Error searching tracks:', error);
+            return [];
+        }
     }
 
-    searchByTag(tagName, tagValue = null) {
-        return new Promise((resolve, reject) => {
-            if (!this.db.isReady()) {
-                resolve([]);
-                return;
-            }
+    async searchByTag(tagName, tagValue = null) {
+        if (!this.db.isReady()) {
+            return [];
+        }
 
-            try {
-                let searchTerm;
-                if (tagValue) {
-                    searchTerm = `%${tagName}:${tagValue}%`;
-                } else {
-                    searchTerm = `%${tagName}%`;
-                }
-
-                const sql = `
-                    SELECT * FROM tracks 
-                    WHERE tags LIKE ?
-                    ORDER BY artist, album, track_number
-                    LIMIT 50
-                `;
-
-                this.db.db.all(sql, [searchTerm], (err, rows) => {
-                    if (err) {
-                        console.error('Error searching by tag:', err);
-                        resolve([]);
-                    } else {
-                        resolve(rows || []);
-                    }
-                });
-            } catch (error) {
-                console.error('Error searching by tag:', error);
-                resolve([]);
-            }
-        });
+        try {
+            return await this.db.searchTracksByTag(tagName, tagValue);
+        } catch (error) {
+            console.error('Error searching by tag:', error);
+            return [];
+        }
     }
 
     searchByGenre(genre) {
@@ -101,63 +48,31 @@ class SearchEngine extends ISearchEngine {
         return this.searchByTag('quality', quality.toLowerCase());
     }
 
-    getUniqueValues(field) {
-        return new Promise((resolve, reject) => {
-            if (!this.db.isReady()) {
-                resolve([]);
-                return;
-            }
+    async getUniqueValues(field) {
+        if (!this.db.isReady()) {
+            return [];
+        }
 
-            try {
-                const sql = `SELECT DISTINCT ${field} FROM tracks WHERE ${field} IS NOT NULL ORDER BY ${field}`;
-                this.db.db.all(sql, [], (err, rows) => {
-                    if (err) {
-                        console.error('Error getting unique values:', err);
-                        resolve([]);
-                    } else {
-                        resolve((rows || []).map(row => row[field]));
-                    }
-                });
-            } catch (error) {
-                console.error(`Error getting unique values for ${field}:`, error);
-                resolve([]);
-            }
-        });
+        try {
+            return await this.db.getUniqueValues(field);
+        } catch (error) {
+            console.error(`Error getting unique values for ${field}:`, error);
+            return [];
+        }
     }
 
-    getAvailableTags() {
-        return new Promise((resolve, reject) => {
-            if (!this.db.isReady()) {
-                resolve([]);
-                return;
-            }
+    async getAvailableTags() {
+        if (!this.db.isReady()) {
+            return [];
+        }
 
-            try {
-                const sql = `SELECT tags FROM tracks WHERE tags IS NOT NULL`;
-                this.db.db.all(sql, [], (err, results) => {
-                    if (err) {
-                        console.error('Error getting available tags:', err);
-                        resolve([]);
-                        return;
-                    }
-                    
-                    const allTags = new Set();
-                    (results || []).forEach(row => {
-                        try {
-                            const tags = JSON.parse(row.tags);
-                            tags.forEach(tag => allTags.add(tag));
-                        } catch (e) {
-                            // Skip invalid JSON
-                        }
-                    });
-                    
-                    resolve(Array.from(allTags).sort());
-                });
-            } catch (error) {
-                console.error('Error getting available tags:', error);
-                resolve([]);
-            }
-        });
+        try {
+            const tags = await this.db.getAvailableTags();
+            return tags.sort();
+        } catch (error) {
+            console.error('Error getting available tags:', error);
+            return [];
+        }
     }
 
     async getTagsByCategory() {
