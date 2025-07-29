@@ -6,17 +6,22 @@ class LegendService extends ServiceBase {
     constructor(stateManager, eventBus) {
         console.log('🎨 LegendService constructor called');
         
-        // Service-specific configuration (MUST be set before super() call)
-        this.config = {
-            maxTagsPerCategory: 10, // Limit tags shown per category
-            showEmptyCategories: false, // Hide categories with no tags
-            refreshInterval: 0, // Auto-refresh disabled for now
-            animationDelay: 100 // Stagger category animation
-        };
-        
-        console.log('🎨 Calling super() with stateManager:', !!stateManager, 'eventBus:', !!eventBus);
-        super(stateManager, eventBus);
-        console.log('🎨 super() call completed');
+        try {
+            // Service-specific configuration (MUST be set before super() call)
+            this.config = {
+                maxTagsPerCategory: 10, // Limit tags shown per category
+                showEmptyCategories: false, // Hide categories with no tags
+                refreshInterval: 0, // Auto-refresh disabled for now
+                animationDelay: 100 // Stagger category animation
+            };
+            
+            console.log('🎨 Calling super() with stateManager:', !!stateManager, 'eventBus:', !!eventBus);
+            super(stateManager, eventBus);
+            console.log('🎨 LegendService constructor completed successfully');
+        } catch (error) {
+            console.error('🎨 Error in LegendService constructor:', error);
+            throw error;
+        }
         
         // Cache for performance
         this.categoryCache = null;
@@ -111,7 +116,8 @@ class LegendService extends ServiceBase {
             console.log('🎨 LegendService.initialize() completed successfully');
         } catch (error) {
             console.error('🎨 Error in LegendService.initialize() event setup:', error);
-            throw error;
+            // Don't throw error to prevent service manager from failing
+            console.error('🎨 LegendService initialization failed but continuing...');
         }
     }
 

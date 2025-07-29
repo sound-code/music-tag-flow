@@ -252,13 +252,31 @@
                 refreshBtn.onclick = () => {
                     // Try to get legend service from App
                     if (window.App && window.App.getService) {
+                        console.log('🔄 App available, checking legend service...');
                         const legendService = window.App.getService('legend');
                         if (legendService) {
                             console.log('🔄 Manual legend refresh triggered');
                             legendService.refreshLegend();
                         } else {
                             console.log('🔄 Legend service not available');
+                            // Debug info
+                            if (window.App.serviceManager) {
+                                const services = window.App.serviceManager.services;
+                                console.log('🔄 Available services:', Array.from(services.keys()));
+                                const legendConfig = services.get('legend');
+                                if (legendConfig) {
+                                    console.log('🔄 Legend service config:', {
+                                        status: legendConfig.status,
+                                        instance: !!legendConfig.instance,
+                                        name: legendConfig.name
+                                    });
+                                } else {
+                                    console.log('🔄 Legend service not registered');
+                                }
+                            }
                         }
+                    } else {
+                        console.log('🔄 App not available');
                     }
                 };
                 legendContainer.appendChild(refreshBtn);
