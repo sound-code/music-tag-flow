@@ -326,6 +326,61 @@ const DataSourceAdapter = {
     },
 
     /**
+     * Get distinct tag categories from database
+     * @returns {Promise<Array>} Array of tag categories
+     */
+    async getTagCategories() {
+        const dbAdapter = this.activeAdapters.get('database');
+        if (dbAdapter && dbAdapter.getAvailableTags) {
+            try {
+                const allTags = await dbAdapter.getAvailableTags();
+                const categories = new Set();
+                
+                allTags.forEach(tag => {
+                    const category = tagUtils.getTagType(tag);
+                    if (category) {
+                        // Include all categories, including 'other' for uncategorized tags
+                        categories.add(category);
+                    }
+                });
+                
+                return Array.from(categories).sort();
+            } catch (error) {
+                console.error('Error getting tag categories from database:', error);
+            }
+        }
+        
+        // Fallback to default categories
+        return ['emotion', 'energy', 'mood', 'style', 'occasion', 'weather', 'intensity', 'rating', 'tempo', 'vibe'];
+    },
+
+    /**
+     * Get tags grouped by category from database
+     * @returns {Promise<Object>} Object with categories as keys and tag arrays as values
+     */
+    async getTagsByCategory() {
+        console.log('🗃️ DataSourceAdapter.getTagsByCategory called');
+        const dbAdapter = this.activeAdapters.get('database');
+        console.log('🗃️ Database adapter available:', !!dbAdapter);
+        if (dbAdapter && dbAdapter.getAvailableTags) {
+            try {
+                const allTags = await dbAdapter.getAvailableTags();
+                console.log('🗃️ All tags from database:', allTags);
+                const grouped = tagUtils.groupTagsByType(allTags);
+                console.log('🗃️ Grouped tags:', grouped);
+                return grouped;
+            } catch (error) {
+                console.error('🗃️ Error getting tags by category from database:', error);
+            }
+        } else {
+            console.warn('🗃️ No database adapter or getAvailableTags method');
+        }
+        
+        // Fallback to empty object
+        return {};
+    },
+
+    /**
      * Scan directory for music files
      * @param {string} directory - Directory path to scan
      * @returns {Promise<Object>} Scan results
@@ -908,6 +963,21 @@ class DatabaseAdapter {
         } catch (error) {
             console.error('Error getting database stats:', error);
             return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
+        }
+    }
+
+    async getAvailableTags() {
+        if (!this.initialized || !window.electronAPI) {
+            return [];
+        }
+
+        try {
+            // Get stats which contains uniqueTags
+            const stats = await window.electronAPI.getStats();
+            return stats.uniqueTags || [];
+        } catch (error) {
+            console.error('Error getting available tags from database:', error);
+            return [];
         }
     }
 
