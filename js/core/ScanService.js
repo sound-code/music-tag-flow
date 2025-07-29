@@ -141,12 +141,10 @@ class ScanService extends ServiceBase {
                     const results = await window.DataSourceAdapter.scanDirectory(directory);
                     
                     // Emit event for StatsComponent to update stats
-                    if (window.App && window.App.eventBus) {
-                        window.App.eventBus.emit('scan:completed', {
-                            directory,
-                            results
-                        });
-                    }
+                    this.events.emit('scan:completed', {
+                        directory,
+                        results
+                    });
                     
                     // Emit event for LibraryToggle to update tags list
                     this.events.emit('scan:completed', {

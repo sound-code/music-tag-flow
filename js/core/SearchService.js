@@ -65,22 +65,7 @@ class SearchService extends ServiceBase {
             musicLibrary: document.getElementById('musicLibrary')
         };
         
-        // Also try to get from AppState if not found
-        if (!this.elements.searchField && window.AppState) {
-            this.elements.searchField = window.AppState.searchField;
-        }
-        if (!this.elements.clearSearchBtn && window.AppState) {
-            this.elements.clearSearchBtn = window.AppState.clearSearchBtn;
-        }
-        if (!this.elements.searchResults && window.AppState) {
-            this.elements.searchResults = window.AppState.searchResults;
-        }
-        if (!this.elements.searchResultsList && window.AppState) {
-            this.elements.searchResultsList = window.AppState.searchResultsList;
-        }
-        if (!this.elements.musicLibrary && window.AppState) {
-            this.elements.musicLibrary = window.AppState.musicLibrary;
-        }
+        // Elements must be found via DOM - no AppState fallbacks
         
         // Validate critical elements exist (but don't fail if some are missing)
         const criticalElements = ['searchField'];

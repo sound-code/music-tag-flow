@@ -153,11 +153,7 @@ class PlaylistService extends ServiceBase {
         const currentSize = this.getPlaylistSize();
         
         // Check multiple sources for tree state
-        const treeRootFromState = this.getState('tree.rootNode');
-        const treeRootFromLegacy = window.Tree && window.Tree.rootNode;
-        const treeRootFromAppState = window.AppState && window.AppState.allNodes && window.AppState.allNodes.length > 0;
-        
-        const hasExistingTree = treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromAppState;
+        const hasExistingTree = this.hasExistingTree();
         
         // Check tree building state from multiple sources
         const isTreeBuildingService = this.getState('tree.isBuilding');
@@ -414,6 +410,19 @@ class PlaylistService extends ServiceBase {
             message: 'Tree cleared - playlist and timer continue',
             type: 'info'
         });
+    }
+    
+    /**
+     * Helper method to check if tree exists (consolidates legacy access)
+     * @private
+     * @returns {boolean} True if tree exists
+     */
+    hasExistingTree() {
+        const treeRootFromState = this.getState('tree.rootNode');
+        const treeRootFromLegacy = window.Tree && window.Tree.rootNode;
+        const treeRootFromAppState = window.AppState && window.AppState.allNodes && window.AppState.allNodes.length > 0;
+        
+        return treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromAppState;
     }
 }
 // Make available globally

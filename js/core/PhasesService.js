@@ -45,26 +45,11 @@ class PhasesService extends ServiceBase {
         this.elements = {
             playlistPhasesBtn: document.getElementById('playlistPhasesBtn'),
             playlistPhasesView: document.getElementById('playlistPhasesView'),
-            canvasContent: document.getElementById('canvas-content'),
+            canvasContent: document.querySelector('.canvas-content'),
             progressLine: document.getElementById('progressLine')
         };
         
-        // Fallback to AppState if elements not found
-        const appState = window.AppState;
-        if (appState) {
-            if (!this.elements.playlistPhasesBtn && appState.playlistPhasesBtn) {
-                this.elements.playlistPhasesBtn = appState.playlistPhasesBtn;
-            }
-            if (!this.elements.playlistPhasesView && appState.playlistPhasesView) {
-                this.elements.playlistPhasesView = appState.playlistPhasesView;
-            }
-            if (!this.elements.canvasContent && appState.canvasContent) {
-                this.elements.canvasContent = appState.canvasContent;
-            }
-            if (!this.elements.progressLine && appState.progressLine) {
-                this.elements.progressLine = appState.progressLine;
-            }
-        }
+        // Elements must be found via DOM - no AppState fallbacks
         
         // Don't throw error - service can still work partially
     }
@@ -117,10 +102,7 @@ class PhasesService extends ServiceBase {
         // Update state
         this.setState('phases.isActive', newState);
         
-        // Update AppState for backward compatibility
-        if (window.AppState && typeof window.AppState.setIsPhasesViewActive === 'function') {
-            window.AppState.setIsPhasesViewActive(newState);
-        }
+        // AppState sync removed - use EventBus for communication
         
         // Apply the change
         if (newState) {
@@ -308,14 +290,7 @@ class PhasesService extends ServiceBase {
      * @private
      */
     onPhasesStateChanged(isActive) {
-        // Sync with AppState for backward compatibility
-        if (window.AppState && window.AppState.isPhasesViewActive !== isActive) {
-            if (typeof window.AppState.setIsPhasesViewActive === 'function') {
-                window.AppState.setIsPhasesViewActive(isActive);
-            } else {
-                window.AppState.isPhasesViewActive = isActive;
-            }
-        }
+        // AppState sync removed - services communicate via EventBus
         
         // Emit state change event
         this.emitEvent('phases:state-changed', {
