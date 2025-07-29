@@ -684,6 +684,9 @@ class UIService extends ServiceBase {
             return;
         }
 
+        // Track current active tooltip
+        this.currentActiveTooltip = null;
+
         // Add event delegation for track nodes
         document.addEventListener('mouseenter', (e) => {
             const trackNode = e.target.closest('.track-node');
@@ -704,6 +707,11 @@ class UIService extends ServiceBase {
      * Show track node tooltip with delay
      */
     showTrackNodeTooltip(trackNode) {
+        // Hide any currently active tooltip first
+        if (this.currentActiveTooltip && this.currentActiveTooltip !== trackNode) {
+            this.hideTrackNodeTooltipImmediate(this.currentActiveTooltip);
+        }
+
         // Clear any existing hide timeout
         if (this.timeouts.trackNodeHide) {
             clearTimeout(this.timeouts.trackNodeHide);
@@ -715,6 +723,7 @@ class UIService extends ServiceBase {
             const tagsContainer = trackNode.querySelector('.tags-container');
             if (tagsContainer) {
                 tagsContainer.classList.add('show-tooltip');
+                this.currentActiveTooltip = trackNode;
                 
                 // Add hover events to tags container to keep it visible
                 const mouseenterHandler = () => {
@@ -754,8 +763,24 @@ class UIService extends ServiceBase {
             const tagsContainer = trackNode.querySelector('.tags-container');
             if (tagsContainer) {
                 tagsContainer.classList.remove('show-tooltip');
+                if (this.currentActiveTooltip === trackNode) {
+                    this.currentActiveTooltip = null;
+                }
             }
         }, this.config.tooltipHideDelay);
+    }
+
+    /**
+     * Hide track node tooltip immediately (no delay)
+     */
+    hideTrackNodeTooltipImmediate(trackNode) {
+        const tagsContainer = trackNode.querySelector('.tags-container');
+        if (tagsContainer) {
+            tagsContainer.classList.remove('show-tooltip');
+            if (this.currentActiveTooltip === trackNode) {
+                this.currentActiveTooltip = null;
+            }
+        }
     }
 }
 
