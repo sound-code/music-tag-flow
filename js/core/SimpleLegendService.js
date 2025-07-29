@@ -43,8 +43,15 @@ class SimpleLegendService {
                 console.log('🎨 Getting tags from DataSourceAdapter...');
                 categorizedTags = await window.DataSourceAdapter.getTagsByCategory();
                 console.log('🎨 Raw categorized tags:', categorizedTags);
+                
+                // If no tags from database, use fallback demo data
+                if (Object.keys(categorizedTags).length === 0) {
+                    console.log('🎨 No database tags, using fallback demo data...');
+                    categorizedTags = this.getFallbackTags();
+                }
             } else {
-                console.warn('🎨 DataSourceAdapter not available');
+                console.warn('🎨 DataSourceAdapter not available, using fallback data');
+                categorizedTags = this.getFallbackTags();
             }
 
             // Filter and limit tags per category
@@ -213,6 +220,31 @@ class SimpleLegendService {
         setTimeout(() => {
             tagElement.classList.remove('clicked');
         }, 300);
+    }
+    
+    /**
+     * Fallback tags for demo/testing when database is empty
+     */
+    getFallbackTags() {
+        return {
+            emotion: ['happy', 'sad', 'energetic', 'romantic', 'nostalgic'],
+            energy: ['high', 'medium', 'low'],
+            mood: ['bright', 'dark', 'neutral', 'melancholic', 'uplifting'],
+            style: ['rock', 'pop', 'electronic', 'jazz', 'classical'],
+            genre: ['alternative', 'indie', 'blues', 'folk', 'ambient'],
+            intensity: ['powerful', 'gentle', 'moderate', 'intense', 'calm'],
+            tempo: ['upbeat', 'slow', 'mid', 'fast', 'relaxed'],
+            vibe: ['chill', 'emotional', 'groovy', 'atmospheric', 'dreamy'],
+            rating: ['discovered', 'favorite', 'liked', 'new'],
+            occasion: ['modern', 'retro', 'party', 'study', 'workout'],
+            weather: ['sunny', 'rainy', 'night', 'morning', 'cloudy'],
+            era: ['modern', '2010s', '2000s', '90s', 'classic'],
+            format: ['flac', 'mp3', 'wav', 'aac'],
+            quality: ['lossless', 'high', 'cd', 'lossy'],
+            bitrate: ['320k', '256k', '192k', '128k'],
+            source: ['ffprobe', 'musicbrainz', 'lastfm'],
+            other: ['studio', 'live', 'remix', 'acoustic', 'instrumental']
+        };
     }
 }
 
