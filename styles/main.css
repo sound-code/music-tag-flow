@@ -889,7 +889,8 @@ body {
     display: none; /* Hide tags by default */
 }
 
-.track-node:hover .tags-container {
+.track-node:hover .tags-container,
+.track-node .tags-container.show-tooltip {
     display: block;
     position: absolute;
     top: 100%;
