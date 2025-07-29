@@ -19,7 +19,8 @@ class UIService extends ServiceBase {
         // UI element references
         this.elements = {
             tooltip: null,
-            legendPopup: null
+            legendPopup: null,
+            trackNodeTooltip: null
         };
         
         // State tracking
@@ -684,6 +685,9 @@ class UIService extends ServiceBase {
             return;
         }
 
+        // Create external tooltip element
+        this.createTrackNodeTooltipElement();
+
         // Track current active tooltip
         this.currentActiveTooltip = null;
 
@@ -704,12 +708,51 @@ class UIService extends ServiceBase {
     }
 
     /**
+     * Create external tooltip element for track nodes
+     */
+    createTrackNodeTooltipElement() {
+        if (this.elements.trackNodeTooltip) return;
+
+        this.elements.trackNodeTooltip = document.createElement('div');
+        this.elements.trackNodeTooltip.className = 'track-node-tooltip';
+        this.elements.trackNodeTooltip.style.cssText = `
+            position: fixed;
+            background: rgba(15, 15, 35, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 8px;
+            min-width: 200px;
+            max-width: 280px;
+            z-index: 50000;
+            display: none;
+            opacity: 0;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.2s ease;
+            pointer-events: auto;
+        `;
+        document.body.appendChild(this.elements.trackNodeTooltip);
+
+        // Add hover events to keep tooltip visible
+        this.elements.trackNodeTooltip.addEventListener('mouseenter', () => {
+            if (this.timeouts.trackNodeHide) {
+                clearTimeout(this.timeouts.trackNodeHide);
+                this.timeouts.trackNodeHide = null;
+            }
+        });
+
+        this.elements.trackNodeTooltip.addEventListener('mouseleave', () => {
+            this.hideTrackNodeTooltipImmediate();
+        });
+    }
+
+    /**
      * Show track node tooltip with delay
      */
     showTrackNodeTooltip(trackNode) {
         // Hide any currently active tooltip first
         if (this.currentActiveTooltip && this.currentActiveTooltip !== trackNode) {
-            this.hideTrackNodeTooltipImmediate(this.currentActiveTooltip);
+            this.hideTrackNodeTooltipImmediate();
         }
 
         // Clear any existing hide timeout
@@ -720,30 +763,26 @@ class UIService extends ServiceBase {
 
         // Show tooltip with delay
         this.timeouts.trackNodeShow = setTimeout(() => {
-            const tagsContainer = trackNode.querySelector('.tags-container');
-            if (tagsContainer) {
-                tagsContainer.classList.add('show-tooltip');
-                this.currentActiveTooltip = trackNode;
+            if (!this.elements.trackNodeTooltip) return;
+
+            // Get track data from node
+            const trackData = this.getTrackDataFromNode(trackNode);
+            if (trackData && trackData.tags && trackData.tags.length > 0) {
+                // Render tooltip content
+                this.renderTrackNodeTooltipContent(trackData, trackNode);
                 
-                // Add hover events to tags container to keep it visible
-                const mouseenterHandler = () => {
-                    if (this.timeouts.trackNodeHide) {
-                        clearTimeout(this.timeouts.trackNodeHide);
-                        this.timeouts.trackNodeHide = null;
+                // Position tooltip
+                this.positionTrackNodeTooltip(trackNode);
+                
+                // Show tooltip
+                this.elements.trackNodeTooltip.style.display = 'block';
+                setTimeout(() => {
+                    if (this.elements.trackNodeTooltip.style.display === 'block') {
+                        this.elements.trackNodeTooltip.style.opacity = '1';
                     }
-                };
+                }, 10);
 
-                const mouseleaveHandler = () => {
-                    this.hideTrackNodeTooltip(trackNode);
-                };
-
-                // Remove existing listeners to avoid duplicates
-                tagsContainer.removeEventListener('mouseenter', mouseenterHandler);
-                tagsContainer.removeEventListener('mouseleave', mouseleaveHandler);
-                
-                // Add new listeners
-                tagsContainer.addEventListener('mouseenter', mouseenterHandler);
-                tagsContainer.addEventListener('mouseleave', mouseleaveHandler);
+                this.currentActiveTooltip = trackNode;
             }
         }, this.config.tooltipDelay);
     }
@@ -760,27 +799,158 @@ class UIService extends ServiceBase {
 
         // Hide tooltip with delay
         this.timeouts.trackNodeHide = setTimeout(() => {
-            const tagsContainer = trackNode.querySelector('.tags-container');
-            if (tagsContainer) {
-                tagsContainer.classList.remove('show-tooltip');
-                if (this.currentActiveTooltip === trackNode) {
-                    this.currentActiveTooltip = null;
-                }
-            }
+            this.hideTrackNodeTooltipImmediate();
         }, this.config.tooltipHideDelay);
     }
 
     /**
      * Hide track node tooltip immediately (no delay)
      */
-    hideTrackNodeTooltipImmediate(trackNode) {
-        const tagsContainer = trackNode.querySelector('.tags-container');
-        if (tagsContainer) {
-            tagsContainer.classList.remove('show-tooltip');
-            if (this.currentActiveTooltip === trackNode) {
-                this.currentActiveTooltip = null;
-            }
+    hideTrackNodeTooltipImmediate() {
+        if (this.elements.trackNodeTooltip) {
+            this.elements.trackNodeTooltip.style.opacity = '0';
+            setTimeout(() => {
+                if (this.elements.trackNodeTooltip.style.opacity === '0') {
+                    this.elements.trackNodeTooltip.style.display = 'none';
+                    this.elements.trackNodeTooltip.innerHTML = '';
+                }
+            }, 200);
+            this.currentActiveTooltip = null;
         }
+    }
+
+    /**
+     * Get track data from track node element
+     */
+    getTrackDataFromNode(trackNode) {
+        // Try to get track data from various possible sources
+        const titleElement = trackNode.querySelector('.title');
+        const artistElement = trackNode.querySelector('.artist');
+        
+        if (titleElement && artistElement) {
+            // Try to find tags from the node's dataset or other sources
+            const title = titleElement.textContent;
+            const artist = artistElement.textContent;
+            
+            // Look for tags in the tags-container
+            const tagsContainer = trackNode.querySelector('.tags-container');
+            let tags = [];
+            
+            if (tagsContainer) {
+                const tagElements = tagsContainer.querySelectorAll('.tooltip-tag, .tag');
+                tags = Array.from(tagElements).map(el => {
+                    // Try to get tag from various attributes
+                    return el.dataset.tag || el.textContent || el.getAttribute('data-value');
+                }).filter(Boolean);
+            }
+
+            return {
+                title: title,
+                artist: artist,
+                album: 'Unknown Album', // Track nodes might not have album info
+                tags: tags
+            };
+        }
+        
+        return null;
+    }
+
+    /**
+     * Render track node tooltip content
+     */
+    renderTrackNodeTooltipContent(trackData, trackNode) {
+        if (!this.elements.trackNodeTooltip) return;
+
+        this.elements.trackNodeTooltip.innerHTML = '';
+
+        // Title
+        const title = document.createElement('div');
+        title.className = 'tooltip-title';
+        title.style.cssText = `
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        `;
+        title.textContent = `${trackData.title} - ${trackData.artist}`;
+
+        // Tags container
+        const tagsContainer = document.createElement('div');
+        tagsContainer.className = 'tooltip-tags';
+        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px;';
+
+        if (trackData.tags && trackData.tags.length > 0) {
+            trackData.tags.forEach(tag => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tooltip-tag';
+                tagElement.style.cssText = `
+                    padding: 2px 5px;
+                    border-radius: 4px;
+                    font-size: 8px;
+                    font-weight: 500;
+                    color: white;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    letter-spacing: 0.02em;
+                    line-height: 1;
+                    background: rgba(99, 102, 241, 0.7);
+                `;
+                tagElement.textContent = tag;
+
+                // Add click handler
+                tagElement.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.emitEvent('tag:click-from-track-node-tooltip', {
+                        tag,
+                        trackNode,
+                        trackData
+                    });
+                    this.hideTrackNodeTooltipImmediate();
+                });
+
+                tagsContainer.appendChild(tagElement);
+            });
+        }
+
+        this.elements.trackNodeTooltip.appendChild(title);
+        this.elements.trackNodeTooltip.appendChild(tagsContainer);
+    }
+
+    /**
+     * Position track node tooltip
+     */
+    positionTrackNodeTooltip(trackNode) {
+        if (!this.elements.trackNodeTooltip) return;
+
+        const nodeRect = trackNode.getBoundingClientRect();
+        const tooltipRect = this.elements.trackNodeTooltip.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Default position: below and centered on the node
+        let x = nodeRect.left + (nodeRect.width / 2) - (tooltipRect.width / 2);
+        let y = nodeRect.bottom + 10;
+
+        // Adjust if tooltip goes off screen
+        if (x + tooltipRect.width > viewportWidth) {
+            x = viewportWidth - tooltipRect.width - 10;
+        }
+        if (x < 10) {
+            x = 10;
+        }
+        if (y + tooltipRect.height > viewportHeight) {
+            y = nodeRect.top - tooltipRect.height - 10;
+        }
+        if (y < 10) {
+            y = 10;
+        }
+
+        this.elements.trackNodeTooltip.style.left = `${x}px`;
+        this.elements.trackNodeTooltip.style.top = `${y}px`;
     }
 }
 
