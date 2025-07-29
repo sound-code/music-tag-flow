@@ -47,36 +47,20 @@ class PlaylistService extends ServiceBase {
         });
         this.subscribeToEvent('playlist:remove-track-by-index', (data) => {
             this.removeTrack(data.index);
-            // Update display after removal
-            this.updatePlaylistDisplay();
-        });
-        
-        // Set up DOM event listeners for playlist UI
-        this.setupPlaylistDOMEventListeners();
-    }
-    
-    /**
-     * Set up DOM event listeners for playlist interactions
-     * @private
-     */
-    setupPlaylistDOMEventListeners() {
-        // Use event delegation for dynamic playlist remove buttons
-        document.addEventListener('click', (e) => {
-            // Handle remove track buttons
-            if (e.target.classList.contains('remove-track')) {
-                e.stopPropagation();
-                e.preventDefault();
-                
-                const trackIndex = parseInt(e.target.getAttribute('data-track-index'));
-                if (!isNaN(trackIndex)) {
-                    // Emit remove event through EventBus
-                    this.emitEvent('playlist:remove-track-by-index', {
-                        index: trackIndex,
-                        element: e.target
-                    });
-                }
+            // Update display through UI handler
+            if (window.PlaylistUIHandler) {
+                window.PlaylistUIHandler.updateDisplay(this.getState('playlist.entries') || []);
             }
         });
+        
+        // Set up DOM event listeners through UI handler
+        if (window.PlaylistUIHandler) {
+            window.PlaylistUIHandler.setupEventListeners((trackIndex) => {
+                this.emitEvent('playlist:remove-track-by-index', {
+                    index: trackIndex
+                });
+            });
+        }
     }
     
     /**
@@ -202,10 +186,10 @@ class PlaylistService extends ServiceBase {
      * @param {string} connectionTag - Connection tag
      */
     recenterTreeOnTrack(track, node, connectionTag) {
-        // Add visual effect to clicked node before clearing
-        node.style.transform = 'scale(1.2)';
-        node.style.zIndex = '1000';
-        node.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
+        // Add visual effect through UI handler
+        if (window.PlaylistUIHandler) {
+            window.PlaylistUIHandler.applyRecenterEffect(node);
+        }
         
         // Show feedback to user
         this.emitEvent('ui:notification', {
@@ -323,7 +307,9 @@ class PlaylistService extends ServiceBase {
         });
         
         // Automatically update display when playlist changes
-        this.updatePlaylistDisplay();
+        if (window.PlaylistUIHandler) {
+            window.PlaylistUIHandler.updateDisplay(entries);
+        }
         
         // Emit global change event
         this.emitEvent('playlist:changed', {
@@ -343,42 +329,13 @@ class PlaylistService extends ServiceBase {
     /**
      * Update playlist display in the DOM
      * @public
+     * @deprecated Use PlaylistUIHandler.updateDisplay instead
      */
     updatePlaylistDisplay() {
         const entries = this.getState('playlist.entries') || [];
-        
-        // Get breadcrumb element
-        const breadcrumb = document.getElementById('breadcrumb') || 
-                          (window.AppState && window.AppState.breadcrumb);
-        
-        if (!breadcrumb) return;
-        
-        // Only show playlist if there are manually selected tracks
-        if (entries.length === 0) {
-            breadcrumb.classList.remove('active');
-            return;
+        if (window.PlaylistUIHandler) {
+            window.PlaylistUIHandler.updateDisplay(entries);
         }
-
-        breadcrumb.classList.add('active');
-        
-        let html = `<div class="breadcrumb-item">🎵 Selected Tracks (${entries.length})</div>`;
-        
-        entries.forEach((entry, index) => {
-            const track = entry.track;
-            const selectedTag = entry.connectionTag;
-            
-            const tagDisplay = selectedTag && selectedTag !== 'direct-selection' ? 
-                ` (${tagUtils.getTagValue(selectedTag)})` : '';
-            const trackDisplay = `${track.title} - ${track.artist}${tagDisplay}`;
-            
-            // Add remove button for all tracks except the first one (playing track)
-            const removeButton = index === 0 ? '' : 
-                `<span class="remove-track" data-track-index="${index}" title="Rimuovi traccia">−</span>`;
-            
-            html += `<div class="breadcrumb-item playlist-entry">${trackDisplay}${removeButton}</div>`;
-        });
-        
-        breadcrumb.innerHTML = html;
     }
     
     /**
@@ -438,39 +395,15 @@ class PlaylistService extends ServiceBase {
      * @public
      */
     clearPlaylistAndTree() {
-        // Clear tree elements from DOM
-        if (window.AppState) {
-            window.AppState.allNodes.forEach(nodeData => {
-                if (nodeData.element) {
-                    nodeData.element.remove();
-                }
-            });
-            
-            window.AppState.allContainers.forEach(container => container.remove());
-            
-            // Clear tree structure
-            if (window.Tree && window.Tree.clearTree) {
-                window.Tree.clearTree();
-            }
-            
-            // Clear selected tags
-            document.querySelectorAll('.tag.selected').forEach(tag => {
-                tag.classList.remove('selected');
-            });
-            
-            // Clear search through SearchService
-            const searchService = window.App?.getService('search');
-            if (searchService) {
-                searchService.clearSearch();
-            }
-            
-            // Clear only tree state, keep playlist entries and clock running
-            window.AppState.clearTreeState();
-            
-            // Show drop zone again so user can drag new tracks
-            if (window.AppState.dropZone) {
-                window.AppState.dropZone.style.display = 'flex';
-            }
+        // Clear tree elements through UI handler
+        if (window.PlaylistUIHandler) {
+            window.PlaylistUIHandler.clearTreeFromDOM();
+        }
+        
+        // Clear search through SearchService
+        const searchService = window.App?.getService('search');
+        if (searchService) {
+            searchService.clearSearch();
         }
         
         // Keep playlist and clock running - don't clear playlist
