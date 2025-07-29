@@ -179,7 +179,6 @@ const DragDrop = {
      * @param {DragEvent} e - The drag event
      */
     handleDragStart(e) {
-        
         e.target.classList.add('dragging');
         
         const trackData = e.target.dataset.track;
@@ -269,13 +268,34 @@ const DragDrop = {
                 return;
             }
             
-            // ULTRA SIMPLE TEST - just show notification without creating anything
+            // Check if required modules are available
+            if (typeof TrackNodes === 'undefined') {
+                Utils.showNotification('❌ TrackNodes module not loaded');
+                return;
+            }
+            
+            if (typeof tagUtils === 'undefined') {
+                Utils.showNotification('❌ TagUtils not loaded');
+                return;
+            }
+            
+            // Delegate to DragDropService
+            if (window.App && window.App.getService) {
+                const dragDropService = window.App.getService('dragdrop');
+                if (dragDropService && typeof dragDropService.handleDrop === 'function') {
+                    await dragDropService.handleDrop(e);
+                    return;
+                }
+            }
+            
+            // Fallback - create auto tree
             try {
-                Utils.showNotification(`🎵 Dropped: ${trackData.title} by ${trackData.artist}`);
+                Utils.showNotification(`🎵 Creating tree for: ${trackData.title} by ${trackData.artist}`);
+                await this.createAutoTreeLegacy(trackData);
                 
-            } catch (simpleError) {
-                console.error('🎯 Error in simple test:', simpleError);
-                throw simpleError;
+            } catch (treeError) {
+                console.error('Error creating tree:', treeError);
+                throw treeError;
             }
             
             dropZone.style.display = 'none';
@@ -423,7 +443,7 @@ const DragDrop = {
          // Group tags by type and score them
          const tagsByType = {};
          tags.forEach(tag => {
-             const [type] = tag.split(':');
+             const type = tagUtils.getTagType(tag);
              if (!tagsByType[type]) tagsByType[type] = [];
              tagsByType[type].push(tag);
          });

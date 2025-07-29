@@ -526,7 +526,7 @@ class JsonDataAdapter {
         if (matchingTracks.length === 0) {
             
             // Fallback: find tracks with same tag category (e.g., "mood:*" if looking for "mood:happy")
-            const [tagCategory] = tagValue.split(':');
+            const tagCategory = tagUtils.getTagType(tagValue);
             let similarTracks = allTracks.filter(track => 
                 track.tags && track.tags.some(tag => tag.startsWith(tagCategory + ':'))
             );
@@ -956,7 +956,7 @@ class DatabaseAdapter {
             
             if (matchingTracks.length === 0) {
                 // Fallback: find tracks with same tag category
-                const [tagCategory] = tagValue.split(':');
+                const tagCategory = tagUtils.getTagType(tagValue);
                 let similarTracks = transformedTracks.filter(track => 
                     track.tags && track.tags.some(tag => tag.startsWith(tagCategory + ':'))
                 );
@@ -1076,12 +1076,14 @@ class DatabaseAdapter {
         // Create tags in the format expected by the UI
         const uiTags = [];
         
-        // Add source and quality tags
-        if (tags.includes('source:ffprobe')) {
-            uiTags.push('source:database');
+        // First, add ALL original tags from database (they should already be in "category:value" format)
+        if (Array.isArray(tags)) {
+            uiTags.push(...tags);
         }
-        if (tags.includes('quality:lossless')) {
-            uiTags.push('quality:lossless');
+        
+        // Add source and quality tags (keep as fallback/additional tags)
+        if (tags.includes('source:ffprobe') && !uiTags.includes('source:database')) {
+            uiTags.push('source:database');
         }
         
         // Add genre if available

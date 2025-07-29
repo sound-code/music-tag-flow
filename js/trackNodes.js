@@ -23,7 +23,7 @@ const TrackNodes = {
         
         // Store connection tag info but ALL nodes get neutral gray color
         if (connectionTag) {
-            const [category] = connectionTag.split(':');
+            const category = tagUtils.getTagType(connectionTag);
             node.dataset.connectionTag = connectionTag;
         }
         
@@ -154,7 +154,9 @@ const TrackNodes = {
         tagsWrapper.className = 'tooltip-tags';
 
         track.tags.forEach(tagWithValue => {
-            const [tagType, tagValue] = tagWithValue.split(':');
+            const tagInfo = tagUtils.parseTag(tagWithValue);
+            const tagType = tagInfo.type;
+            const tagValue = tagInfo.value;
             const tag = document.createElement('div');
             tag.className = `tooltip-tag tag-${tagType}`;
             tag.textContent = tagValue;
@@ -287,7 +289,7 @@ const TrackNodes = {
             
             // Show notification
             if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification(`🌿 Created ${tracksToCreate.length} branches for ${tagValue.split(':')[1]}`);
+                Utils.showNotification(`🌿 Created ${tracksToCreate.length} branches for ${tagUtils.getTagValue(tagValue)}`);
             }
             
         } catch (error) {
@@ -366,7 +368,7 @@ const TrackNodes = {
             Utils.updateCanvasSize();
         }
         
-        Utils.showNotification(`Added "${track.title}" connected by "${connectionTag.split(':')[1]}" tag`);
+        Utils.showNotification(`Added "${track.title}" connected by "${tagUtils.getTagValue(connectionTag)}" tag`);
     },
 
     /**
@@ -408,7 +410,7 @@ const TrackNodes = {
             }, i * 200); // Stagger creation for animation effect
         }
         
-        Utils.showNotification(`Created ${numBranches} branches for "${tag.split(':')[1]}" tag`);
+        Utils.showNotification(`Created ${numBranches} branches for "${tagUtils.getTagValue(tag)}" tag`);
     },
 
     // addToPlaylistDisplay method removed - now handled centrally by Playlist.addTrackToPlaylist
@@ -439,7 +441,9 @@ const TrackNodes = {
             // Update the visual tags container
             const tagsContainer = node.querySelector('.tags');
             if (tagsContainer) {
-                const [category, value] = newTag.split(':');
+                const tagInfo = tagUtils.parseTag(newTag);
+                const category = tagInfo.type;
+                const value = tagInfo.value;
                 const tagElement = document.createElement('div');
                 tagElement.className = `tag tag-${category}`;
                 tagElement.textContent = value;
@@ -455,7 +459,7 @@ const TrackNodes = {
             }
             
             // Ensure styles exist for the new tag category (for tooltips)
-            const [category] = newTag.split(':');
+            const category = tagUtils.getTagType(newTag);
             this.ensureCategoryStyles(category);
             
             // Node ALWAYS keeps neutral gray color (never changes)
@@ -492,8 +496,8 @@ const TrackNodes = {
         const existingStyle = document.querySelector(`#category-styles-${category}`);
         if (existingStyle) return;
         
-        // Get color from Tree.getTagColor
-        const color = Tree.getTagColor(`${category}:test`);
+        // Get color from centralized TagUtils
+        const color = tagUtils.getTagColor(`${category}:test`);
         
         // Create style element
         const style = document.createElement('style');

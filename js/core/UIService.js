@@ -244,7 +244,7 @@ class UIService extends ServiceBase {
 
         trackData.tags.forEach(tag => {
             const tagElement = document.createElement('span');
-            tagElement.textContent = tag.split(':')[1];
+            tagElement.textContent = tagUtils.getTagValue(tag);
             tagElement.style.cssText = `
                 padding: 2px 6px;
                 border-radius: 4px;
@@ -253,8 +253,8 @@ class UIService extends ServiceBase {
                 transition: all 0.2s ease;
             `;
 
-            const [category, value] = tag.split(':');
-            tagElement.className = `tooltip-tag tag-${category}`;
+            const tagInfo = tagUtils.parseTag(tag);
+            tagElement.className = `tooltip-tag tag-${tagInfo.type}`;
 
             // Tag click handler
             tagElement.addEventListener('click', async (e) => {

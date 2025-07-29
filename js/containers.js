@@ -226,10 +226,10 @@ const Containers = {
         tagsContainer.className = 'track-tags';
         
         track.tags.forEach(tagWithValue => {
-            const [tagType, tagValue] = tagWithValue.split(':');
+            const tagInfo = tagUtils.parseTag(tagWithValue);
             const tag = document.createElement('div');
-            tag.className = `tag ${tagType}`;
-            tag.textContent = tagValue;
+            tag.className = `tag ${tagInfo.type}`;
+            tag.textContent = tagInfo.value;
             tag.dataset.tagValue = tagWithValue;
             tag.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -289,12 +289,12 @@ const Containers = {
         if (container.dataset.isMultiTagContainer === 'true') {
             // Generate tracks with multiple selected tags
             newTracks = await DataLoader.generateTracksWithMultipleTags(Array.from(AppState.selectedTags));
-            const tagDisplays = Array.from(AppState.selectedTags).map(tag => tag.split(':')[1]).join(' + ');
+            const tagDisplays = Array.from(AppState.selectedTags).map(tag => tagUtils.getTagValue(tag)).join(' + ');
             notificationMessage = `Refreshed 7 tracks for ${tagDisplays}`;
         } else {
             // Generate new tracks with the single tag
             newTracks = await DataLoader.generateTracksWithTag(tagValue);
-            notificationMessage = `Refreshed 7 tracks for ${tagValue.split(':')[1]}`;
+            notificationMessage = `Refreshed 7 tracks for ${tagUtils.getTagValue(tagValue)}`;
         }
         
         // Remove existing track items

@@ -449,7 +449,7 @@ const Tree = {
         }
         
         // Use tag colors for all connections - more colorful and clear
-        const branchColor = this.getTagColor(tag);
+        const branchColor = tagUtils.getTagColor(tag);
         
         svgPath.setAttribute('stroke', branchColor);
         svgPath.setAttribute('stroke-width', strokeWidth);
@@ -527,8 +527,8 @@ const Tree = {
         const midX = (from.x + to.x) / 2;
         const midY = (from.y + to.y) / 2;
         
-        // Extract just the tag value (after the colon)
-        const tagValue = tag.split(':')[1] || tag;
+        // Extract just the tag value using centralized TagUtils
+        const tagValue = tagUtils.getTagValue(tag);
         
         // Create SVG text element
         const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -554,94 +554,8 @@ const Tree = {
         return textElement;
     },
 
-    /**
-     * Get color for a tag type
-     * @param {string} tag - Tag string (type:value)
-     * @returns {string} Color value
-     */
-    getTagColor(tag) {
-        const tagType = tag.split(':')[0];
-        
-        // Centralized color system matching CSS definitions
-        const colors = {
-            emotion: '#ec4899',    // Pink gradient primary color
-            energy: '#f59e0b',     // Orange gradient primary color
-            mood: '#8b5cf6',       // Purple gradient primary color
-            style: '#06b6d4',      // Cyan gradient primary color
-            occasion: '#10b981',   // Green gradient primary color
-            weather: '#6366f1',    // Blue gradient primary color  
-            intensity: '#ef4444',  // Red gradient primary color
-            rating: '#fbbf24',     // Yellow gradient primary color
-            tempo: '#a855f7',      // Purple gradient primary color
-            vibe: '#14b8a6'        // Teal gradient primary color
-        };
-        
-        // If color exists, return it
-        if (colors[tagType]) {
-            return colors[tagType];
-        }
-        
-        // Generate consistent color for new categories
-        return this.generateColorForCategory(tagType);
-    },
+    // ✅ Removed duplicate getTagColor function - now using TagUtils
 
-    /**
-     * Generate a consistent color for a new category
-     * @param {string} category - Category name
-     * @returns {string} Hex color code
-     */
-    generateColorForCategory(category) {
-        // Use a simple hash to generate consistent colors
-        let hash = 0;
-        for (let i = 0; i < category.length; i++) {
-            hash = category.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        
-        // Generate HSL color with good saturation and lightness
-        const hue = Math.abs(hash % 360);
-        const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
-        const lightness = 50 + (Math.abs(hash >> 8) % 15); // 50-65%
-        
-        // Convert HSL to hex
-        return this.hslToHex(hue, saturation, lightness);
-    },
-
-    /**
-     * Convert HSL to hex color
-     * @param {number} h - Hue (0-360)
-     * @param {number} s - Saturation (0-100)
-     * @param {number} l - Lightness (0-100)
-     * @returns {string} Hex color code
-     */
-    hslToHex(h, s, l) {
-        s /= 100;
-        l /= 100;
-        
-        const c = (1 - Math.abs(2 * l - 1)) * s;
-        const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-        const m = l - c/2;
-        let r = 0, g = 0, b = 0;
-        
-        if (0 <= h && h < 60) {
-            r = c; g = x; b = 0;
-        } else if (60 <= h && h < 120) {
-            r = x; g = c; b = 0;
-        } else if (120 <= h && h < 180) {
-            r = 0; g = c; b = x;
-        } else if (180 <= h && h < 240) {
-            r = 0; g = x; b = c;
-        } else if (240 <= h && h < 300) {
-            r = x; g = 0; b = c;
-        } else if (300 <= h && h < 360) {
-            r = c; g = 0; b = x;
-        }
-        
-        r = Math.round((r + m) * 255);
-        g = Math.round((g + m) * 255);
-        b = Math.round((b + m) * 255);
-        
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    },
 
     /**
      * Redraw all connections

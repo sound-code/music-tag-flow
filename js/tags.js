@@ -57,14 +57,14 @@ const Tags = {
             document.querySelectorAll(`[data-tag-value="${tagValue}"]`).forEach(tag => {
                 tag.classList.remove('selected');
             });
-            Utils.showNotification(`Removed "${tagValue.split(':')[1]}" from selection`);
+            Utils.showNotification(`Removed "${tagUtils.getTagValue(tagValue)}" from selection`);
         } else {
             AppState.selectedTags.add(tagValue);
             tagElement.classList.add('selected');
             document.querySelectorAll(`[data-tag-value="${tagValue}"]`).forEach(tag => {
                 tag.classList.add('selected');
             });
-            Utils.showNotification(`Added "${tagValue.split(':')[1]}" to selection`);
+            Utils.showNotification(`Added "${tagUtils.getTagValue(tagValue)}" to selection`);
         }
         
         if (AppState.selectedTags.size === 0) {
@@ -103,7 +103,7 @@ const Tags = {
         
         // Create new container with selected tags
         const tracks = await DataLoader.generateTracksWithMultipleTags(Array.from(AppState.selectedTags));
-        const tagDisplays = Array.from(AppState.selectedTags).map(tag => tag.split(':')[1]).join(' + ');
+        const tagDisplays = Array.from(AppState.selectedTags).map(tag => tagUtils.getTagValue(tag)).join(' + ');
         
         // Create a more informative title
         let containerTitle;
@@ -219,7 +219,7 @@ const Tags = {
         
         if (existingContainer) {
             existingContainer.scrollIntoView({ behavior: 'smooth' });
-            Utils.showNotification(`Scrolled to existing container for "${tagValue.split(':')[1]}"`);
+            Utils.showNotification(`Scrolled to existing container for "${tagUtils.getTagValue(tagValue)}"`);
             return;
         }
 
@@ -232,7 +232,7 @@ const Tags = {
         // Reposition all containers after adding new one
         Containers.repositionAll();
         
-        Utils.showNotification(`Created new container for "${tagValue.split(':')[1]}" with 7 tracks`);
+        Utils.showNotification(`Created new container for "${tagUtils.getTagValue(tagValue)}" with 7 tracks`);
     }
 };
 

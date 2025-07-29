@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { tagUtils } = require('../../../utils/TagUtils');
 
 class DatabaseManager {
     constructor(dbPath = null) {
@@ -98,6 +99,7 @@ class DatabaseManager {
                 resolve(false);
                 return;
             }
+
 
             const sql = `
                 INSERT OR REPLACE INTO tracks 
@@ -222,11 +224,11 @@ class DatabaseManager {
                     this.db.all('SELECT tags FROM tracks WHERE tags IS NOT NULL AND tags != ""', [], (err, rows) => {
                         if (err) rej(err);
                         else {
-                            // Extract unique tags from all tracks
+                            // Extract unique tags from all tracks using centralized TagUtils
                             const allTags = new Set();
                             rows.forEach(row => {
                                 if (row.tags) {
-                                    const tags = JSON.parse(row.tags);
+                                    const tags = tagUtils.parseTagsFromDatabase(row.tags);
                                     tags.forEach(tag => allTags.add(tag));
                                 }
                             });
@@ -412,11 +414,9 @@ class DatabaseManager {
                     
                     const allTags = new Set();
                     (results || []).forEach(row => {
-                        try {
-                            const tags = JSON.parse(row.tags);
+                        if (row.tags) {
+                            const tags = tagUtils.parseTagsFromDatabase(row.tags);
                             tags.forEach(tag => allTags.add(tag));
-                        } catch (e) {
-                            // Skip invalid JSON
                         }
                     });
                     

@@ -597,7 +597,7 @@ const UI = {
                 const connectionTag = connection.tag;
                 
                 // Estrai la categoria dal tag (formato "categoria:valore")
-                const tagCategory = connectionTag.split(':')[0];
+                const tagCategory = tagUtils.getTagType(connectionTag);
                 
                 // Verifica se questo ramo appartiene a una delle categorie selezionate
                 if (this.highlightedCategories.has(tagCategory)) {
@@ -759,14 +759,14 @@ const UI = {
                         const tagElement = document.createElement('span');
                         tagElement.className = 'tooltip-tag';
                         
-                        // Split tag into category and value for better display
-                        const [category, value] = tag.split(':');
-                        tagElement.textContent = value || tag;
-                        tagElement.dataset.category = category;
+                        // Split tag into category and value for better display using centralized TagUtils
+                        const tagInfo = tagUtils.parseTag(tag);
+                        tagElement.textContent = tagInfo.value || tag;
+                        tagElement.dataset.category = tagInfo.type;
                         tagElement.dataset.tagValue = tag; // Store full tag value for click handler
                         
                         // Add category-based styling
-                        tagElement.classList.add(`tag-${category}`);
+                        tagElement.classList.add(`tag-${tagInfo.type}`);
                         
                         // Add click handler to create branches like before
                         tagElement.addEventListener('click', async (e) => {

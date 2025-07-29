@@ -473,7 +473,7 @@ class DragDropService extends ServiceBase {
         // Group tags by type and score them
         const tagsByType = {};
         tags.forEach(tag => {
-            const [type] = tag.split(':');
+            const type = tagUtils.getTagType(tag);
             if (!tagsByType[type]) tagsByType[type] = [];
             tagsByType[type].push(tag);
         });

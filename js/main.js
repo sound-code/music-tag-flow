@@ -237,6 +237,7 @@ class Application {
                     try {
                         window[moduleName].initialize();
                     } catch (error) {
+                        console.error(`Error initializing ${moduleName}:`, error);
                         // Continue with other modules - non-blocking
                     }
                 }

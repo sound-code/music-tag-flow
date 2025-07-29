@@ -80,12 +80,12 @@ class DatabaseSearchService extends ISearchService {
         const categories = {};
         
         allTags.forEach(tag => {
-            const [category, value] = tag.split(':');
-            if (!categories[category]) {
-                categories[category] = [];
+            const tagInfo = tagUtils.parseTag(tag);
+            if (!categories[tagInfo.type]) {
+                categories[tagInfo.type] = [];
             }
-            if (value) {
-                categories[category].push(value);
+            if (tagInfo.value) {
+                categories[tagInfo.type].push(tagInfo.value);
             }
         });
         

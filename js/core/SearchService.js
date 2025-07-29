@@ -261,10 +261,10 @@ class SearchService extends ServiceBase {
             if (track.tags && track.tags.length > 0) {
                 tagMatch = track.tags.some(tag => {
                     const tagLower = tag.toLowerCase();
-                    const [category, value] = tag.split(':');
+                    const tagInfo = tagUtils.parseTag(tag);
                     return tagLower.includes(term) || 
-                           (category && category.toLowerCase().includes(term)) ||
-                           (value && value.toLowerCase().includes(term));
+                           (tagInfo.type && tagInfo.type.toLowerCase().includes(term)) ||
+                           (tagInfo.value && tagInfo.value.toLowerCase().includes(term));
                 });
             }
             
@@ -468,16 +468,16 @@ class SearchService extends ServiceBase {
         if (track.tags && track.tags.length > 0 && currentQuery) {
             const matchedTags = track.tags.filter(tag => {
                 const tagLower = tag.toLowerCase();
-                const [category, value] = tag.split(':');
+                const tagInfo = tagUtils.parseTag(tag);
                 return tagLower.includes(currentQuery) || 
-                       (category && category.toLowerCase().includes(currentQuery)) ||
-                       (value && value.toLowerCase().includes(currentQuery));
+                       (tagInfo.type && tagInfo.type.toLowerCase().includes(currentQuery)) ||
+                       (tagInfo.value && tagInfo.value.toLowerCase().includes(currentQuery));
             });
             
             if (matchedTags.length > 0) {
                 const tagsPreview = document.createElement('div');
                 tagsPreview.className = 'search-result-tags';
-                tagsPreview.textContent = `Tags: ${matchedTags.map(tag => tag.split(':')[1] || tag).join(', ')}`;
+                tagsPreview.textContent = `Tags: ${matchedTags.map(tag => tagUtils.getTagValue(tag)).join(', ')}`;
                 resultInfo.appendChild(tagsPreview);
             }
         }

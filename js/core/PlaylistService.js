@@ -368,7 +368,7 @@ class PlaylistService extends ServiceBase {
             const selectedTag = entry.connectionTag;
             
             const tagDisplay = selectedTag && selectedTag !== 'direct-selection' ? 
-                ` (${selectedTag.split(':')[1]})` : '';
+                ` (${tagUtils.getTagValue(selectedTag)})` : '';
             const trackDisplay = `${track.title} - ${track.artist}${tagDisplay}`;
             
             // Add remove button for all tracks except the first one (playing track)
@@ -400,7 +400,7 @@ class PlaylistService extends ServiceBase {
         const playlistText = entries.map((entry, index) => {
             const track = entry.track;
             const tagInfo = entry.connectionTag && entry.connectionTag !== 'direct-selection' ? 
-                ` (${entry.connectionTag.split(':')[1]})` : '';
+                ` (${tagUtils.getTagValue(entry.connectionTag)})` : '';
             return `${index + 1}. ${track.title} - ${track.artist}${tagInfo}`;
         }).join('\n');
         

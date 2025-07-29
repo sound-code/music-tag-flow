@@ -35,19 +35,6 @@ class TreeService extends ServiceBase {
                 distance: 120
             }
         };
-        // Connection colors by tag type
-        this.connectionColors = {
-            emotion: '#e74c3c',
-            energy: '#f39c12',
-            mood: '#9b59b6',
-            style: '#3498db',
-            occasion: '#2ecc71',
-            weather: '#1abc9c',
-            intensity: '#e67e22',
-            rating: '#f1c40f',
-            tempo: '#34495e',
-            vibe: '#95a5a6'
-        };
         // Initialize validation rules
         this.validationRules = {
             position: (pos) => pos && typeof pos.x === 'number' && typeof pos.y === 'number',
@@ -403,11 +390,7 @@ class TreeService extends ServiceBase {
      * @returns {string} Color code
      */
     getConnectionColor(connectionTag) {
-        if (connectionTag.includes(':')) {
-            const tagType = connectionTag.split(':')[0];
-            return this.connectionColors[tagType] || '#95a5a6';
-        }
-        return '#95a5a6';
+        return tagUtils.getTagColor(connectionTag);
     }
     /**
      * Sort tags by priority
@@ -415,13 +398,7 @@ class TreeService extends ServiceBase {
      * @returns {Array} Sorted tags
      */
     sortTagsByPriority(tags) {
-        return tags.sort((a, b) => {
-            const getPriority = (tag) => {
-                const type = tag.split(':')[0];
-                return this.tagPriorities[type] || 999;
-            };
-            return getPriority(a) - getPriority(b);
-        });
+        return tagUtils.sortTagsByPriority(tags);
     }
     // Utility methods
     findNodeByElement(element) {

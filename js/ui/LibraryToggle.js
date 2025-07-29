@@ -181,15 +181,8 @@ window.LibraryToggle = (() => {
         // Sort tags alphabetically
         const sortedTags = [...uniqueTags].sort();
         
-        // Group tags by type
-        const tagsByType = {};
-        sortedTags.forEach(tag => {
-            const [type, value] = tag.split(':');
-            if (!tagsByType[type]) {
-                tagsByType[type] = [];
-            }
-            tagsByType[type].push(value);
-        });
+        // Group tags by type using centralized TagUtils
+        const tagsByType = window.tagUtils.groupTagsByType(sortedTags);
         
         // Create grouped display
         Object.entries(tagsByType).forEach(([type, values]) => {

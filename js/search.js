@@ -83,10 +83,10 @@ const Search = {
             if (track.tags && track.tags.length > 0) {
                 tagMatch = track.tags.some(tag => {
                     const tagLower = tag.toLowerCase();
-                    const [category, value] = tag.split(':');
+                    const tagInfo = tagUtils.parseTag(tag);
                     return tagLower.includes(term) || 
-                           (category && category.toLowerCase().includes(term)) ||
-                           (value && value.toLowerCase().includes(term));
+                           (tagInfo.type && tagInfo.type.toLowerCase().includes(term)) ||
+                           (tagInfo.value && tagInfo.value.toLowerCase().includes(term));
                 });
             }
             

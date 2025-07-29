@@ -12,19 +12,6 @@ class TagService extends ServiceBase {
             preserveSourceTrack: true,
             selectionTimeout: 1000 // Visual feedback duration
         };
-        // Tag type priorities for branch creation
-        this.tagPriorities = {
-            emotion: 1,
-            energy: 2,
-            mood: 3,
-            style: 4,
-            occasion: 5,
-            weather: 6,
-            intensity: 7,
-            rating: 8,
-            tempo: 9,
-            vibe: 10
-        };
         // Initialize validation rules
         this.validationRules = {
             tagValue: (value) => typeof value === 'string' && value.includes(':'),
@@ -142,8 +129,8 @@ class TagService extends ServiceBase {
             selectedTags: Array.from(selectedTags),
             count: selectedTags.size
         });
-        // Show notification
-        const [type, value] = tagValue.split(':');
+        // Show notification using centralized TagUtils
+        const value = tagUtils.getTagValue(tagValue);
         this.emitEvent('notification:show', {
             message: `Added "${value}" to selection`,
             type: 'success'
@@ -169,8 +156,8 @@ class TagService extends ServiceBase {
             selectedTags: Array.from(selectedTags),
             count: selectedTags.size
         });
-        // Show notification
-        const [type, value] = tagValue.split(':');
+        // Show notification using centralized TagUtils
+        const value = tagUtils.getTagValue(tagValue);
         this.emitEvent('notification:show', {
             message: `Removed "${value}" from selection`,
             type: 'info'
@@ -212,10 +199,10 @@ class TagService extends ServiceBase {
             sourceNode: trackNode,
             trackData: this.extractTrackDataFromNode(trackNode)
         });
-        // Analytics event
+        // Analytics event using centralized TagUtils
         this.emitEvent('analytics:tag-branch-created', {
             tagValue,
-            tagType: tagValue.split(':')[0],
+            tagType: tagUtils.getTagType(tagValue),
             sourceTrack: trackNode.id
         });
     }
@@ -257,7 +244,7 @@ class TagService extends ServiceBase {
      * @param {Array} selectedTags - Selected tags
      */
     handleMultiTagTracks(tracks, selectedTags) {
-        const tagDisplays = selectedTags.map(tag => tag.split(':')[1]).join(' + ');
+        const tagDisplays = selectedTags.map(tag => tagUtils.getTagValue(tag)).join(' + ');
         // Emit event for container creation
         this.emitEvent('container:create-multi-tag', {
             tracks,
@@ -312,17 +299,17 @@ class TagService extends ServiceBase {
      * @param {string} tagValue - Tag value
      * @returns {number} Priority value
      */
+    // ✅ Using centralized TagUtils for priorities and sorting
     getTagPriority(tagValue) {
-        const type = tagValue.split(':')[0];
-        return this.tagPriorities[type] || 999;
+        return tagUtils.getTagPriority(tagValue);
     }
     /**
-     * Sort tags by priority
+     * Sort tags by priority using centralized TagUtils
      * @param {Array} tags - Tags to sort
      * @returns {Array} Sorted tags
      */
     sortTagsByPriority(tags) {
-        return tags.sort((a, b) => this.getTagPriority(a) - this.getTagPriority(b));
+        return tagUtils.sortTagsByPriority(tags);
     }
     // Visual feedback methods
     addVisualFeedback(element, className) {
