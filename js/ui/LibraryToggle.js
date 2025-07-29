@@ -14,7 +14,16 @@ window.LibraryToggle = (() => {
         
         toggleButton.addEventListener('click', toggleView);
         
-        // Stats are now handled by StatsService
+        // Subscribe to events to update tags list
+        if (window.App && window.App.eventBus) {
+            window.App.eventBus.on('scan:completed', () => {
+                updateTagsList();
+            });
+            
+            window.App.eventBus.on('database:cleared', () => {
+                updateTagsList();
+            });
+        }
     }
     
     function toggleView() {
@@ -34,104 +43,10 @@ window.LibraryToggle = (() => {
             toggleButton.querySelector('.toggle-icon').textContent = '📚';
             toggleButton.title = 'Back to Library';
             
-            // Re-initialize scan button when showing scan view
-            // Emit event to notify that scan view is now visible
+            // Notify that scan view is now visible
             if (window.App && window.App.eventBus) {
                 window.App.eventBus.emit('scan:viewShown');
             }
-            
-            // Fallback: if ScanService doesn't handle the buttons, set them up here
-            setTimeout(() => {
-                const scanButton = document.getElementById('scanButton');
-                const clearButton = document.getElementById('clearButton');
-                
-                if (scanButton && !scanButton.onclick) {
-                    scanButton.onclick = async () => {
-                        if (window.DataSourceAdapter) {
-                            try {
-                                const scanProgress = document.getElementById('scanProgress');
-                                const progressFill = document.getElementById('progressFill');
-                                const progressText = document.getElementById('progressText');
-                                
-                                // Show progress bar
-                                if (scanProgress) scanProgress.style.display = 'block';
-                                if (progressFill) progressFill.style.width = '0%';
-                                if (progressText) progressText.textContent = 'Starting scan...';
-                                
-                                const directory = await window.DataSourceAdapter.selectMusicDirectory();
-                                if (directory) {
-                                    // Clean up existing listeners and setup new one
-                                    if (window.electronAPI) {
-                                        window.electronAPI.removeAllListeners('scan-progress');
-                                        window.electronAPI.onScanProgress((progress) => {
-                                            if (progressFill && progressText) {
-                                                const percentage = Math.round((progress.processed / progress.total) * 100);
-                                                progressFill.style.width = `${percentage}%`;
-                                                progressText.textContent = `Scanning... ${progress.processed}/${progress.total} (${percentage}%)`;
-                                            }
-                                        });
-                                    }
-                                    
-                                    const results = await window.DataSourceAdapter.scanDirectory(directory);
-                                    
-                                    // Emit event for StatsComponent to update stats
-                                    if (window.App && window.App.eventBus) {
-                                        window.App.eventBus.emit('scan:completed', {
-                                            directory,
-                                            results
-                                        });
-                                    }
-                                    
-                                    // Update tags list after scan
-                                    updateTagsList();
-                                }
-                                
-                                // Hide progress bar
-                                if (scanProgress) scanProgress.style.display = 'none';
-                            } catch (error) {
-                                alert('Error scanning library: ' + error.message);
-                                
-                                // Hide progress bar on error
-                                const scanProgress = document.getElementById('scanProgress');
-                                if (scanProgress) scanProgress.style.display = 'none';
-                            }
-                        } else {
-                            alert('Data source not available');
-                        }
-                    };
-                }
-                
-                // Setup clear button fallback
-                if (clearButton && !clearButton.onclick) {
-                    clearButton.onclick = async () => {
-                        const confirmed = confirm(
-                            'Are you sure you want to clear the entire database?\n\n' +
-                            'This will permanently delete all scanned tracks, artists, albums, and tags.\n\n' +
-                            'This action cannot be undone.'
-                        );
-                        
-                        if (!confirmed) {
-                            return;
-                        }
-                        
-                        if (window.DataSourceAdapter) {
-                            try {
-                                const success = await window.DataSourceAdapter.clearDatabase();
-                                if (success) {
-                                    // Stats updated by StatsService via events
-                                    alert('Database cleared successfully!');
-                                } else {
-                                    alert('Failed to clear database');
-                                }
-                            } catch (error) {
-                                alert('Error clearing database: ' + error.message);
-                            }
-                        } else {
-                            alert('Data source not available');
-                        }
-                    };
-                }
-            }, 200);
         } else {
             libraryContent.style.display = 'block';
             scanContent.style.display = 'none';

@@ -237,6 +237,11 @@ class Application {
                 AppState.initializeEventBusListeners();
             }
             
+            // Initialize LibraryToggle BEFORE services so EventBus subscriptions are ready
+            if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {
+                LibraryToggle.init();
+            }
+            
             // Initialize data source adapter
             if (typeof DataSourceAdapter !== 'undefined') {
                 await DataSourceAdapter.initialize();
@@ -259,10 +264,7 @@ class Application {
                 }
             }
             
-            // Initialize LibraryToggle
-            if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {
-                LibraryToggle.init();
-            }
+            // LibraryToggle already initialized above
             
             // Initialize StatsComponent
             if (typeof StatsComponent !== 'undefined') {
