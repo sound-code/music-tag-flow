@@ -7,7 +7,10 @@ class LegendService extends ServiceBase {
         console.log('🎨 LegendService constructor called');
         
         try {
-            // Service-specific configuration (MUST be set before super() call)
+            console.log('🎨 Calling super() with stateManager:', !!stateManager, 'eventBus:', !!eventBus);
+            super(stateManager, eventBus);
+            
+            // Service-specific configuration (MUST be set after super() call)
             this.config = {
                 maxTagsPerCategory: 10, // Limit tags shown per category
                 showEmptyCategories: false, // Hide categories with no tags
@@ -15,8 +18,6 @@ class LegendService extends ServiceBase {
                 animationDelay: 100 // Stagger category animation
             };
             
-            console.log('🎨 Calling super() with stateManager:', !!stateManager, 'eventBus:', !!eventBus);
-            super(stateManager, eventBus);
             console.log('🎨 LegendService constructor completed successfully');
         } catch (error) {
             console.error('🎨 Error in LegendService constructor:', error);
@@ -42,15 +43,17 @@ class LegendService extends ServiceBase {
         try {
             console.log('🎨 LegendService.initialize() starting...');
             
-            // Ensure config is available (ServiceBase calls initialize before subclass properties are set)
+            // Ensure config is available (ServiceBase calls initialize in constructor)
             if (!this.config) {
-                console.log('🎨 Config not yet available, using defaults');
+                console.log('🎨 Config not yet available from constructor, using defaults');
                 this.config = {
                     maxTagsPerCategory: 10,
                     showEmptyCategories: false,
                     refreshInterval: 0,
                     animationDelay: 100
                 };
+            } else {
+                console.log('🎨 Config available from constructor');
             }
             
             // Ensure legend state exists
