@@ -219,7 +219,6 @@
     <script src="js/core/DragDropService.js"></script>
     <script src="js/core/ScanService.js"></script>
     <script src="js/core/LegendService.js"></script>
-    <script src="js/core/SimpleLegendService.js"></script>
     <script src="js/core/ServiceManager.js"></script>
     
     <!-- Application State -->
@@ -241,45 +240,8 @@
     <script src="js/ui/LibraryToggle.js"></script>
     <script src="js/main.js"></script>
     
-    <!-- Initialize SimpleLegendService as a test -->
+    <!-- Add refresh button for legend testing -->
     <script>
-        console.log('🎨 Testing SimpleLegendService initialization...');
-        
-        // Wait for the app to be ready, then initialize SimpleLegendService
-        let initAttempts = 0;
-        const maxAttempts = 50;
-        
-        function tryInitSimpleLegend() {
-            initAttempts++;
-            
-            // Check if dependencies are available
-            if (window.SimpleLegendService && window.DataSourceAdapter && window.tagUtils) {
-                console.log('🎨 Dependencies available, initializing SimpleLegendService...');
-                
-                // Create and initialize SimpleLegendService
-                window.simpleLegendService = new SimpleLegendService();
-                window.simpleLegendService.initialize();
-                
-                console.log('🎨 SimpleLegendService initialized successfully');
-                
-            } else {
-                if (initAttempts < maxAttempts) {
-                    console.log(`🎨 Waiting for dependencies... (attempt ${initAttempts}/${maxAttempts})`);
-                    console.log('🎨 Available:', {
-                        SimpleLegendService: !!window.SimpleLegendService,
-                        DataSourceAdapter: !!window.DataSourceAdapter,
-                        tagUtils: !!window.tagUtils
-                    });
-                    setTimeout(tryInitSimpleLegend, 200);
-                } else {
-                    console.error('🎨 Failed to initialize SimpleLegendService after maximum attempts');
-                }
-            }
-        }
-        
-        // Start trying to initialize after a short delay
-        setTimeout(tryInitSimpleLegend, 500);
-        
         // Add refresh button for testing
         setTimeout(() => {
             const legendContainer = document.querySelector('.color-legend');
@@ -288,14 +250,20 @@
                 refreshBtn.textContent = '🔄 Refresh Legend';
                 refreshBtn.style.cssText = 'margin: 5px 0; padding: 5px 10px; font-size: 12px;';
                 refreshBtn.onclick = () => {
-                    if (window.simpleLegendService) {
-                        console.log('🔄 Manual legend refresh triggered');
-                        window.simpleLegendService.refreshLegend();
+                    // Try to get legend service from App
+                    if (window.App && window.App.getService) {
+                        const legendService = window.App.getService('legend');
+                        if (legendService) {
+                            console.log('🔄 Manual legend refresh triggered');
+                            legendService.refreshLegend();
+                        } else {
+                            console.log('🔄 Legend service not available');
+                        }
                     }
                 };
                 legendContainer.appendChild(refreshBtn);
             }
-        }, 2000);
+        }, 3000); // Wait longer for app to initialize
     </script>
     
 </body>

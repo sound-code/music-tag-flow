@@ -65,11 +65,27 @@ class TagUtils {
             };
         }
 
-        // Tag senza categoria (fallback)
+        // Tag senza categoria - prova a classificarlo automaticamente
+        const cleanTag = tag.trim().toLowerCase();
+        let inferredType = 'other';
+        
+        // Classifica automaticamente basandosi sul contenuto
+        if (['flac', 'mp3', 'wav', 'aac', 'm4a', 'ogg'].includes(cleanTag)) {
+            inferredType = 'format';
+        } else if (['lossless', 'lossy', 'high', 'low', 'cd'].includes(cleanTag)) {
+            inferredType = 'quality';
+        } else if (cleanTag.match(/^\d+k?$/)) { // 320k, 128, etc.
+            inferredType = 'bitrate';
+        } else if (['ffprobe', 'musicbrainz', 'lastfm', 'spotify'].includes(cleanTag)) {
+            inferredType = 'source';
+        } else if (cleanTag.match(/^\d{4}s?$/)) { // Years like 2023, 1990s
+            inferredType = 'era';
+        }
+        
         return {
-            type: 'other',
+            type: inferredType,
             value: tag.trim(),
-            isValid: false
+            isValid: false // Still marked as inferred, not explicit
         };
     }
 
@@ -135,16 +151,19 @@ class TagUtils {
      * @returns {Object} Oggetto con categorie come chiavi e array di valori
      */
     groupTagsByType(tags) {
+        console.log('🏷️ TagUtils.groupTagsByType called with:', tags);
         const grouped = {};
         
         tags.forEach(tag => {
             const parsed = this.parseTag(tag);
+            console.log(`🏷️ Tag "${tag}" parsed as:`, parsed);
             if (!grouped[parsed.type]) {
                 grouped[parsed.type] = [];
             }
             grouped[parsed.type].push(parsed.value);
         });
 
+        console.log('🏷️ Final grouped result:', grouped);
         return grouped;
     }
 

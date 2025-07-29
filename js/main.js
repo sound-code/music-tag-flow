@@ -162,9 +162,18 @@ class Application {
             autoStart: true
         });
         
+        console.log('🔧 LegendService available:', typeof LegendService);
+        this.serviceManager.registerService('legend', LegendService, [], {
+            required: false,
+            autoStart: true
+        });
+        console.log('🔧 Legend service registered');
+        
         
         // Initialize all services
+        console.log('🔧 Initializing services...');
         await this.serviceManager.initializeServices();
+        console.log('🔧 Services initialized. Legend service:', this.serviceManager.getService('legend'));
     }
 
     /**
