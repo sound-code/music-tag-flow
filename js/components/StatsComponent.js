@@ -85,11 +85,12 @@ class StatsComponent {
             clearButton: document.getElementById('clearButton')
         };
 
-        // Setup clear button handler if not already handled by ScanService
-        if (this.elements.clearButton && !this.elements.clearButton.onclick) {
+        // Setup clear button handler - prevent duplicate handlers
+        if (this.elements.clearButton && !this.elements.clearButton.dataset.handlerAttached) {
             this.elements.clearButton.onclick = () => {
                 this.handleClearDatabase();
             };
+            this.elements.clearButton.dataset.handlerAttached = 'true';
         }
     }
 
@@ -216,8 +217,6 @@ class StatsComponent {
             if (window.LibraryToggle && window.LibraryToggle.updateTagsList) {
                 window.LibraryToggle.updateTagsList();
             }
-            
-            alert('Database cleared successfully!');
             
         } catch (error) {
             console.error('Error clearing database:', error);
