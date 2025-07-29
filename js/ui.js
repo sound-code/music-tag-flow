@@ -254,29 +254,52 @@ const UI = {
             vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic']
         };
 
-        // Wait for DOM to be ready, then add event listeners
+        // Wait for DOM to be ready, then add event listeners  
         setTimeout(() => {
-            const legendItems = document.querySelectorAll('.legend-item');
+            this.attachLegendEventHandlers();
+        }, 100);
+        
+        // Listen for legend re-rendering from LegendService
+        if (typeof EventBus !== 'undefined' && EventBus.on) {
+            EventBus.on('legend:rendered', () => {
+                console.log('🎨 UI.js received legend:rendered event - reattaching handlers');
+                setTimeout(() => {
+                    this.attachLegendEventHandlers();
+                }, 200); // Small delay to ensure DOM is updated
+            });
+        }
+    },
+    
+    /**
+     * Attach event handlers to legend items (can be called multiple times)
+     */
+    attachLegendEventHandlers() {
+        console.log('🎨 UI.js attaching legend event handlers...');
+        const legendItems = document.querySelectorAll('.legend-item');
+        console.log(`🎨 Found ${legendItems.length} legend items to attach handlers to`);
 
+        legendItems.forEach(item => {
+            // Remove existing listeners to avoid duplicates
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
             
-            legendItems.forEach(item => {
-                // Add click handler for category highlighting
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const category = this.getCategoryFromLegendItem(item);
-                    if (category) {
-                        this.toggleCategoryHighlight(category, item);
-                    }
-                });
-                
-                item.addEventListener('mouseenter', (e) => {
+            // Add click handler for category highlighting
+            newItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                const category = this.getCategoryFromLegendItem(newItem);
+                if (category) {
+                    this.toggleCategoryHighlight(category, newItem);
+                }
+            });
+            
+            newItem.addEventListener('mouseenter', (e) => {
                     // Clear any pending hide timeout
                     if (this.legendHideTimeout) {
                         clearTimeout(this.legendHideTimeout);
                         this.legendHideTimeout = null;
                     }
 
-                    const category = this.getCategoryFromLegendItem(item);
+                    const category = this.getCategoryFromLegendItem(newItem);
 
                     if (category) {
                         // Show immediately if not already showing, or with small delay
@@ -289,7 +312,7 @@ const UI = {
                     }
                 });
                 
-                item.addEventListener('mouseleave', () => {
+                newItem.addEventListener('mouseleave', () => {
                     // Clear any pending show timeout
                     if (this.legendShowTimeout) {
                         clearTimeout(this.legendShowTimeout);
@@ -302,12 +325,14 @@ const UI = {
                     }, 300); // 300ms delay before hiding
                 });
                 
-                item.addEventListener('mousemove', (e) => {
+                newItem.addEventListener('mousemove', (e) => {
                     if (this.legendPopup.style.display === 'block') {
                         this.updateLegendPopupPosition(e);
                     }
                 });
             });
+        
+        console.log(`🎨 UI.js attached event handlers to ${legendItems.length} legend items`);
 
             // Also add hover events to the popup itself to keep it visible
             this.legendPopup.addEventListener('mouseenter', () => {

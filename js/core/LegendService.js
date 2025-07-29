@@ -270,6 +270,13 @@ class LegendService extends ServiceBase {
             totalInfo.textContent = `${Object.keys(categorizedTags).length} categories, ${totalTags} tags`;
             legendContainer.appendChild(totalInfo);
         }
+        
+        // Notify UI.js that legend has been rendered so it can attach event handlers
+        this.emitEvent('legend:rendered', {
+            categories: Object.keys(categorizedTags),
+            totalItems: Object.keys(categorizedTags).length
+        });
+        console.log('🎨 Emitted legend:rendered event for UI.js integration');
     }
 
     /**
@@ -298,11 +305,9 @@ class LegendService extends ServiceBase {
         legendItem.appendChild(colorIndicator);
         legendItem.appendChild(categoryName);
 
-        // Add click handler for category selection
-        legendItem.addEventListener('click', (e) => {
-            this.handleCategoryClick(legendItem, category, tags);
-        });
-
+        // Don't add event handlers here - let UI.js handle all legend interactions
+        // This maintains compatibility with existing multi-tag selection and hover effects
+        
         console.log(`🎨 Appending legend item for ${category} to container`);
         container.appendChild(legendItem);
         console.log(`🎨 Legend item for ${category} added successfully`);
