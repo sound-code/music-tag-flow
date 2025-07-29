@@ -67,7 +67,8 @@ class DatabaseManager {
                 
                 `CREATE INDEX IF NOT EXISTS idx_tracks_artist ON tracks(artist)`,
                 `CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album)`,
-                `CREATE INDEX IF NOT EXISTS idx_tracks_title ON tracks(title)`
+                `CREATE INDEX IF NOT EXISTS idx_tracks_title ON tracks(title)`,
+                `CREATE INDEX IF NOT EXISTS idx_tracks_tags ON tracks(tags)`
             ];
             
             this.db.serialize(() => {
