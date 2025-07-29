@@ -289,6 +289,77 @@ const DataSourceAdapter = {
     },
 
     /**
+     * Get database statistics
+     * @returns {Promise<Object>} Stats object with tracks, artists, albums counts
+     */
+    async getStats() {
+        // Try database adapter first if available
+        const dbAdapter = this.activeAdapters.get('database');
+        if (dbAdapter && dbAdapter.getStats) {
+            try {
+                return await dbAdapter.getStats();
+            } catch (error) {
+                console.error('Error getting stats from database:', error);
+            }
+        }
+        
+        // Return default stats if no database adapter
+        return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
+    },
+
+    /**
+     * Clear database
+     * @returns {Promise<boolean>} Success status
+     */
+    async clearDatabase() {
+        const dbAdapter = this.activeAdapters.get('database');
+        if (dbAdapter && window.electronAPI) {
+            try {
+                await window.electronAPI.clearDatabase();
+                return true;
+            } catch (error) {
+                console.error('Error clearing database:', error);
+                return false;
+            }
+        }
+        return false;
+    },
+
+    /**
+     * Scan directory for music files
+     * @param {string} directory - Directory path to scan
+     * @returns {Promise<Object>} Scan results
+     */
+    async scanDirectory(directory) {
+        const dbAdapter = this.activeAdapters.get('database');
+        if (dbAdapter && window.electronAPI) {
+            try {
+                return await window.electronAPI.scanDirectory(directory);
+            } catch (error) {
+                console.error('Error scanning directory:', error);
+                throw error;
+            }
+        }
+        throw new Error('Database adapter not available');
+    },
+
+    /**
+     * Select music directory
+     * @returns {Promise<string>} Selected directory path
+     */
+    async selectMusicDirectory() {
+        if (window.electronAPI) {
+            try {
+                return await window.electronAPI.selectMusicDirectory();
+            } catch (error) {
+                console.error('Error selecting directory:', error);
+                throw error;
+            }
+        }
+        throw new Error('Electron API not available');
+    },
+
+    /**
      * Clear all adapter caches
      */
     clearCache() {
@@ -829,14 +900,14 @@ class DatabaseAdapter {
 
     async getStats() {
         if (!this.initialized || !window.electronAPI) {
-            return { tracks: 0, artists: 0, albums: 0 };
+            return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
         }
 
         try {
             return await window.electronAPI.getStats();
         } catch (error) {
             console.error('Error getting database stats:', error);
-            return { tracks: 0, artists: 0, albums: 0 };
+            return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
         }
     }
 

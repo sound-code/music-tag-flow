@@ -9,53 +9,80 @@
 <body>
     <div class="app-container">
         <div class="sidebar">
-            <h3>Music Library</h3>
+            <div class="library-header">
+                <h3>Music Library</h3>
+                <button class="toggle-scan-button" id="toggleScanButton" title="Scan Settings">
+                    <span class="toggle-icon">⚙️</span>
+                </button>
+            </div>
             
-            <div class="search-container">
+            <div class="library-content" id="libraryContent">
+                <div class="search-container">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-field" placeholder="Search tags, tracks, artists, albums..." id="searchField">
                 <button class="clear-search" id="clearSearch">×</button>
             </div>
             
-            <div class="search-results" id="searchResults">
-                <div class="search-results-header">Search Results</div>
-                <div id="searchResultsList">
-                    <!-- Search results will be populated here -->
+                <div class="search-results" id="searchResults">
+                    <div class="search-results-header">Search Results</div>
+                    <div id="searchResultsList">
+                        <!-- Search results will be populated here -->
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Scan Library Section -->
-            <div class="scan-section">
-                <button class="scan-button" id="scanButton">
-                    <span class="scan-icon">📁</span>
-                    <span class="scan-text">Scan Music Library</span>
-                </button>
-                <div class="scan-progress" id="scanProgress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Scanning...</div>
-                </div>
-                <div class="scan-stats" id="scanStats" style="display: none;">
-                    <div class="stat-item">
-                        <span class="stat-label">Tracks:</span>
-                        <span class="stat-value" id="tracksCount">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Artists:</span>
-                        <span class="stat-value" id="artistsCount">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Albums:</span>
-                        <span class="stat-value" id="albumsCount">0</span>
+                
+                <div class="music-library" id="musicLibrary">
+                    <!-- Music library will be populated dynamically by DataSourceAdapter -->
+                    <div class="library-loading">
+                        <p>Loading music library...</p>
                     </div>
                 </div>
             </div>
             
-            <div class="music-library" id="musicLibrary">
-                <!-- Music library will be populated dynamically by DataSourceAdapter -->
-                <div class="library-loading">
-                    <p>Loading music library...</p>
+            <!-- Scan Library Section (hidden by default) -->
+            <div class="scan-content" id="scanContent" style="display: none;">
+                <div class="scan-section">
+                    <button class="scan-button" id="scanButton">
+                        <span class="scan-icon">📁</span>
+                        <span class="scan-text">Scan Music Library</span>
+                    </button>
+                    <div class="scan-progress" id="scanProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Scanning...</div>
+                    </div>
+                    <div class="scan-stats" id="scanStats" style="display: block;">
+                        <div class="stats-header">
+                            <h4>Database Statistics</h4>
+                            <button class="trash-button" id="clearButton" title="Clear Database">
+                                🗑️
+                            </button>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Tracks:</span>
+                            <span class="stat-value" id="tracksCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Artists:</span>
+                            <span class="stat-value" id="artistsCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Albums:</span>
+                            <span class="stat-value" id="albumsCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Unique Tags:</span>
+                            <span class="stat-value" id="tagsCount">0</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Tags List Section -->
+                    <div class="tags-list-section" id="tagsListSection">
+                        <h4>All Tags</h4>
+                        <div class="tags-list-content" id="tagsListContent">
+                            <!-- Tags will be populated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -174,8 +201,6 @@
         </div>
     </div>
 
-    <!-- Crash Monitor - Disabled temporarily -->
-    <!-- <script src="crash-monitor.js"></script> -->
     
     <!-- JavaScript Modules -->
     <!-- Core Infrastructure -->
@@ -210,6 +235,7 @@
     <script src="js/phases.js"></script>
     <script src="js/realTimeClock.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/ui/LibraryToggle.js"></script>
     <script src="js/main.js"></script>
     
 </body>

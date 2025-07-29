@@ -38,6 +38,141 @@ body {
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 
+.library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.library-header h3 {
+    color: #ffffff;
+    margin: 0;
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.toggle-scan-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.toggle-scan-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.toggle-scan-button:active {
+    transform: translateY(0);
+}
+
+.scan-content {
+    padding: 0 16px;
+}
+
+.scan-content .scan-stats {
+    margin-top: 20px;
+}
+
+.scan-content .scan-stats h4,
+.scan-content .stats-header h4 {
+    color: #e0e7ff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Tags list section styles */
+.tags-list-section {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tags-list-section h4 {
+    color: #e0e7ff;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.tags-list-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.no-tags-message {
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.tag-type-group {
+    margin-bottom: 16px;
+}
+
+.tag-type-group:last-child {
+    margin-bottom: 0;
+}
+
+.tag-type-header {
+    color: #a5b4fc;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tag-item {
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    transition: all 0.2s ease;
+}
+
+.tag-item:hover {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* Scrollbar styling for tags list */
+.tags-list-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tags-list-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.tags-list-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.tags-list-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 .sidebar h3 {
     color: #ffffff;
     margin-bottom: 16px;
@@ -234,6 +369,38 @@ body {
 .scan-button:active {
     background: rgba(59, 130, 246, 0.2);
     transform: scale(0.98);
+}
+
+/* Stats Header with Trash Button */
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.stats-header h4 {
+    margin: 0;
+}
+
+.trash-button {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    color: #ef4444;
+    opacity: 0.7;
+}
+
+.trash-button:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.trash-button:active {
+    transform: scale(0.95);
 }
 
 .scan-button:disabled {

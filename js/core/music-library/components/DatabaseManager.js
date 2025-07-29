@@ -193,11 +193,11 @@ class DatabaseManager {
     getStats() {
         return new Promise((resolve, reject) => {
             if (!this.db) {
-                resolve({ tracks: 0, artists: 0, albums: 0 });
+                resolve({ tracks: 0, artists: 0, albums: 0, uniqueTags: [] });
                 return;
             }
             
-            // Use Promise.all to run all three queries in parallel
+            // Use Promise.all to run all queries in parallel
             const queries = [
                 new Promise((res, rej) => {
                     this.db.get('SELECT COUNT(*) as count FROM tracks', [], (err, row) => {
@@ -216,16 +216,32 @@ class DatabaseManager {
                         if (err) rej(err);
                         else res(row.count);
                     });
+                }),
+                new Promise((res, rej) => {
+                    this.db.all('SELECT tags FROM tracks WHERE tags IS NOT NULL AND tags != ""', [], (err, rows) => {
+                        if (err) rej(err);
+                        else {
+                            // Extract unique tags from all tracks
+                            const allTags = new Set();
+                            rows.forEach(row => {
+                                if (row.tags) {
+                                    const tags = JSON.parse(row.tags);
+                                    tags.forEach(tag => allTags.add(tag));
+                                }
+                            });
+                            res(Array.from(allTags).sort());
+                        }
+                    });
                 })
             ];
             
             Promise.all(queries)
-                .then(([tracks, artists, albums]) => {
-                    resolve({ tracks, artists, albums });
+                .then(([tracks, artists, albums, uniqueTags]) => {
+                    resolve({ tracks, artists, albums, uniqueTags });
                 })
                 .catch(error => {
                     console.error('Error getting stats:', error);
-                    resolve({ tracks: 0, artists: 0, albums: 0 });
+                    resolve({ tracks: 0, artists: 0, albums: 0, uniqueTags: [] });
                 });
         });
     }

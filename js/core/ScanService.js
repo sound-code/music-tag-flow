@@ -18,18 +18,34 @@ class ScanService extends ServiceBase {
         this.setupUI();
     }
 
+    initialize() {
+        // Initialize elements immediately if DOM is ready
+        if (document.readyState !== 'loading') {
+            this.initializeElements();
+            this.loadExistingStats();
+        }
+    }
+
     setupEventListeners() {
         // Setup scan button click handler - try immediately and on DOM ready
         this.setupScanButton();
+        this.setupClearButton();
+        
+        // Listen for scan view being shown
+        this.eventBus.on('scan:viewShown', () => {
+            this.initializeElements();
+            this.setupScanButton();
+            this.setupClearButton();
+        });
         
         // Also try when DOM is fully loaded as fallback
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.setupScanButton();
-                    });
+            });
         }
 
-        // Listen for Electron IPC messages (quando saranno implementati)
+        // Listen for Electron IPC messages
         if (window.electronAPI) {
             window.electronAPI.onScanProgress((progress) => {
                 this.updateProgress(progress);
@@ -39,17 +55,33 @@ class ScanService extends ServiceBase {
 
     setupScanButton() {
         const scanButton = document.getElementById('scanButton');
+        
         if (scanButton) {
-            
             // Remove existing listener if any
-            scanButton.removeEventListener('click', this.handleScanClick);
+            const boundHandleScanClick = this.handleScanClick.bind(this);
+            scanButton.removeEventListener('click', boundHandleScanClick);
             
             // Add new listener
-            scanButton.addEventListener('click', () => {
+            scanButton.addEventListener('click', (e) => {
+                e.preventDefault();
                 this.handleScanClick();
             });
-        } else {
-            console.error('🔍 Scan button not found');
+        }
+    }
+
+    setupClearButton() {
+        const clearButton = document.getElementById('clearButton');
+        
+        if (clearButton) {
+            // Remove existing listener if any
+            const boundHandleClearClick = this.handleClearClick.bind(this);
+            clearButton.removeEventListener('click', boundHandleClearClick);
+            
+            // Add new listener
+            clearButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleClearClick();
+            });
         }
     }
 
@@ -88,22 +120,19 @@ class ScanService extends ServiceBase {
     }
 
     async handleScanClick() {
-        
         if (this.isScanning) {
             return;
         }
 
         try {
-            // Check if we're running in Electron
-            if (!window.electronAPI) {
-                console.error('🔍 window.electronAPI not available');
-                alert('Scanning is only available in the Electron app');
+            // Check if DataSourceAdapter is available
+            if (!window.DataSourceAdapter) {
+                alert('Data source not available');
                 return;
             }
-            
 
             // Select directory
-            const directory = await window.electronAPI.selectMusicDirectory();
+            const directory = await window.DataSourceAdapter.selectMusicDirectory();
             if (!directory) {
                 return;
             }
@@ -118,14 +147,68 @@ class ScanService extends ServiceBase {
         }
     }
 
+    async handleClearClick() {
+        // Show confirmation dialog
+        const confirmed = confirm(
+            'Are you sure you want to clear the entire database?\n\n' +
+            'This will permanently delete all scanned tracks, artists, albums, and tags.\n\n' +
+            'This action cannot be undone.'
+        );
+        
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            // Check if DataSourceAdapter is available
+            if (!window.DataSourceAdapter) {
+                alert('Data source not available');
+                return;
+            }
+
+            // Clear the database
+            const success = await window.DataSourceAdapter.clearDatabase();
+            if (!success) {
+                throw new Error('Failed to clear database');
+            }
+            
+            // Reset local stats
+            this.scanStats = {
+                tracks: 0,
+                artists: 0,
+                albums: 0
+            };
+            
+            // Update stats display
+            this.updateStatsDisplay();
+            
+            // Emit events to notify other components
+            this.eventBus.emit('database:cleared');
+            this.eventBus.emit('library:refresh');
+            
+            alert('Database cleared successfully!');
+            
+        } catch (error) {
+            console.error('Error clearing database:', error);
+            alert('Error clearing database: ' + error.message);
+        }
+    }
+
     async startScan(directory) {
         this.isScanning = true;
         this.showProgress();
         
         try {
+            // Clean up any existing listeners and setup new one for this scan
+            if (window.electronAPI) {
+                window.electronAPI.removeAllListeners('scan-progress');
+                window.electronAPI.onScanProgress((progress) => {
+                    this.updateProgress(progress);
+                });
+            }
             
-            // Call Electron IPC to start scanning
-            const results = await window.electronAPI.scanDirectory(directory);
+            // Call DataSourceAdapter to start scanning
+            const results = await window.DataSourceAdapter.scanDirectory(directory);
             
             
             // Update stats
@@ -139,16 +222,14 @@ class ScanService extends ServiceBase {
             this.showScanResults(results);
             
             // Emit event to notify other services
-            if (window.EventBus) {
-                window.EventBus.emit('scan:completed', {
-                    directory,
-                    results,
-                    stats: this.scanStats
-                });
-                
-                // Refresh the music library display
-                window.EventBus.emit('library:refresh');
-            }
+            this.eventBus.emit('scan:completed', {
+                directory,
+                results,
+                stats: this.scanStats
+            });
+            
+            // Refresh the music library display
+            this.eventBus.emit('library:refresh');
             
             // Clear cache and force reload of library data
             if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.clearCache) {
@@ -277,8 +358,8 @@ class ScanService extends ServiceBase {
     // Load existing stats from storage/database
     async loadExistingStats() {
         try {
-            if (window.electronAPI) {
-                const stats = await window.electronAPI.getStats();
+            if (window.DataSourceAdapter) {
+                const stats = await window.DataSourceAdapter.getStats();
                 this.scanStats = stats;
                 this.updateStatsDisplay();
             }

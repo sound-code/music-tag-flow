@@ -242,6 +242,11 @@ class Application {
                 }
             }
             
+            // Initialize LibraryToggle
+            if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {
+                LibraryToggle.init();
+            }
+            
         } catch (error) {
             // Don't throw - app can still work with services
         }

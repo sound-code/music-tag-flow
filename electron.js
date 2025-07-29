@@ -109,14 +109,14 @@ ipcMain.handle('scan-directory', async (event, directory) => {
 // Get library statistics
 ipcMain.handle('get-stats', async () => {
   if (!musicLibrary || !musicLibrary.isReady()) {
-    return { tracks: 0, artists: 0, albums: 0 };
+    return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
   }
   
   try {
     return await musicLibrary.getStats();
   } catch (error) {
     console.error('Error getting stats:', error);
-    return { tracks: 0, artists: 0, albums: 0 };
+    return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
   }
 });
 
