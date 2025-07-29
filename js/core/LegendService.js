@@ -175,9 +175,13 @@ class LegendService extends ServiceBase {
                 categorizedTags = await window.DataSourceAdapter.getTagsByCategory();
                 console.log('🎨 Raw categorized tags:', categorizedTags);
                 
-                // If no tags from database, use fallback demo data
-                if (Object.keys(categorizedTags).length === 0) {
-                    console.log('🎨 No database tags, using fallback demo data...');
+                // If database has only technical tags, use fallback demo data
+                const hasMusicTags = Object.keys(categorizedTags).some(category => 
+                    ['emotion', 'energy', 'mood', 'style', 'genre', 'vibe', 'tempo', 'intensity', 'rating', 'occasion', 'weather'].includes(category)
+                );
+                
+                if (!hasMusicTags) {
+                    console.log('🎨 Database has only technical tags, using fallback demo data for better UX...');
                     categorizedTags = this.getFallbackTags();
                 }
             } else {
