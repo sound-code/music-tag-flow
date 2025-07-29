@@ -120,8 +120,12 @@ class LegendService extends ServiceBase {
             const categorizedTags = await this.getCategorizedTags();
             this.setState('legend.categories', categorizedTags);
             
-            // Update UI
-            this.renderLegend(categorizedTags);
+            // Update UI through UI handler
+            if (window.LegendUIHandler) {
+                window.LegendUIHandler.renderLegend(categorizedTags, (legendItem, category, tags) => {
+                    this.handleCategoryClick(legendItem, category, tags);
+                });
+            }
             
             // Emit refresh event
             this.emitEvent('legend:refreshed', {
@@ -191,99 +195,6 @@ class LegendService extends ServiceBase {
         }
     }
 
-    /**
-     * Render legend in the DOM
-     * @param {Object} categorizedTags - Tags grouped by category
-     */
-    renderLegend(categorizedTags) {
-        const legendContainer = document.querySelector('.color-legend');
-        if (!legendContainer) {
-            return;
-        }
-
-        // Preserve existing header or create new one
-        const header = legendContainer.querySelector('h4');
-        const headerText = header ? header.textContent : 'Node Colors';
-        
-        // Clear existing content
-        legendContainer.innerHTML = '';
-        
-        // Recreate header
-        const newHeader = document.createElement('h4');
-        newHeader.textContent = headerText;
-        legendContainer.appendChild(newHeader);
-
-        // Create legend items container with original structure
-        const itemsContainer = document.createElement('div');
-        itemsContainer.className = 'legend-items';
-        legendContainer.appendChild(itemsContainer);
-
-        // Render each category without animation delay
-        Object.entries(categorizedTags).forEach(([category, tags]) => {
-            this.renderLegendItem(itemsContainer, category, tags);
-        });
-
-        // Show total count
-        const totalTags = Object.values(categorizedTags).reduce((sum, tags) => sum + tags.length, 0);
-        if (totalTags > 0) {
-            const totalInfo = document.createElement('div');
-            totalInfo.className = 'legend-total';
-            totalInfo.textContent = `${Object.keys(categorizedTags).length} categories, ${totalTags} tags`;
-            legendContainer.appendChild(totalInfo);
-        }
-        
-        // Notify UI.js that legend has been rendered so it can attach event handlers
-        this.emitEvent('legend:rendered', {
-            categories: Object.keys(categorizedTags),
-            totalItems: Object.keys(categorizedTags).length
-        });
-        
-        // Also try direct global EventBus as fallback
-        if (typeof window !== 'undefined' && window.EventBus) {
-            window.EventBus.emit('legend:rendered', {
-                categories: Object.keys(categorizedTags),
-                totalItems: Object.keys(categorizedTags).length
-            });
-        }
-        
-        // Direct fallback - call UI.js directly if available
-        setTimeout(() => {
-            if (typeof window !== 'undefined' && window.UI && window.UI.attachLegendEventHandlers) {
-                window.UI.attachLegendEventHandlers();
-            }
-        }, 100);
-    }
-
-    /**
-     * Render a legend item in the original format with hover functionality
-     * @param {HTMLElement} container - Container element
-     * @param {string} category - Category name
-     * @param {Array} tags - Array of tag values
-     */
-    renderLegendItem(container, category, tags) {
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        legendItem.dataset.category = category;
-        // Store tags in data attribute for hover popup
-        legendItem.dataset.tags = JSON.stringify(tags);
-
-        // Color indicator with original class structure
-        const colorIndicator = document.createElement('div');
-        colorIndicator.className = `legend-color legend-${category}`;
-        
-        // Category name
-        const categoryName = document.createElement('span');
-        categoryName.textContent = this.getCategoryDisplayName(category);
-        
-        // Append to item
-        legendItem.appendChild(colorIndicator);
-        legendItem.appendChild(categoryName);
-
-        // Don't add event handlers here - let UI.js handle all legend interactions
-        // This maintains compatibility with existing multi-tag selection and hover effects
-        
-        container.appendChild(legendItem);
-    }
 
     /**
      * Handle category click in legend
@@ -292,29 +203,26 @@ class LegendService extends ServiceBase {
      * @param {Array} tags - Tags for this category
      */
     handleCategoryClick(legendItem, category, tags) {
-        // Toggle active state
-        const isActive = legendItem.classList.contains('legend-active');
-        
-        // Remove active from all items
-        document.querySelectorAll('.legend-item').forEach(item => {
-            item.classList.remove('legend-active');
-        });
-        
-        if (!isActive) {
-            // Add active to clicked item
-            legendItem.classList.add('legend-active');
-            
-            // Emit category selection event
-            this.emitEvent('legend:category-selected', {
-                category: category,
-                tags: tags,
-                element: legendItem
-            });
-        } else {
-            // If was active, deselect
-            this.emitEvent('legend:category-deselected', {
-                category: category
-            });
+        if (window.LegendUIHandler) {
+            window.LegendUIHandler.handleCategoryClick(
+                legendItem,
+                category,
+                tags,
+                (cat, tags, element) => {
+                    // Category selected
+                    this.emitEvent('legend:category-selected', {
+                        category: cat,
+                        tags: tags,
+                        element: element
+                    });
+                },
+                (cat) => {
+                    // Category deselected
+                    this.emitEvent('legend:category-deselected', {
+                        category: cat
+                    });
+                }
+            );
         }
     }
 
@@ -341,16 +249,9 @@ class LegendService extends ServiceBase {
      */
     updateCategorySelection() {
         const selectedCategory = this.getState('legend.selectedCategory');
-        const categoryBoxes = document.querySelectorAll('.legend-category-box');
-        
-        categoryBoxes.forEach(box => {
-            const category = box.dataset.category;
-            if (category === selectedCategory) {
-                box.classList.add('selected');
-            } else {
-                box.classList.remove('selected');
-            }
-        });
+        if (window.LegendUIHandler) {
+            window.LegendUIHandler.updateCategorySelection(selectedCategory);
+        }
     }
 
     /**
@@ -358,41 +259,24 @@ class LegendService extends ServiceBase {
      */
     toggleLegend() {
         const isVisible = this.getState('legend.isVisible');
-        this.setState('legend.isVisible', !isVisible);
         
-        const legendContainer = document.querySelector('.color-legend');
-        if (legendContainer) {
-            legendContainer.style.display = isVisible ? 'none' : 'block';
+        if (window.LegendUIHandler) {
+            const newVisibility = window.LegendUIHandler.toggleLegendVisibility(isVisible);
+            this.setState('legend.isVisible', newVisibility);
         }
     }
 
     /**
      * Get user-friendly display name for category
      * @param {string} category - Category key
-     * @returns {string} Display name
+     * @returns {string} Display name  
+     * @deprecated Use LegendUIHandler.getCategoryDisplayName instead
      */
     getCategoryDisplayName(category) {
-        const displayNames = {
-            other: 'Technical',
-            format: 'Format',
-            quality: 'Quality', 
-            bitrate: 'Bitrate',
-            source: 'Source',
-            era: 'Era',
-            emotion: 'Emotion',
-            energy: 'Energy',
-            mood: 'Mood',
-            style: 'Style',
-            genre: 'Genre',
-            intensity: 'Intensity',
-            tempo: 'Tempo',
-            vibe: 'Vibe',
-            rating: 'Rating',
-            occasion: 'Occasion',
-            weather: 'Weather'
-        };
-        
-        return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+        if (window.LegendUIHandler) {
+            return window.LegendUIHandler.getCategoryDisplayName(category);
+        }
+        return category.charAt(0).toUpperCase() + category.slice(1);
     }
 
     /**
