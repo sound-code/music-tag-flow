@@ -251,7 +251,16 @@ const UI = {
             intensity: ['powerful', 'emotional', 'deep', 'fierce', 'determined', 'gentle'],
             rating: ['hit', 'viral', 'beautiful', 'anthem', 'unstoppable', 'classic'],
             tempo: ['ballad', 'anthem', 'hypnotic', 'driving', 'perfect', 'slow'],
-            vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic']
+            vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic'],
+            // Technical categories
+            format: ['flac', 'mp3', 'wav', 'aac', 'm4a', 'ogg'],
+            quality: ['lossless', 'high', 'cd', 'lossy', 'studio', 'master'],
+            bitrate: ['320k', '256k', '192k', '128k', 'variable', '1411k'],
+            source: ['ffprobe', 'musicbrainz', 'lastfm', 'spotify', 'local', 'streaming'],
+            // Additional musical categories
+            genre: ['rock', 'jazz', 'classical', 'electronic', 'folk', 'blues'],
+            era: ['modern', '2010s', '2000s', '90s', '80s', 'classic'],
+            other: ['live', 'remix', 'acoustic', 'instrumental', 'cover', 'original']
         };
 
         // Wait for DOM to be ready, then add event listeners  
@@ -411,8 +420,26 @@ const UI = {
      * @param {Event} event - Mouse event for positioning
      */
     showLegendPopup(category, event) {
-        const tags = this.categoryTags[category];
-        if (!tags) {
+        // First try to get tags from the legend item's data attribute (real tags from database)
+        let tags = null;
+        const legendItem = event.target.closest('.legend-item');
+        if (legendItem && legendItem.dataset.tags) {
+            try {
+                tags = JSON.parse(legendItem.dataset.tags);
+                console.log(`🎨 Using real tags from data attribute for ${category}:`, tags);
+            } catch (e) {
+                console.warn('🎨 Failed to parse tags from data attribute:', e);
+            }
+        }
+        
+        // Fallback to hardcoded tags if no real tags available
+        if (!tags || tags.length === 0) {
+            tags = this.categoryTags[category];
+            console.log(`🎨 Using fallback tags for ${category}:`, tags);
+        }
+        
+        if (!tags || tags.length === 0) {
+            console.warn(`🎨 No tags available for category ${category}`);
             return;
         }
 

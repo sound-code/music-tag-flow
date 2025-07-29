@@ -307,6 +307,8 @@ class LegendService extends ServiceBase {
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.dataset.category = category;
+        // Store tags in data attribute for hover popup
+        legendItem.dataset.tags = JSON.stringify(tags);
 
         // Color indicator with original class structure
         const colorIndicator = document.createElement('div');
