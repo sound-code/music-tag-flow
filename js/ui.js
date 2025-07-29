@@ -260,13 +260,28 @@ const UI = {
         }, 100);
         
         // Listen for legend re-rendering from LegendService
+        console.log('🎨 UI.js setting up EventBus listener...');
+        console.log('🎨 EventBus available:', typeof EventBus !== 'undefined');
+        console.log('🎨 window.EventBus available:', typeof window !== 'undefined' && typeof window.EventBus !== 'undefined');
+        
         if (typeof EventBus !== 'undefined' && EventBus.on) {
-            EventBus.on('legend:rendered', () => {
-                console.log('🎨 UI.js received legend:rendered event - reattaching handlers');
+            console.log('🎨 Registering EventBus listener for legend:rendered');
+            EventBus.on('legend:rendered', (data) => {
+                console.log('🎨 UI.js received legend:rendered event via EventBus:', data);
                 setTimeout(() => {
                     this.attachLegendEventHandlers();
                 }, 200); // Small delay to ensure DOM is updated
             });
+        } else if (typeof window !== 'undefined' && window.EventBus && window.EventBus.on) {
+            console.log('🎨 Registering window.EventBus listener for legend:rendered');
+            window.EventBus.on('legend:rendered', (data) => {
+                console.log('🎨 UI.js received legend:rendered event via window.EventBus:', data);
+                setTimeout(() => {
+                    this.attachLegendEventHandlers();
+                }, 200);
+            });
+        } else {
+            console.warn('🎨 No EventBus available for legend:rendered listener');
         }
     },
     
@@ -349,7 +364,6 @@ const UI = {
                     this.hideLegendPopup();
                 }, 100);
             });
-        }, 100);
 
         // Aggiungi event listeners globali per rimuovere l'evidenziazione
         document.addEventListener('click', (e) => {

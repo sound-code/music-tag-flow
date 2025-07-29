@@ -277,6 +277,23 @@ class LegendService extends ServiceBase {
             totalItems: Object.keys(categorizedTags).length
         });
         console.log('🎨 Emitted legend:rendered event for UI.js integration');
+        
+        // Also try direct global EventBus as fallback
+        if (typeof window !== 'undefined' && window.EventBus) {
+            window.EventBus.emit('legend:rendered', {
+                categories: Object.keys(categorizedTags),
+                totalItems: Object.keys(categorizedTags).length
+            });
+            console.log('🎨 Also emitted via global EventBus');
+        }
+        
+        // Direct fallback - call UI.js directly if available
+        setTimeout(() => {
+            if (typeof window !== 'undefined' && window.UI && window.UI.attachLegendEventHandlers) {
+                console.log('🎨 Calling UI.attachLegendEventHandlers directly as fallback');
+                window.UI.attachLegendEventHandlers();
+            }
+        }, 300);
     }
 
     /**
