@@ -1002,7 +1002,15 @@ const UI = {
      */
     toggleArtist(header) {
         const artistFolder = header.parentElement;
+        const icon = header.querySelector('.artist-icon');
         artistFolder.classList.toggle('expanded');
+        
+        // Update icon text
+        if (artistFolder.classList.contains('expanded')) {
+            icon.textContent = '−';
+        } else {
+            icon.textContent = '+';
+        }
     },
 
     /**
@@ -1011,7 +1019,15 @@ const UI = {
      */
     toggleAlbum(header) {
         const albumFolder = header.parentElement;
+        const icon = header.querySelector('.album-icon');
         albumFolder.classList.toggle('expanded');
+        
+        // Update icon text
+        if (albumFolder.classList.contains('expanded')) {
+            icon.textContent = '−';
+        } else {
+            icon.textContent = '+';
+        }
     }
 };
 

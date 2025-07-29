@@ -34,8 +34,35 @@ body {
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     padding: 24px 20px;
     z-index: 100;
-    overflow-y: auto;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Library Content with Scroll */
+.library-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    max-height: calc(100vh - 200px);
+}
+
+.library-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.library-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.library-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.library-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .library-header {
@@ -505,12 +532,12 @@ body {
 
 .artist-icon {
     font-size: 12px;
-    transition: transform 0.2s ease;
+    font-weight: bold;
     color: #9ca3af;
-}
-
-.artist-folder.expanded .artist-icon {
-    transform: rotate(90deg);
+    width: 12px;
+    display: inline-block;
+    text-align: center;
+    font-family: monospace;
 }
 
 .artist-name {
@@ -556,12 +583,12 @@ body {
 
 .album-icon {
     font-size: 10px;
-    transition: transform 0.2s ease;
+    font-weight: bold;
     color: #6b7280;
-}
-
-.album-folder.expanded .album-icon {
-    transform: rotate(90deg);
+    width: 10px;
+    display: inline-block;
+    text-align: center;
+    font-family: monospace;
 }
 
 .album-name {

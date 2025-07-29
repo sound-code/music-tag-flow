@@ -272,7 +272,7 @@ const Utils = {
                     artistHeader.className = 'artist-header';
                     artistHeader.onclick = function() { toggleArtist(this); };
                     artistHeader.innerHTML = `
-                        <span class="artist-icon">▶</span>
+                        <span class="artist-icon">+</span>
                         <span class="artist-name">${artist.name}</span>
                         <span class="artist-count">${artist.albums.length} albums</span>
                     `;
@@ -294,7 +294,7 @@ const Utils = {
                         albumHeader.className = 'album-header';
                         albumHeader.onclick = function() { toggleAlbum(this); };
                         albumHeader.innerHTML = `
-                            <span class="album-icon">▶</span>
+                            <span class="album-icon">+</span>
                             <span class="album-name">${album.name}</span>
                             <span class="album-count">${album.tracks.length} tracks</span>
                         `;
