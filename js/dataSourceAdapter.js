@@ -1081,10 +1081,7 @@ class DatabaseAdapter {
             uiTags.push(...tags);
         }
         
-        // Add source and quality tags (keep as fallback/additional tags)
-        if (tags.includes('source:ffprobe') && !uiTags.includes('source:database')) {
-            uiTags.push('source:database');
-        }
+        // Remove synthetic source tags - not useful for music categorization
         
         // Add genre if available
         if (dbTrack.genre) {
