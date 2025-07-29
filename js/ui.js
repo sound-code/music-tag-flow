@@ -199,7 +199,7 @@ const UI = {
 
         // TOOLTIP HANDLING DISABLED - now handled by UIService to avoid conflicts
         // UIService handles all tooltips for track-item and track-list-item
-        // CSS hover handles track-node tooltips
+        // JavaScript hover handles track-node tooltips with delays
 
         document.addEventListener('mouseout', (e) => {
             const trackItem = e.target.closest('.track-item, .track-list-item, .track-node');
@@ -239,6 +239,7 @@ const UI = {
         // Add timeout management for legend popup
         this.legendShowTimeout = null;
         this.legendHideTimeout = null;
+        
 
         // NO HARDCODED TAGS - All tags come from database
 
@@ -468,6 +469,7 @@ const UI = {
             }, 200);
         }
     },
+
 
     /**
      * Update legend popup position

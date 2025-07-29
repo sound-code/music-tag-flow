@@ -31,7 +31,9 @@ class UIService extends ServiceBase {
             show: null,
             hide: null,
             legendShow: null,
-            legendHide: null
+            legendHide: null,
+            trackNodeShow: null,
+            trackNodeHide: null
         };
         
         // Validation rules
@@ -92,6 +94,7 @@ class UIService extends ServiceBase {
 
         // Initialize UI components
         this.initializeTooltips();
+        this.initializeTrackNodeTooltips();
         // NOTE: Legend popups handled by legacy ui.js to avoid duplication
         // this.initializeLegendPopups(); 
         this.initializeVisualEffects();
@@ -468,6 +471,89 @@ class UIService extends ServiceBase {
     refreshTooltipListeners() {
         // The mouseover/mouseout listeners are already set on document
         // so they will catch new elements automatically
+    },
+
+    /**
+     * Initialize track node tooltip functionality
+     */
+    initializeTrackNodeTooltips() {
+        // Check if DOM is ready
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        // Add event delegation for track nodes
+        document.addEventListener('mouseenter', (e) => {
+            const trackNode = e.target.closest('.track-node');
+            if (trackNode) {
+                this.showTrackNodeTooltip(trackNode);
+            }
+        }, true);
+
+        document.addEventListener('mouseleave', (e) => {
+            const trackNode = e.target.closest('.track-node');
+            if (trackNode) {
+                this.hideTrackNodeTooltip(trackNode);
+            }
+        }, true);
+    },
+
+    /**
+     * Show track node tooltip with delay
+     */
+    showTrackNodeTooltip(trackNode) {
+        // Clear any existing hide timeout
+        if (this.timeouts.trackNodeHide) {
+            clearTimeout(this.timeouts.trackNodeHide);
+            this.timeouts.trackNodeHide = null;
+        }
+
+        // Show tooltip with delay
+        this.timeouts.trackNodeShow = setTimeout(() => {
+            const tagsContainer = trackNode.querySelector('.tags-container');
+            if (tagsContainer) {
+                tagsContainer.classList.add('show-tooltip');
+                
+                // Add hover events to tags container to keep it visible
+                const mouseenterHandler = () => {
+                    if (this.timeouts.trackNodeHide) {
+                        clearTimeout(this.timeouts.trackNodeHide);
+                        this.timeouts.trackNodeHide = null;
+                    }
+                };
+
+                const mouseleaveHandler = () => {
+                    this.hideTrackNodeTooltip(trackNode);
+                };
+
+                // Remove existing listeners to avoid duplicates
+                tagsContainer.removeEventListener('mouseenter', mouseenterHandler);
+                tagsContainer.removeEventListener('mouseleave', mouseleaveHandler);
+                
+                // Add new listeners
+                tagsContainer.addEventListener('mouseenter', mouseenterHandler);
+                tagsContainer.addEventListener('mouseleave', mouseleaveHandler);
+            }
+        }, this.config.tooltipDelay); // Use configured delay
+    },
+
+    /**
+     * Hide track node tooltip with delay
+     */
+    hideTrackNodeTooltip(trackNode) {
+        // Clear any existing show timeout
+        if (this.timeouts.trackNodeShow) {
+            clearTimeout(this.timeouts.trackNodeShow);
+            this.timeouts.trackNodeShow = null;
+        }
+
+        // Hide tooltip with delay
+        this.timeouts.trackNodeHide = setTimeout(() => {
+            const tagsContainer = trackNode.querySelector('.tags-container');
+            if (tagsContainer) {
+                tagsContainer.classList.remove('show-tooltip');
+            }
+        }, this.config.tooltipHideDelay); // Use configured delay
     }
 
     /**
