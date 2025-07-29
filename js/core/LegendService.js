@@ -113,8 +113,9 @@ class LegendService extends ServiceBase {
             console.log('🎨 LegendService initializing legend display...');
             // Use setTimeout to avoid async issues with ServiceBase initialization
             setTimeout(() => {
+                console.log('🎨 Auto-refreshing legend after initialization...');
                 this.refreshLegend();
-            }, 1000);
+            }, 2000); // Increased timeout
             
             console.log('🎨 LegendService.initialize() completed successfully');
         } catch (error) {
@@ -132,10 +133,13 @@ class LegendService extends ServiceBase {
             console.log('🎨 Refreshing legend...');
             const categorizedTags = await this.getCategorizedTags();
             console.log('🎨 Got categorized tags:', categorizedTags);
+            console.log('🎨 Number of categories:', Object.keys(categorizedTags).length);
             this.setState('legend.categories', categorizedTags);
             
             // Update UI
+            console.log('🎨 About to render legend...');
             this.renderLegend(categorizedTags);
+            console.log('🎨 Legend rendering completed');
             
             // Emit refresh event
             this.emitEvent('legend:refreshed', {
@@ -216,31 +220,39 @@ class LegendService extends ServiceBase {
      * @param {Object} categorizedTags - Tags grouped by category
      */
     renderLegend(categorizedTags) {
+        console.log('🎨 renderLegend called with:', Object.keys(categorizedTags));
         const legendContainer = document.querySelector('.color-legend');
         if (!legendContainer) {
-            console.warn('Legend container not found');
+            console.warn('🎨 Legend container not found');
             return;
         }
+        console.log('🎨 Legend container found');
 
         // Preserve existing header or create new one
         const header = legendContainer.querySelector('h4');
         const headerText = header ? header.textContent : 'Node Colors';
+        console.log('🎨 Header text:', headerText);
         
         // Clear existing content
         legendContainer.innerHTML = '';
+        console.log('🎨 Cleared existing content');
         
         // Recreate header
         const newHeader = document.createElement('h4');
         newHeader.textContent = headerText;
         legendContainer.appendChild(newHeader);
+        console.log('🎨 Header recreated');
 
         // Create legend items container with original structure
         const itemsContainer = document.createElement('div');
         itemsContainer.className = 'legend-items';
         legendContainer.appendChild(itemsContainer);
+        console.log('🎨 Items container created');
 
         // Render each category in the original format
+        console.log('🎨 About to render', Object.keys(categorizedTags).length, 'categories');
         Object.entries(categorizedTags).forEach(([category, tags], index) => {
+            console.log(`🎨 Rendering category ${index + 1}/${Object.keys(categorizedTags).length}: ${category} (${tags.length} tags)`);
             setTimeout(() => {
                 this.renderLegendItem(itemsContainer, category, tags);
             }, index * this.config.animationDelay);
@@ -263,6 +275,7 @@ class LegendService extends ServiceBase {
      * @param {Array} tags - Array of tag values
      */
     renderLegendItem(container, category, tags) {
+        console.log(`🎨 renderLegendItem: ${category} with ${tags.length} tags`);
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.dataset.category = category;
@@ -270,10 +283,12 @@ class LegendService extends ServiceBase {
         // Color indicator with original class structure
         const colorIndicator = document.createElement('div');
         colorIndicator.className = `legend-color legend-${category}`;
+        console.log(`🎨 Color indicator classes: ${colorIndicator.className}`);
         
         // Category name
         const categoryName = document.createElement('span');
         categoryName.textContent = this.getCategoryDisplayName(category);
+        console.log(`🎨 Category display name: ${categoryName.textContent}`);
         
         // Append to item
         legendItem.appendChild(colorIndicator);
@@ -284,7 +299,9 @@ class LegendService extends ServiceBase {
             this.handleCategoryClick(legendItem, category, tags);
         });
 
+        console.log(`🎨 Appending legend item for ${category} to container`);
         container.appendChild(legendItem);
+        console.log(`🎨 Legend item for ${category} added successfully`);
     }
 
     /**
