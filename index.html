@@ -52,28 +52,7 @@
                         <div class="progress-text" id="progressText">Scanning...</div>
                     </div>
                     <div class="scan-stats" id="scanStats" style="display: block;">
-                        <div class="stats-header">
-                            <h4>Database Statistics</h4>
-                            <button class="trash-button" id="clearButton" title="Clear Database">
-                                🗑️
-                            </button>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Tracks:</span>
-                            <span class="stat-value" id="tracksCount">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Artists:</span>
-                            <span class="stat-value" id="artistsCount">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Albums:</span>
-                            <span class="stat-value" id="albumsCount">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Unique Tags:</span>
-                            <span class="stat-value" id="tagsCount">0</span>
-                        </div>
+                        <!-- Statistics will be rendered by StatsComponent -->
                     </div>
                     
                     <!-- Tags List Section -->
@@ -181,6 +160,8 @@
     <script src="js/core/DragDropService.js"></script>
     <script src="js/core/ScanService.js"></script>
     <script src="js/core/LegendService.js"></script>
+    <script src="js/core/StatsService.js"></script>
+    <script src="js/components/StatsComponent.js"></script>
     <script src="js/core/ServiceManager.js"></script>
     
     <!-- Application State -->
@@ -202,29 +183,6 @@
     <script src="js/ui/LibraryToggle.js"></script>
     <script src="js/main.js"></script>
     
-    <!-- Add refresh button for legend testing -->
-    <script>
-        // Add refresh button for testing
-        setTimeout(() => {
-            const legendContainer = document.querySelector('.color-legend');
-            if (legendContainer) {
-                const refreshBtn = document.createElement('button');
-                refreshBtn.textContent = '🔄 Refresh Legend';
-                refreshBtn.style.cssText = 'margin: 5px 0; padding: 5px 10px; font-size: 12px;';
-                refreshBtn.onclick = () => {
-                    // Try to get legend service from App
-                    if (window.App && window.App.getService) {
-                        const legendService = window.App.getService('legend');
-                        if (legendService) {
-                            legendService.forceRefreshLegend();
-                        }
-                    }
-                };
-                legendContainer.appendChild(refreshBtn);
-            }
-        }, 3000); // Wait longer for app to initialize
-
-    </script>
     
 </body>
 </html> 

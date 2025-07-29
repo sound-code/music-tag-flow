@@ -14,19 +14,7 @@ window.LibraryToggle = (() => {
         
         toggleButton.addEventListener('click', toggleView);
         
-        // Listen for scan completion and database clear to update stats
-        if (window.App && window.App.eventBus) {
-            window.App.eventBus.on('scan:completed', () => {
-                updateStats();
-            });
-            
-            window.App.eventBus.on('database:cleared', () => {
-                updateStats();
-            });
-        }
-        
-        // Load stats when the component initializes
-        updateStats();
+        // Stats are now handled by StatsService
     }
     
     function toggleView() {
@@ -45,7 +33,6 @@ window.LibraryToggle = (() => {
             if (playlistPhasesLink) playlistPhasesLink.style.display = 'none';
             toggleButton.querySelector('.toggle-icon').textContent = '📚';
             toggleButton.title = 'Back to Library';
-            updateStats();
             
             // Re-initialize scan button when showing scan view
             // Emit event to notify that scan view is now visible
@@ -85,8 +72,18 @@ window.LibraryToggle = (() => {
                                         });
                                     }
                                     
-                                    await window.DataSourceAdapter.scanDirectory(directory);
-                                    updateStats();
+                                    const results = await window.DataSourceAdapter.scanDirectory(directory);
+                                    
+                                    // Emit event for StatsComponent to update stats
+                                    if (window.App && window.App.eventBus) {
+                                        window.App.eventBus.emit('scan:completed', {
+                                            directory,
+                                            results
+                                        });
+                                    }
+                                    
+                                    // Update tags list after scan
+                                    updateTagsList();
                                 }
                                 
                                 // Hide progress bar
@@ -121,7 +118,7 @@ window.LibraryToggle = (() => {
                             try {
                                 const success = await window.DataSourceAdapter.clearDatabase();
                                 if (success) {
-                                    updateStats();
+                                    // Stats updated by StatsService via events
                                     alert('Database cleared successfully!');
                                 } else {
                                     alert('Failed to clear database');
@@ -145,28 +142,21 @@ window.LibraryToggle = (() => {
         }
     }
     
-    async function updateStats() {
+    async function updateTagsList() {
         try {
-            // Get stats from the data source
+            // Get only uniqueTags for tags list rendering
             const stats = await window.DataSourceAdapter.getStats();
             
-            // Update the UI
-            document.getElementById('tracksCount').textContent = stats.tracks || 0;
-            document.getElementById('artistsCount').textContent = stats.artists || 0;
-            document.getElementById('albumsCount').textContent = stats.albums || 0;
-            
-            // Update tags count and store unique tags
             if (stats.uniqueTags) {
                 uniqueTags = stats.uniqueTags;
-                document.getElementById('tagsCount').textContent = uniqueTags.length;
-                updateTagsList();
+                renderTagsList();
             }
         } catch (error) {
-            console.error('Failed to update stats:', error);
+            console.error('Failed to update tags list:', error);
         }
     }
     
-    function updateTagsList() {
+    function renderTagsList() {
         const listContent = document.getElementById('tagsListContent');
         if (!listContent) return;
         
@@ -211,6 +201,6 @@ window.LibraryToggle = (() => {
     
     return {
         init,
-        updateStats
+        updateTagsList
     };
 })();

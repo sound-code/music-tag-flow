@@ -290,21 +290,27 @@ const DataSourceAdapter = {
 
     /**
      * Get database statistics
-     * @returns {Promise<Object>} Stats object with tracks, artists, albums counts
+     * @returns {Promise<Object>} Stats object with tracks, artists, albums, categories counts
      */
     async getStats() {
         // Try database adapter first if available
         const dbAdapter = this.activeAdapters.get('database');
         if (dbAdapter && dbAdapter.getStats) {
             try {
-                return await dbAdapter.getStats();
+                const stats = await dbAdapter.getStats();
+                // Calculate categories count
+                const categorizedTags = await this.getTagsByCategory();
+                return {
+                    ...stats,
+                    categories: Object.keys(categorizedTags).length
+                };
             } catch (error) {
                 console.error('Error getting stats from database:', error);
             }
         }
         
         // Return default stats if no database adapter
-        return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
+        return { tracks: 0, artists: 0, albums: 0, categories: 0, uniqueTags: [] };
     },
 
     /**
@@ -543,10 +549,18 @@ const DataSourceAdapter = {
         if (dbAdapter && dbAdapter.getAvailableTags) {
             try {
                 const allTags = await dbAdapter.getAvailableTags();
-                const grouped = tagUtils.groupTagsByType(allTags);
-                return grouped;
+                
+                // Check if tagUtils is available
+                const utils = window.tagUtils || tagUtils;
+                if (utils && utils.groupTagsByType) {
+                    const grouped = utils.groupTagsByType(allTags);
+                    return grouped;
+                } else {
+                    console.error('tagUtils not available for grouping');
+                    return {};
+                }
             } catch (error) {
-                // Error getting tags by category from database
+                console.error('Error getting tags by category from database:', error);
             }
         }
         
@@ -1129,14 +1143,31 @@ class DatabaseAdapter {
 
     async getStats() {
         if (!this.initialized || !window.electronAPI) {
-            return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
+            return { tracks: 0, artists: 0, albums: 0, categories: 0, uniqueTags: [] };
         }
 
         try {
-            return await window.electronAPI.getStats();
+            const stats = await window.electronAPI.getStats();
+            // Calculate categories count from uniqueTags
+            const categories = new Set();
+            if (stats.uniqueTags && Array.isArray(stats.uniqueTags)) {
+                stats.uniqueTags.forEach(tag => {
+                    const utils = window.tagUtils || (typeof tagUtils !== 'undefined' ? tagUtils : null);
+                    if (utils && utils.getTagType) {
+                        const category = utils.getTagType(tag);
+                        if (category && category !== '') {
+                            categories.add(category);
+                        }
+                    }
+                });
+            }
+            return {
+                ...stats,
+                categories: categories.size
+            };
         } catch (error) {
             console.error('Error getting database stats:', error);
-            return { tracks: 0, artists: 0, albums: 0, uniqueTags: [] };
+            return { tracks: 0, artists: 0, albums: 0, categories: 0, uniqueTags: [] };
         }
     }
 

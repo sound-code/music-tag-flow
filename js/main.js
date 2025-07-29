@@ -41,6 +41,8 @@ class Application {
                 type: 'success'
             });
             
+            // Statistics are now handled by StatsService automatically
+            
         } catch (error) {
             
             // Fallback to legacy notification
@@ -169,6 +171,8 @@ class Application {
             });
         }
         
+        // StatsService replaced by StatsComponent
+        
         // Initialize all services
         try {
             await this.serviceManager.initializeServices();
@@ -186,6 +190,8 @@ class Application {
         this.eventBus.on('app:shutdown', () => {
             this.shutdown();
         });
+        
+        // Statistics updates are now handled by StatsService
         
         // Legacy bridge events
         this.eventBus.on('legacy:notification', (data) => {
@@ -258,6 +264,12 @@ class Application {
                 LibraryToggle.init();
             }
             
+            // Initialize StatsComponent
+            if (typeof StatsComponent !== 'undefined') {
+                this.statsComponent = new StatsComponent('scanStats', this.eventBus);
+                window.GlobalStatsComponent = this.statsComponent;
+            }
+            
         } catch (error) {
             // Don't throw - app can still work with services
         }
@@ -297,6 +309,7 @@ class Application {
             } : null
         };
     }
+
 
     /**
      * Graceful application shutdown

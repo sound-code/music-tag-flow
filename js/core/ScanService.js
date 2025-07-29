@@ -5,14 +5,19 @@
 
 class ScanService extends ServiceBase {
     constructor(stateManager, eventBus) {
-        super(stateManager, eventBus);
-        
+        // Initialize properties BEFORE calling super() since super() calls initialize()
         this.isScanning = false;
-        this.scanStats = {
-            tracks: 0,
-            artists: 0,
-            albums: 0
+        
+        // Initialize elements object immediately
+        this.elements = {
+            scanButton: null,
+            scanProgress: null,
+            progressFill: null,
+            progressText: null,
+            scanStats: null
         };
+        
+        super(stateManager, eventBus);
         
         this.setupEventListeners();
         this.setupUI();
@@ -22,20 +27,19 @@ class ScanService extends ServiceBase {
         // Initialize elements immediately if DOM is ready
         if (document.readyState !== 'loading') {
             this.initializeElements();
-            this.loadExistingStats();
         }
     }
 
     setupEventListeners() {
         // Setup scan button click handler - try immediately and on DOM ready
         this.setupScanButton();
-        this.setupClearButton();
+        // Clear button now handled by StatsComponent
         
         // Listen for scan view being shown
         this.eventBus.on('scan:viewShown', () => {
             this.initializeElements();
             this.setupScanButton();
-            this.setupClearButton();
+            // Clear button handled by StatsComponent
         });
         
         // Also try when DOM is fully loaded as fallback
@@ -69,39 +73,10 @@ class ScanService extends ServiceBase {
         }
     }
 
-    setupClearButton() {
-        const clearButton = document.getElementById('clearButton');
-        
-        if (clearButton) {
-            // Remove existing listener if any
-            const boundHandleClearClick = this.handleClearClick.bind(this);
-            clearButton.removeEventListener('click', boundHandleClearClick);
-            
-            // Add new listener
-            clearButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.handleClearClick();
-            });
-        }
-    }
-
-
     setupUI() {
-        this.elements = {
-            scanButton: null,
-            scanProgress: null,
-            progressFill: null,
-            progressText: null,
-            scanStats: null,
-            tracksCount: null,
-            artistsCount: null,
-            albumsCount: null
-        };
-
         // Initialize elements when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             this.initializeElements();
-            this.loadExistingStats(); // Load existing stats on startup
         });
     }
 
@@ -111,12 +86,6 @@ class ScanService extends ServiceBase {
         this.elements.progressFill = document.getElementById('progressFill');
         this.elements.progressText = document.getElementById('progressText');
         this.elements.scanStats = document.getElementById('scanStats');
-        this.elements.tracksCount = document.getElementById('tracksCount');
-        this.elements.artistsCount = document.getElementById('artistsCount');
-        this.elements.albumsCount = document.getElementById('albumsCount');
-
-        // Update stats display if we have existing data
-        this.updateStatsDisplay();
     }
 
     async handleScanClick() {
@@ -147,52 +116,6 @@ class ScanService extends ServiceBase {
         }
     }
 
-    async handleClearClick() {
-        // Show confirmation dialog
-        const confirmed = confirm(
-            'Are you sure you want to clear the entire database?\n\n' +
-            'This will permanently delete all scanned tracks, artists, albums, and tags.\n\n' +
-            'This action cannot be undone.'
-        );
-        
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            // Check if DataSourceAdapter is available
-            if (!window.DataSourceAdapter) {
-                alert('Data source not available');
-                return;
-            }
-
-            // Clear the database
-            const success = await window.DataSourceAdapter.clearDatabase();
-            if (!success) {
-                throw new Error('Failed to clear database');
-            }
-            
-            // Reset local stats
-            this.scanStats = {
-                tracks: 0,
-                artists: 0,
-                albums: 0
-            };
-            
-            // Update stats display
-            this.updateStatsDisplay();
-            
-            // Emit events to notify other components
-            this.eventBus.emit('database:cleared');
-            this.eventBus.emit('library:refresh');
-            
-            alert('Database cleared successfully!');
-            
-        } catch (error) {
-            console.error('Error clearing database:', error);
-            alert('Error clearing database: ' + error.message);
-        }
-    }
 
     async startScan(directory) {
         this.isScanning = true;
@@ -211,12 +134,7 @@ class ScanService extends ServiceBase {
             const results = await window.DataSourceAdapter.scanDirectory(directory);
             
             
-            // Update stats
-            this.scanStats = {
-                tracks: results.processed || 0,
-                artists: results.artists || 0,
-                albums: results.albums || 0
-            };
+            // Stats will be updated by StatsService via events
             
             // Show results
             this.showScanResults(results);
@@ -224,8 +142,7 @@ class ScanService extends ServiceBase {
             // Emit event to notify other services
             this.eventBus.emit('scan:completed', {
                 directory,
-                results,
-                stats: this.scanStats
+                results
             });
             
             // Refresh the music library display
@@ -290,9 +207,6 @@ class ScanService extends ServiceBase {
     }
 
     showScanResults(results) {
-        // Update stats display
-        this.updateStatsDisplay();
-        
         // Show stats section
         if (this.elements.scanStats) {
             this.elements.scanStats.style.display = 'block';
@@ -305,18 +219,6 @@ class ScanService extends ServiceBase {
         if (this.elements.progressText) {
             this.elements.progressText.textContent = 
                 `Scan completed! Found ${results.processed} tracks`;
-        }
-    }
-
-    updateStatsDisplay() {
-        if (this.elements.tracksCount) {
-            this.elements.tracksCount.textContent = this.scanStats.tracks;
-        }
-        if (this.elements.artistsCount) {
-            this.elements.artistsCount.textContent = this.scanStats.artists;
-        }
-        if (this.elements.albumsCount) {
-            this.elements.albumsCount.textContent = this.scanStats.albums;
         }
     }
 
@@ -347,25 +249,8 @@ class ScanService extends ServiceBase {
     }
 
     // Public API methods
-    getScanStats() {
-        return { ...this.scanStats };
-    }
-
     isCurrentlyScanning() {
         return this.isScanning;
-    }
-
-    // Load existing stats from storage/database
-    async loadExistingStats() {
-        try {
-            if (window.DataSourceAdapter) {
-                const stats = await window.DataSourceAdapter.getStats();
-                this.scanStats = stats;
-                this.updateStatsDisplay();
-            }
-        } catch (error) {
-            console.error('Error loading existing stats:', error);
-        }
     }
 }
 
