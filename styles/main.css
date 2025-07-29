@@ -889,26 +889,7 @@ body {
     display: none; /* Hide tags by default */
 }
 
-/* CSS hover disabled - now handled by JavaScript for better UX with delays */
-/*
 .track-node:hover .tags-container {
-    display: block;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(15, 15, 35, 0.95);
-    border-radius: 8px;
-    padding: 8px;
-    z-index: 1000;
-    margin-top: 8px;
-    min-width: 200px;
-    max-width: 280px;
-}
-*/
-
-/* JavaScript-managed tooltip styling */
-.track-node .tags-container.show-tooltip {
     display: block;
     position: absolute;
     top: 100%;
