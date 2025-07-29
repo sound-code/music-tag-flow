@@ -4,23 +4,18 @@
  */
 class LegendService extends ServiceBase {
     constructor(stateManager, eventBus) {
-        console.log('🎨 LegendService constructor called');
-        
         try {
-            console.log('🎨 Calling super() with stateManager:', !!stateManager, 'eventBus:', !!eventBus);
             super(stateManager, eventBus);
             
             // Service-specific configuration (MUST be set after super() call)
             this.config = {
-                maxTagsPerCategory: 10, // Limit tags shown per category
+                maxTagsPerCategory: 15, // Increased limit for richer categories
                 showEmptyCategories: false, // Hide categories with no tags
+                minTagsToShow: 1, // Show categories with at least 1 tag
                 refreshInterval: 0, // Auto-refresh disabled for now
                 animationDelay: 100 // Stagger category animation
             };
-            
-            console.log('🎨 LegendService constructor completed successfully');
         } catch (error) {
-            console.error('🎨 Error in LegendService constructor:', error);
             throw error;
         }
         
@@ -41,23 +36,18 @@ class LegendService extends ServiceBase {
      */
     initialize() {
         try {
-            console.log('🎨 LegendService.initialize() starting...');
-            
             // Ensure config is available (ServiceBase calls initialize in constructor)
             if (!this.config) {
-                console.log('🎨 Config not yet available from constructor, using defaults');
                 this.config = {
-                    maxTagsPerCategory: 10,
+                    maxTagsPerCategory: 15,
                     showEmptyCategories: false,
+                    minTagsToShow: 1,
                     refreshInterval: 0,
                     animationDelay: 100
                 };
-            } else {
-                console.log('🎨 Config available from constructor');
             }
             
             // Ensure legend state exists
-            console.log('🎨 Setting up legend state...');
             if (!this.getState('legend.categories')) {
                 this.setState('legend.categories', {});
             }
@@ -67,15 +57,11 @@ class LegendService extends ServiceBase {
             if (!this.getState('legend.selectedCategory')) {
                 this.setState('legend.selectedCategory', null);
             }
-            console.log('🎨 Legend state setup complete');
         } catch (error) {
-            console.error('🎨 Error in LegendService.initialize():', error);
             throw error;
         }
 
         try {
-            console.log('🎨 Setting up event subscriptions...');
-            
             // Subscribe to legend state changes
             this.subscribeToState('legend.categories', (categories) => {
                 this.onCategoriesChanged(categories);
@@ -94,34 +80,35 @@ class LegendService extends ServiceBase {
                 this.selectCategory(data.category);
             });
             
+            this.subscribeToEvent('scan:completed', () => {
+                this.invalidateCache();
+                this.refreshLegend();
+            });
+            
+            this.subscribeToEvent('data:loading:complete', () => {
+                this.invalidateCache();
+                this.refreshLegend();
+            });
+            
             this.subscribeToEvent('database:updated', () => {
                 this.invalidateCache();
                 this.refreshLegend();
             });
 
-            console.log('🎨 Event subscriptions complete');
-
             // Auto-refresh legend
             if (this.config.refreshInterval > 0) {
-                console.log('🎨 Setting up auto-refresh...');
                 setInterval(() => {
                     this.refreshLegend();
                 }, this.config.refreshInterval);
             }
 
             // Initialize legend display
-            console.log('🎨 LegendService initializing legend display...');
-            // Use setTimeout to avoid async issues with ServiceBase initialization
             setTimeout(() => {
-                console.log('🎨 Auto-refreshing legend after initialization...');
                 this.refreshLegend();
-            }, 2000); // Increased timeout
+            }, 2000);
             
-            console.log('🎨 LegendService.initialize() completed successfully');
         } catch (error) {
-            console.error('🎨 Error in LegendService.initialize() event setup:', error);
-            // Don't throw error to prevent service manager from failing
-            console.error('🎨 LegendService initialization failed but continuing...');
+            // Silent error handling
         }
     }
 
@@ -130,16 +117,11 @@ class LegendService extends ServiceBase {
      */
     async refreshLegend() {
         try {
-            console.log('🎨 Refreshing legend...');
             const categorizedTags = await this.getCategorizedTags();
-            console.log('🎨 Got categorized tags:', categorizedTags);
-            console.log('🎨 Number of categories:', Object.keys(categorizedTags).length);
             this.setState('legend.categories', categorizedTags);
             
             // Update UI
-            console.log('🎨 About to render legend...');
             this.renderLegend(categorizedTags);
-            console.log('🎨 Legend rendering completed');
             
             // Emit refresh event
             this.emitEvent('legend:refreshed', {
@@ -149,7 +131,6 @@ class LegendService extends ServiceBase {
             });
             
         } catch (error) {
-            console.error('🎨 Error refreshing legend:', error);
             this.emitEvent('legend:error', { error: error.message });
         }
     }
@@ -161,60 +142,51 @@ class LegendService extends ServiceBase {
     async getCategorizedTags() {
         const now = Date.now();
         
-        // Return cached data if still valid
-        if (this.categoryCache && (now - this.lastCacheUpdate) < this.cacheTimeout) {
-            return this.categoryCache;
-        }
+        // DEBUG: Always fetch fresh data for now to debug the issue
+        // Return cached data if still valid and not empty
+        // if (this.categoryCache && 
+        //     (now - this.lastCacheUpdate) < this.cacheTimeout &&
+        //     Object.keys(this.categoryCache).length > 0) {
+        //     return this.categoryCache;
+        // }
 
         try {
             let categorizedTags = {};
             
-            // Get tags from DataSourceAdapter
+            // Get tags from DataSourceAdapter - ONLY DATABASE CONTENT
             if (window.DataSourceAdapter && window.DataSourceAdapter.getTagsByCategory) {
-                console.log('🎨 Getting tags from DataSourceAdapter...');
                 categorizedTags = await window.DataSourceAdapter.getTagsByCategory();
-                console.log('🎨 Raw categorized tags:', categorizedTags);
                 
-                // If database has only technical tags, use fallback demo data
-                const hasMusicTags = Object.keys(categorizedTags).some(category => 
-                    ['emotion', 'energy', 'mood', 'style', 'genre', 'vibe', 'tempo', 'intensity', 'rating', 'occasion', 'weather'].includes(category)
-                );
-                
-                if (!hasMusicTags) {
-                    console.log('🎨 Database has only technical tags, using fallback demo data for better UX...');
-                    categorizedTags = this.getFallbackTags();
-                }
             } else {
-                console.warn('🎨 DataSourceAdapter not available, using fallback data');
-                categorizedTags = this.getFallbackTags();
+                categorizedTags = {};
             }
 
-            // Filter and limit tags per category
+            // SHOW ALL CATEGORIES - Remove restrictive filtering
             const filteredCategories = {};
             Object.entries(categorizedTags).forEach(([category, tags]) => {
-                if (!this.config.showEmptyCategories && tags.length === 0) {
-                    return;
-                }
-                
-                // Limit tags per category and sort them
-                const limitedTags = tags
-                    .sort()
-                    .slice(0, this.config.maxTagsPerCategory);
-                
-                if (limitedTags.length > 0) {
-                    filteredCategories[category] = limitedTags;
+                // Show all categories that exist, even if empty
+                if (tags && Array.isArray(tags)) {
+                    // Limit tags per category and sort them
+                    const limitedTags = tags
+                        .sort()
+                        .slice(0, this.config.maxTagsPerCategory);
+                    
+                    // Always show category if it has any tags (ignore empty categories)
+                    if (limitedTags.length > 0) {
+                        filteredCategories[category] = limitedTags;
+                    }
                 }
             });
 
-            // Update cache
+
+            // Always update cache with latest data
             this.categoryCache = filteredCategories;
             this.lastCacheUpdate = now;
 
             return filteredCategories;
             
         } catch (error) {
-            console.error('Error getting categorized tags:', error);
-            // Return empty object on error
+            // Return empty object on error - NO HARDCODED FALLBACKS
             return {};
         }
     }
@@ -224,42 +196,31 @@ class LegendService extends ServiceBase {
      * @param {Object} categorizedTags - Tags grouped by category
      */
     renderLegend(categorizedTags) {
-        console.log('🎨 renderLegend called with:', Object.keys(categorizedTags));
         const legendContainer = document.querySelector('.color-legend');
         if (!legendContainer) {
-            console.warn('🎨 Legend container not found');
             return;
         }
-        console.log('🎨 Legend container found');
 
         // Preserve existing header or create new one
         const header = legendContainer.querySelector('h4');
         const headerText = header ? header.textContent : 'Node Colors';
-        console.log('🎨 Header text:', headerText);
         
         // Clear existing content
         legendContainer.innerHTML = '';
-        console.log('🎨 Cleared existing content');
         
         // Recreate header
         const newHeader = document.createElement('h4');
         newHeader.textContent = headerText;
         legendContainer.appendChild(newHeader);
-        console.log('🎨 Header recreated');
 
         // Create legend items container with original structure
         const itemsContainer = document.createElement('div');
         itemsContainer.className = 'legend-items';
         legendContainer.appendChild(itemsContainer);
-        console.log('🎨 Items container created');
 
-        // Render each category in the original format
-        console.log('🎨 About to render', Object.keys(categorizedTags).length, 'categories');
-        Object.entries(categorizedTags).forEach(([category, tags], index) => {
-            console.log(`🎨 Rendering category ${index + 1}/${Object.keys(categorizedTags).length}: ${category} (${tags.length} tags)`);
-            setTimeout(() => {
-                this.renderLegendItem(itemsContainer, category, tags);
-            }, index * this.config.animationDelay);
+        // Render each category without animation delay
+        Object.entries(categorizedTags).forEach(([category, tags]) => {
+            this.renderLegendItem(itemsContainer, category, tags);
         });
 
         // Show total count
@@ -276,7 +237,6 @@ class LegendService extends ServiceBase {
             categories: Object.keys(categorizedTags),
             totalItems: Object.keys(categorizedTags).length
         });
-        console.log('🎨 Emitted legend:rendered event for UI.js integration');
         
         // Also try direct global EventBus as fallback
         if (typeof window !== 'undefined' && window.EventBus) {
@@ -284,16 +244,14 @@ class LegendService extends ServiceBase {
                 categories: Object.keys(categorizedTags),
                 totalItems: Object.keys(categorizedTags).length
             });
-            console.log('🎨 Also emitted via global EventBus');
         }
         
         // Direct fallback - call UI.js directly if available
         setTimeout(() => {
             if (typeof window !== 'undefined' && window.UI && window.UI.attachLegendEventHandlers) {
-                console.log('🎨 Calling UI.attachLegendEventHandlers directly as fallback');
                 window.UI.attachLegendEventHandlers();
             }
-        }, 300);
+        }, 100);
     }
 
     /**
@@ -303,7 +261,6 @@ class LegendService extends ServiceBase {
      * @param {Array} tags - Array of tag values
      */
     renderLegendItem(container, category, tags) {
-        console.log(`🎨 renderLegendItem: ${category} with ${tags.length} tags`);
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.dataset.category = category;
@@ -313,12 +270,10 @@ class LegendService extends ServiceBase {
         // Color indicator with original class structure
         const colorIndicator = document.createElement('div');
         colorIndicator.className = `legend-color legend-${category}`;
-        console.log(`🎨 Color indicator classes: ${colorIndicator.className}`);
         
         // Category name
         const categoryName = document.createElement('span');
         categoryName.textContent = this.getCategoryDisplayName(category);
-        console.log(`🎨 Category display name: ${categoryName.textContent}`);
         
         // Append to item
         legendItem.appendChild(colorIndicator);
@@ -327,9 +282,7 @@ class LegendService extends ServiceBase {
         // Don't add event handlers here - let UI.js handle all legend interactions
         // This maintains compatibility with existing multi-tag selection and hover effects
         
-        console.log(`🎨 Appending legend item for ${category} to container`);
         container.appendChild(legendItem);
-        console.log(`🎨 Legend item for ${category} added successfully`);
     }
 
     /**
@@ -450,6 +403,14 @@ class LegendService extends ServiceBase {
         this.lastCacheUpdate = 0;
     }
 
+    /**
+     * Force refresh legend ignoring cache
+     */
+    async forceRefreshLegend() {
+        this.invalidateCache();
+        return this.refreshLegend();
+    }
+
     // Getters
     getLegendCategories() {
         return this.getState('legend.categories') || {};
@@ -474,30 +435,6 @@ class LegendService extends ServiceBase {
         });
     }
 
-    /**
-     * Fallback tags for demo/testing when database is empty
-     */
-    getFallbackTags() {
-        return {
-            emotion: ['happy', 'sad', 'energetic', 'romantic', 'nostalgic'],
-            energy: ['high', 'medium', 'low'],
-            mood: ['bright', 'dark', 'neutral', 'melancholic', 'uplifting'],
-            style: ['rock', 'pop', 'electronic', 'jazz', 'classical'],
-            genre: ['alternative', 'indie', 'blues', 'folk', 'ambient'],
-            intensity: ['powerful', 'gentle', 'moderate', 'intense', 'calm'],
-            tempo: ['upbeat', 'slow', 'mid', 'fast', 'relaxed'],
-            vibe: ['chill', 'emotional', 'groovy', 'atmospheric', 'dreamy'],
-            rating: ['discovered', 'favorite', 'liked', 'new'],
-            occasion: ['modern', 'retro', 'party', 'study', 'workout'],
-            weather: ['sunny', 'rainy', 'night', 'morning', 'cloudy'],
-            era: ['modern', '2010s', '2000s', '90s', 'classic'],
-            format: ['flac', 'mp3', 'wav', 'aac'],
-            quality: ['lossless', 'high', 'cd', 'lossy'],
-            bitrate: ['320k', '256k', '192k', '128k'],
-            source: ['ffprobe', 'musicbrainz', 'lastfm'],
-            other: ['studio', 'live', 'remix', 'acoustic', 'instrumental']
-        };
-    }
 }
 
 // Make available globally

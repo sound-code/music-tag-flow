@@ -83,53 +83,15 @@
                             <!-- Tags will be populated here -->
                         </div>
                     </div>
+                    
                 </div>
             </div>
 
-            <!-- Color Legend -->
+            <!-- Color Legend - populated dynamically from database -->
             <div class="color-legend">
                 <h4>Node Colors</h4>
                 <div class="legend-items">
-                    <div class="legend-item">
-                        <div class="legend-color legend-emotion"></div>
-                        <span>Emotion</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-energy"></div>
-                        <span>Energy</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-mood"></div>
-                        <span>Mood</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-style"></div>
-                        <span>Style</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-occasion"></div>
-                        <span>Occasion</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-weather"></div>
-                        <span>Weather</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-intensity"></div>
-                        <span>Intensity</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-rating"></div>
-                        <span>Rating</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-tempo"></div>
-                        <span>Tempo</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-vibe"></div>
-                        <span>Vibe</span>
-                    </div>
+                    <!-- Legend items will be populated dynamically by LegendService -->
                 </div>
             </div>
 
@@ -252,36 +214,16 @@
                 refreshBtn.onclick = () => {
                     // Try to get legend service from App
                     if (window.App && window.App.getService) {
-                        console.log('🔄 App available, checking legend service...');
                         const legendService = window.App.getService('legend');
                         if (legendService) {
-                            console.log('🔄 Manual legend refresh triggered');
-                            legendService.refreshLegend();
-                        } else {
-                            console.log('🔄 Legend service not available');
-                            // Debug info
-                            if (window.App.serviceManager) {
-                                const services = window.App.serviceManager.services;
-                                console.log('🔄 Available services:', Array.from(services.keys()));
-                                const legendConfig = services.get('legend');
-                                if (legendConfig) {
-                                    console.log('🔄 Legend service config:', {
-                                        status: legendConfig.status,
-                                        instance: !!legendConfig.instance,
-                                        name: legendConfig.name
-                                    });
-                                } else {
-                                    console.log('🔄 Legend service not registered');
-                                }
-                            }
+                            legendService.forceRefreshLegend();
                         }
-                    } else {
-                        console.log('🔄 App not available');
                     }
                 };
                 legendContainer.appendChild(refreshBtn);
             }
         }, 3000); // Wait longer for app to initialize
+
     </script>
     
 </body>

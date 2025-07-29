@@ -162,49 +162,18 @@ class Application {
             autoStart: true
         });
         
-        console.log('🔧 LegendService available:', typeof LegendService);
-        console.log('🔧 LegendService class:', LegendService);
-        
-        if (typeof LegendService === 'undefined') {
-            console.error('🔧 LegendService is not loaded!');
-        } else {
+        if (typeof LegendService !== 'undefined') {
             this.serviceManager.registerService('legend', LegendService, [], {
                 required: false,
                 autoStart: true
             });
-            console.log('🔧 Legend service registered');
         }
         
-        
         // Initialize all services
-        console.log('🔧 Initializing services...');
         try {
             await this.serviceManager.initializeServices();
-            console.log('🔧 Services initialized successfully');
-            
-            // Check legend service specifically
-            const legendService = this.serviceManager.getService('legend');
-            console.log('🔧 Legend service after init:', !!legendService);
-            
-            if (legendService) {
-                console.log('🔧 Legend service type:', typeof legendService);
-                console.log('🔧 Legend service methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(legendService)));
-            } else {
-                console.error('🔧 Legend service is null after initialization!');
-                // Debug service manager state
-                const services = this.serviceManager.services;
-                console.log('🔧 All registered services:', Array.from(services.keys()));
-                const legendConfig = services.get('legend');
-                if (legendConfig) {
-                    console.log('🔧 Legend service config after init:', {
-                        status: legendConfig.status,
-                        instance: !!legendConfig.instance,
-                        error: legendConfig.error || 'none'
-                    });
-                }
-            }
         } catch (error) {
-            console.error('🔧 Error initializing services:', error);
+            // Services initialization failed
         }
     }
 

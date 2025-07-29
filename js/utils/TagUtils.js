@@ -151,19 +151,33 @@ class TagUtils {
      * @returns {Object} Oggetto con categorie come chiavi e array di valori
      */
     groupTagsByType(tags) {
-        console.log('🏷️ TagUtils.groupTagsByType called with:', tags);
         const grouped = {};
         
-        tags.forEach(tag => {
+        tags.forEach((tag, index) => {
             const parsed = this.parseTag(tag);
-            console.log(`🏷️ Tag "${tag}" parsed as:`, parsed);
-            if (!grouped[parsed.type]) {
-                grouped[parsed.type] = [];
+            
+            // Only include valid tags with proper category:value format
+            if (parsed.isValid && parsed.type && parsed.value) {
+                if (!grouped[parsed.type]) {
+                    grouped[parsed.type] = [];
+                }
+                // Store the VALUE only, not the full tag
+                if (!grouped[parsed.type].includes(parsed.value)) {
+                    grouped[parsed.type].push(parsed.value);
+                }
+            } else {
+                // Handle invalid tags differently - put them in 'other' category
+                if (parsed.type === 'other' && parsed.value) {
+                    if (!grouped['other']) {
+                        grouped['other'] = [];
+                    }
+                    if (!grouped['other'].includes(parsed.value)) {
+                        grouped['other'].push(parsed.value);
+                    }
+                }
             }
-            grouped[parsed.type].push(parsed.value);
         });
 
-        console.log('🏷️ Final grouped result:', grouped);
         return grouped;
     }
 

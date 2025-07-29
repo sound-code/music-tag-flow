@@ -240,28 +240,7 @@ const UI = {
         this.legendShowTimeout = null;
         this.legendHideTimeout = null;
 
-        // Define example tags for each category
-        this.categoryTags = {
-            emotion: ['excited', 'mysterious', 'empowering', 'vulnerable', 'romantic', 'sassy'],
-            energy: ['high', 'laid-back', 'vibrant', 'intimate', 'bold', 'minimal'],
-            mood: ['confident', 'melancholic', 'euphoric', 'playful', 'smooth', 'dark'],
-            style: ['pop', 'disco', 'alternative', 'indie', 'hip-hop', 'r&b'],
-            occasion: ['dance', 'solitude', 'freedom', 'rebellion', 'self-care', 'club'],
-            weather: ['golden', 'shadow', 'clarity', 'sparkle', 'quiet', 'stormy'],
-            intensity: ['powerful', 'emotional', 'deep', 'fierce', 'determined', 'gentle'],
-            rating: ['hit', 'viral', 'beautiful', 'anthem', 'unstoppable', 'classic'],
-            tempo: ['ballad', 'anthem', 'hypnotic', 'driving', 'perfect', 'slow'],
-            vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic'],
-            // Technical categories
-            format: ['flac', 'mp3', 'wav', 'aac', 'm4a', 'ogg'],
-            quality: ['lossless', 'high', 'cd', 'lossy', 'studio', 'master'],
-            bitrate: ['320k', '256k', '192k', '128k', 'variable', '1411k'],
-            source: ['ffprobe', 'musicbrainz', 'lastfm', 'spotify', 'local', 'streaming'],
-            // Additional musical categories
-            genre: ['rock', 'jazz', 'classical', 'electronic', 'folk', 'blues'],
-            era: ['modern', '2010s', '2000s', '90s', '80s', 'classic'],
-            other: ['live', 'remix', 'acoustic', 'instrumental', 'cover', 'original']
-        };
+        // NO HARDCODED TAGS - All tags come from database
 
         // Wait for DOM to be ready, then add event listeners  
         setTimeout(() => {
@@ -269,28 +248,18 @@ const UI = {
         }, 100);
         
         // Listen for legend re-rendering from LegendService
-        console.log('🎨 UI.js setting up EventBus listener...');
-        console.log('🎨 EventBus available:', typeof EventBus !== 'undefined');
-        console.log('🎨 window.EventBus available:', typeof window !== 'undefined' && typeof window.EventBus !== 'undefined');
-        
         if (typeof EventBus !== 'undefined' && EventBus.on) {
-            console.log('🎨 Registering EventBus listener for legend:rendered');
             EventBus.on('legend:rendered', (data) => {
-                console.log('🎨 UI.js received legend:rendered event via EventBus:', data);
-                setTimeout(() => {
-                    this.attachLegendEventHandlers();
-                }, 200); // Small delay to ensure DOM is updated
-            });
-        } else if (typeof window !== 'undefined' && window.EventBus && window.EventBus.on) {
-            console.log('🎨 Registering window.EventBus listener for legend:rendered');
-            window.EventBus.on('legend:rendered', (data) => {
-                console.log('🎨 UI.js received legend:rendered event via window.EventBus:', data);
                 setTimeout(() => {
                     this.attachLegendEventHandlers();
                 }, 200);
             });
-        } else {
-            console.warn('🎨 No EventBus available for legend:rendered listener');
+        } else if (typeof window !== 'undefined' && window.EventBus && window.EventBus.on) {
+            window.EventBus.on('legend:rendered', (data) => {
+                setTimeout(() => {
+                    this.attachLegendEventHandlers();
+                }, 200);
+            });
         }
     },
     
@@ -298,67 +267,83 @@ const UI = {
      * Attach event handlers to legend items (can be called multiple times)
      */
     attachLegendEventHandlers() {
-        console.log('🎨 UI.js attaching legend event handlers...');
         const legendItems = document.querySelectorAll('.legend-item');
-        console.log(`🎨 Found ${legendItems.length} legend items to attach handlers to`);
 
-        legendItems.forEach(item => {
-            // Remove existing listeners to avoid duplicates
-            const newItem = item.cloneNode(true);
-            item.parentNode.replaceChild(newItem, item);
+        legendItems.forEach((item, index) => {
+            // PRESERVE DATASET - Don't use cloneNode which might lose data
+            // Instead, remove specific event listeners if they exist
+            const existingListeners = item._uiEventListeners;
+            if (existingListeners) {
+                existingListeners.forEach(({ event, handler }) => {
+                    item.removeEventListener(event, handler);
+                });
+            }
+            
+            // Create new event handlers array
+            item._uiEventListeners = [];
             
             // Add click handler for category highlighting
-            newItem.addEventListener('click', (e) => {
+            const clickHandler = (e) => {
                 e.preventDefault();
-                const category = this.getCategoryFromLegendItem(newItem);
+                const category = this.getCategoryFromLegendItem(item);
                 if (category) {
-                    this.toggleCategoryHighlight(category, newItem);
+                    this.toggleCategoryHighlight(category, item);
                 }
-            });
+            };
+            item.addEventListener('click', clickHandler);
+            item._uiEventListeners.push({ event: 'click', handler: clickHandler });
             
-            newItem.addEventListener('mouseenter', (e) => {
-                    // Clear any pending hide timeout
-                    if (this.legendHideTimeout) {
-                        clearTimeout(this.legendHideTimeout);
-                        this.legendHideTimeout = null;
-                    }
+            // Add mouseenter handler
+            const mouseenterHandler = (e) => {
+                // Clear any pending hide timeout
+                if (this.legendHideTimeout) {
+                    clearTimeout(this.legendHideTimeout);
+                    this.legendHideTimeout = null;
+                }
 
-                    const category = this.getCategoryFromLegendItem(newItem);
+                const category = this.getCategoryFromLegendItem(item);
 
-                    if (category) {
-                        // Show immediately if not already showing, or with small delay
-                        if (this.legendShowTimeout) {
-                            clearTimeout(this.legendShowTimeout);
-                        }
-                        this.legendShowTimeout = setTimeout(() => {
-                            this.showLegendPopup(category, e);
-                        }, 100);
-                    }
-                });
-                
-                newItem.addEventListener('mouseleave', () => {
-                    // Clear any pending show timeout
+                if (category) {
+                    // Show immediately if not already showing, or with small delay
                     if (this.legendShowTimeout) {
                         clearTimeout(this.legendShowTimeout);
-                        this.legendShowTimeout = null;
                     }
-
-                    // Hide with delay to prevent flicker
-                    this.legendHideTimeout = setTimeout(() => {
-                        this.hideLegendPopup();
-                    }, 300); // 300ms delay before hiding
-                });
+                    this.legendShowTimeout = setTimeout(() => {
+                        this.showLegendPopup(category, e);
+                    }, 100);
+                }
+            };
+            item.addEventListener('mouseenter', mouseenterHandler);
+            item._uiEventListeners.push({ event: 'mouseenter', handler: mouseenterHandler });
                 
-                newItem.addEventListener('mousemove', (e) => {
-                    if (this.legendPopup.style.display === 'block') {
-                        this.updateLegendPopupPosition(e);
-                    }
-                });
-            });
-        
-        console.log(`🎨 UI.js attached event handlers to ${legendItems.length} legend items`);
+            // Add mouseleave handler
+            const mouseleaveHandler = () => {
+                // Clear any pending show timeout
+                if (this.legendShowTimeout) {
+                    clearTimeout(this.legendShowTimeout);
+                    this.legendShowTimeout = null;
+                }
 
-            // Also add hover events to the popup itself to keep it visible
+                // Hide with delay to prevent flicker
+                this.legendHideTimeout = setTimeout(() => {
+                    this.hideLegendPopup();
+                }, 300); // 300ms delay before hiding
+            };
+            item.addEventListener('mouseleave', mouseleaveHandler);
+            item._uiEventListeners.push({ event: 'mouseleave', handler: mouseleaveHandler });
+                
+            // Add mousemove handler
+            const mousemoveHandler = (e) => {
+                if (this.legendPopup && this.legendPopup.style.display === 'block') {
+                    this.updateLegendPopupPosition(e);
+                }
+            };
+            item.addEventListener('mousemove', mousemoveHandler);
+            item._uiEventListeners.push({ event: 'mousemove', handler: mousemoveHandler });
+        });
+        
+        // Add hover events to the popup itself to keep it visible - only once
+        if (this.legendPopup && !this.legendPopup._hasEventHandlers) {
             this.legendPopup.addEventListener('mouseenter', () => {
                 // Clear hide timeout if hovering over popup
                 if (this.legendHideTimeout) {
@@ -373,6 +358,9 @@ const UI = {
                     this.hideLegendPopup();
                 }, 100);
             });
+            
+            this.legendPopup._hasEventHandlers = true;
+        }
 
         // Aggiungi event listeners globali per rimuovere l'evidenziazione
         document.addEventListener('click', (e) => {
@@ -397,20 +385,23 @@ const UI = {
      * @returns {string|null} - Category name
      */
     getCategoryFromLegendItem(legendItem) {
+        // First try to get category from dataset (preferred method from LegendService)
+        if (legendItem.dataset && legendItem.dataset.category) {
+            return legendItem.dataset.category;
+        }
+        
+        // Fallback: extract from CSS class (supports any category dynamically)
         const colorElement = legendItem.querySelector('.legend-color');
         if (colorElement) {
             const classList = Array.from(colorElement.classList);
-            // Look for category-specific legend classes (not legend-color)
-            const categoryClasses = ['legend-emotion', 'legend-energy', 'legend-mood', 'legend-style', 
-                                   'legend-occasion', 'legend-weather', 'legend-intensity', 'legend-rating', 
-                                   'legend-tempo', 'legend-vibe'];
-            
-            const legendClass = classList.find(cls => categoryClasses.includes(cls));
+            // Look for any legend-* class (not just hardcoded ones)
+            const legendClass = classList.find(cls => cls.startsWith('legend-') && cls !== 'legend-color');
             if (legendClass) {
                 const category = legendClass.replace('legend-', '');
                 return category;
             }
         }
+        
         return null;
     },
 
@@ -423,23 +414,19 @@ const UI = {
         // First try to get tags from the legend item's data attribute (real tags from database)
         let tags = null;
         const legendItem = event.target.closest('.legend-item');
+        
         if (legendItem && legendItem.dataset.tags) {
             try {
                 tags = JSON.parse(legendItem.dataset.tags);
-                console.log(`🎨 Using real tags from data attribute for ${category}:`, tags);
             } catch (e) {
-                console.warn('🎨 Failed to parse tags from data attribute:', e);
+                // Failed to parse tags
             }
         }
         
-        // Fallback to hardcoded tags if no real tags available
+        // Show more info if no tags found
         if (!tags || tags.length === 0) {
-            tags = this.categoryTags[category];
-            console.log(`🎨 Using fallback tags for ${category}:`, tags);
-        }
-        
-        if (!tags || tags.length === 0) {
-            console.warn(`🎨 No tags available for category ${category}`);
+            // Create a debug popup showing the issue
+            this.createDebugPopup(category, event, 'No tags found in database for this category');
             return;
         }
 
@@ -514,6 +501,49 @@ const UI = {
 
         this.legendPopup.style.left = `${x}px`;
         this.legendPopup.style.top = `${y}px`;
+    },
+
+    /**
+     * Create debug popup when no tags are found
+     */
+    createDebugPopup(category, event, message) {
+        // Remove existing popup
+        if (this.legendPopup) {
+            this.legendPopup.remove();
+        }
+
+        // Create debug popup
+        this.legendPopup = document.createElement('div');
+        this.legendPopup.className = 'legend-popup debug-popup';
+        this.legendPopup.style.cssText = `
+            position: absolute;
+            background: #ff4444;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 200px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        `;
+
+        this.legendPopup.innerHTML = `
+            <div style="font-weight: bold;">${category.toUpperCase()}</div>
+            <div style="margin-top: 4px;">${message}</div>
+        `;
+
+        document.body.appendChild(this.legendPopup);
+
+        // Position popup
+        this.positionPopup(this.legendPopup, event);
+
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            if (this.legendPopup) {
+                this.legendPopup.remove();
+                this.legendPopup = null;
+            }
+        }, 3000);
     },
 
     /**
@@ -1102,13 +1132,11 @@ window.toggleArtist = function(header) {
     if (UI && UI.toggleArtist) {
         return UI.toggleArtist(header);
     }
-    console.warn('UI.toggleArtist not available yet');
 };
 window.toggleAlbum = function(header) {
     if (UI && UI.toggleAlbum) {
         return UI.toggleAlbum(header);
     }
-    console.warn('UI.toggleAlbum not available yet');
 };
 window.clearMindmap = () => {
     if (typeof Playlist !== 'undefined' && Playlist.clear) {

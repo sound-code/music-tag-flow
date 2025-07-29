@@ -308,6 +308,186 @@ const DataSourceAdapter = {
     },
 
     /**
+     * Generate random synthetic tags from predefined lists
+     * @param {number} tagsPerCategory - Number of random tags per category (default: 2-4)
+     * @returns {Array} Array of random synthetic tags in "category:value" format
+     */
+    generateRandomSyntheticTags(tagsPerCategory = null) {
+        // Predefined tag lists for each category
+        const tagCategories = {
+            emotion: ['happy', 'sad', 'romantic', 'energetic', 'melancholic', 'joyful', 'nostalgic', 'mysterious', 'uplifting', 'contemplative', 'passionate', 'dreamy'],
+            energy: ['high', 'medium', 'low', 'vibrant', 'calm', 'intense', 'relaxed', 'explosive', 'gentle', 'dynamic'],
+            mood: ['bright', 'dark', 'neutral', 'cheerful', 'somber', 'playful', 'serious', 'whimsical', 'dramatic', 'peaceful', 'aggressive', 'tender'],
+            style: ['rock', 'pop', 'jazz', 'classical', 'electronic', 'folk', 'blues', 'reggae', 'country', 'funk', 'soul', 'indie', 'alternative'],
+            genre: ['alternative', 'indie', 'experimental', 'fusion', 'acoustic', 'instrumental', 'vocal', 'orchestral', 'ambient', 'world', 'crossover'],
+            intensity: ['powerful', 'gentle', 'moderate', 'fierce', 'subtle', 'overwhelming', 'delicate', 'strong', 'soft', 'crushing', 'smooth'],
+            tempo: ['fast', 'slow', 'medium', 'upbeat', 'ballad', 'driving', 'relaxed', 'rushing', 'steady', 'variable', 'hypnotic'],
+            vibe: ['chill', 'groovy', 'atmospheric', 'edgy', 'smooth', 'raw', 'polished', 'organic', 'synthetic', 'warm', 'cold', 'spacey'],
+            rating: ['favorite', 'liked', 'discovered', 'hidden-gem', 'classic', 'underrated', 'popular', 'cult', 'mainstream', 'niche'],
+            occasion: ['party', 'study', 'workout', 'relaxation', 'driving', 'morning', 'evening', 'weekend', 'work', 'travel', 'romance', 'meditation'],
+            weather: ['sunny', 'rainy', 'cloudy', 'stormy', 'clear', 'foggy', 'windy', 'snow', 'spring', 'summer', 'autumn', 'winter'],
+            era: ['modern', '2020s', '2010s', '2000s', '90s', '80s', '70s', '60s', 'classic', 'vintage', 'retro', 'contemporary']
+        };
+
+        const syntheticTags = [];
+
+        // Add random tags from each category
+        Object.entries(tagCategories).forEach(([category, tagList]) => {
+            // Random number of tags per category (2-4 if not specified)
+            const numTags = tagsPerCategory || (Math.floor(Math.random() * 3) + 2); // 2-4 tags
+            
+            // Shuffle and pick random tags
+            const shuffledTags = [...tagList].sort(() => Math.random() - 0.5);
+            const selectedTags = shuffledTags.slice(0, Math.min(numTags, tagList.length));
+            
+            // Add to synthetic tags with category prefix
+            selectedTags.forEach(tag => {
+                syntheticTags.push(`${category}:${tag}`);
+            });
+        });
+
+        return syntheticTags;
+    },
+
+    /**
+     * Generate synthetic tags for a track to enrich categorization (OLD METHOD - REPLACED)
+     * @param {Object} track - Track object with basic metadata
+     * @returns {Array} Array of synthetic tags in "category:value" format
+     */
+    generateSyntheticTags(track) {
+        const syntheticTags = [];
+        
+        const trackTitle = (track.title || '').toLowerCase();
+        const trackArtist = (track.artist || '').toLowerCase();
+        
+        // Energy tags based on genre patterns
+        if (track.genre) {
+            const genre = track.genre.toLowerCase();
+            if (['rock', 'metal', 'punk', 'electronic', 'dance', 'edm', 'techno', 'house'].includes(genre)) {
+                syntheticTags.push('energy:high');
+                syntheticTags.push('intensity:powerful');
+                syntheticTags.push('vibe:energetic');
+            } else if (['classical', 'ambient', 'folk', 'acoustic', 'new age', 'meditation'].includes(genre)) {
+                syntheticTags.push('energy:low');
+                syntheticTags.push('intensity:gentle');
+                syntheticTags.push('vibe:calm');
+            } else if (['jazz', 'blues', 'soul', 'r&b'].includes(genre)) {
+                syntheticTags.push('energy:medium');
+                syntheticTags.push('intensity:smooth');
+                syntheticTags.push('vibe:soulful');
+            } else {
+                syntheticTags.push('energy:medium');
+                syntheticTags.push('intensity:moderate');
+                syntheticTags.push('vibe:balanced');
+            }
+        } else {
+            // Default tags if no genre
+            syntheticTags.push('energy:medium');
+            syntheticTags.push('intensity:moderate');
+        }
+        
+        // Mood and emotion tags based on title/artist patterns
+        if (trackTitle.includes('dark') || trackTitle.includes('night') || trackTitle.includes('shadow') || trackTitle.includes('black')) {
+            syntheticTags.push('mood:dark');
+            syntheticTags.push('weather:night');
+            syntheticTags.push('emotion:mysterious');
+        } else if (trackTitle.includes('light') || trackTitle.includes('bright') || trackTitle.includes('sun') || trackTitle.includes('morning')) {
+            syntheticTags.push('mood:bright');
+            syntheticTags.push('weather:sunny');
+            syntheticTags.push('emotion:uplifting');
+        } else if (trackTitle.includes('love') || trackTitle.includes('heart') || trackTitle.includes('romance')) {
+            syntheticTags.push('emotion:romantic');
+            syntheticTags.push('vibe:emotional');
+            syntheticTags.push('mood:tender');
+        } else if (trackTitle.includes('sad') || trackTitle.includes('cry') || trackTitle.includes('lonely')) {
+            syntheticTags.push('emotion:melancholic');
+            syntheticTags.push('mood:somber');
+            syntheticTags.push('vibe:reflective');
+        } else if (trackTitle.includes('happy') || trackTitle.includes('joy') || trackTitle.includes('celebration')) {
+            syntheticTags.push('emotion:joyful');
+            syntheticTags.push('mood:cheerful');
+            syntheticTags.push('vibe:upbeat');
+        } else {
+            syntheticTags.push('mood:neutral');
+            syntheticTags.push('vibe:chill');
+            syntheticTags.push('emotion:contemplative');
+        }
+        
+        // Tempo tags based on duration (rough estimation)
+        if (track.duration && typeof track.duration === 'number') {
+            if (track.duration < 180) { // Less than 3 minutes
+                syntheticTags.push('tempo:upbeat');
+                syntheticTags.push('style:pop');
+            } else if (track.duration > 300) { // More than 5 minutes
+                syntheticTags.push('tempo:slow');
+                syntheticTags.push('style:progressive');
+            } else {
+                syntheticTags.push('tempo:mid');
+                syntheticTags.push('style:standard');
+            }
+        } else {
+            syntheticTags.push('tempo:mid');
+        }
+        
+        // Era tags based on year
+        if (track.year) {
+            if (track.year >= 2020) {
+                syntheticTags.push('era:modern');
+                syntheticTags.push('occasion:contemporary');
+            } else if (track.year >= 2010) {
+                syntheticTags.push('era:2010s');
+                syntheticTags.push('occasion:recent');
+            } else if (track.year >= 2000) {
+                syntheticTags.push('era:2000s');
+                syntheticTags.push('occasion:millennial');
+            } else if (track.year >= 1990) {
+                syntheticTags.push('era:90s');
+                syntheticTags.push('occasion:retro');
+            } else if (track.year >= 1980) {
+                syntheticTags.push('era:80s');
+                syntheticTags.push('occasion:vintage');
+            } else {
+                syntheticTags.push('era:classic');
+                syntheticTags.push('occasion:timeless');
+            }
+        } else {
+            syntheticTags.push('era:unknown');
+        }
+        
+        // Weather tags based on seasonal/mood patterns
+        if (trackTitle.includes('winter') || trackTitle.includes('cold') || trackTitle.includes('snow')) {
+            syntheticTags.push('weather:winter');
+        } else if (trackTitle.includes('summer') || trackTitle.includes('hot') || trackTitle.includes('beach')) {
+            syntheticTags.push('weather:summer');
+        } else if (trackTitle.includes('rain') || trackTitle.includes('storm') || trackTitle.includes('thunder')) {
+            syntheticTags.push('weather:rainy');
+        } else if (trackTitle.includes('spring') || trackTitle.includes('flower') || trackTitle.includes('bloom')) {
+            syntheticTags.push('weather:spring');
+        } else {
+            syntheticTags.push('weather:clear');
+        }
+        
+        // Rating tags (all discovered tracks get this)
+        syntheticTags.push('rating:discovered');
+        
+        // Add some variety in rating
+        const trackHash = (track.title + track.artist).length;
+        if (trackHash % 3 === 0) {
+            syntheticTags.push('rating:favorite');
+        } else if (trackHash % 5 === 0) {
+            syntheticTags.push('rating:liked');
+        }
+        
+        // Style tags based on genre
+        if (track.genre) {
+            syntheticTags.push(`style:${track.genre.toLowerCase()}`);
+        }
+        
+        return syntheticTags;
+    },
+
+
+    /**
      * Clear database
      * @returns {Promise<boolean>} Success status
      */
@@ -359,21 +539,15 @@ const DataSourceAdapter = {
      * @returns {Promise<Object>} Object with categories as keys and tag arrays as values
      */
     async getTagsByCategory() {
-        console.log('🗃️ DataSourceAdapter.getTagsByCategory called');
         const dbAdapter = this.activeAdapters.get('database');
-        console.log('🗃️ Database adapter available:', !!dbAdapter);
         if (dbAdapter && dbAdapter.getAvailableTags) {
             try {
                 const allTags = await dbAdapter.getAvailableTags();
-                console.log('🗃️ All tags from database:', allTags);
                 const grouped = tagUtils.groupTagsByType(allTags);
-                console.log('🗃️ Grouped tags:', grouped);
                 return grouped;
             } catch (error) {
-                console.error('🗃️ Error getting tags by category from database:', error);
+                // Error getting tags by category from database
             }
-        } else {
-            console.warn('🗃️ No database adapter or getAvailableTags method');
         }
         
         // Fallback to empty object
@@ -972,7 +1146,7 @@ class DatabaseAdapter {
         }
 
         try {
-            // Get stats which contains uniqueTags
+            // Get stats which contains uniqueTags from database
             const stats = await window.electronAPI.getStats();
             return stats.uniqueTags || [];
         } catch (error) {
