@@ -920,9 +920,11 @@ body {
 
 .track-node .tags-container .tooltip-tags {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
-    gap: 3px;
+    gap: 4px;
     margin-bottom: 6px;
+    align-items: center;
 }
 
 .track-node .tags-container .tooltip-add-tag-input {
@@ -964,27 +966,7 @@ body {
     opacity: 0.5;
 }
 
-/* Tooltip CSS disabilitato - ora gestito dal sistema JavaScript in ui.js per evitare duplicazioni */
-/*
-.track-node:hover .tags-container {
-    display: flex;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(15, 15, 35, 0.95);
-    border-radius: 8px;
-    padding: 8px;
-    flex-wrap: wrap;
-    gap: 3px;
-    max-width: 200px;
-    z-index: 100;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 8px;
-}
-*/
+/* Track node tooltip gestito da UIService JavaScript - non CSS */
 
 .tag {
     padding: 2px 4px;
@@ -1527,8 +1509,10 @@ body {
 
 .tooltip-tags {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 6px;
+    align-items: center;
 }
 
 .tooltip-tag {

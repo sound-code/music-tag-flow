@@ -159,6 +159,11 @@ class Application {
             autoStart: true
         });
         
+        this.serviceManager.registerService('tracknodes', TrackNodesService, [], {
+            required: false,
+            autoStart: true
+        });
+        
         this.serviceManager.registerService('scan', ScanService, [], {
             required: false,
             autoStart: true

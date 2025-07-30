@@ -71,7 +71,7 @@ const Tree = {
             track,
             children: new Set(),
             parent: parentId,
-            depth: parentId ? this.nodes.get(parentId).depth + 1 : 0,
+            depth: parentId ? (this.nodes.get(parentId)?.depth + 1 || 1) : 0,
             angle: 0,
             position: { x: 0, y: 0 },
             connectionTag

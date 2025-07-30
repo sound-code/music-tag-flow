@@ -96,32 +96,16 @@ const DragDrop = {
                 // DISABLED - use the new tag:click event instead
             });
 
-            // Bridge TagService tree:create-branches events to NEW TrackNodes method
-            window.EventBus.on('tree:create-branches', (data) => {
-                if (typeof TrackNodes !== 'undefined' && TrackNodes.createBranchesDirectly) {
-                    TrackNodes.createBranchesDirectly(data.tagValue, data.sourceNode);
-                } else {
-                    console.warn('🌿 TrackNodes.createBranchesDirectly not available');
-                }
-            });
+            // Bridge TagService tree:create-branches events - RIMOSSO 
+            // Ora gestito da TrackNodesService, rimuovere per evitare duplicazioni
+            // window.EventBus.on('tree:create-branches', (data) => {
+            //     TrackNodesService handles this now
+            // });
 
-            // Bridge tag:click events to TagService
-            window.EventBus.on('tag:click', (data) => {
-                if (window.App && window.App.getService) {
-                    const tagService = window.App.getService('tags');
-                    if (tagService && typeof tagService.handleTagClick === 'function') {
-                        tagService.handleTagClick(data.element, data.tagValue);
-                    } else {
-                        console.warn('🏷️ TagService not available, using fallback');
-                        // Fallback to legacy Tags module
-                        if (typeof Tags !== 'undefined' && Tags.toggleSelection) {
-                            Tags.toggleSelection(data.element);
-                        }
-                    }
-                } else {
-                    console.warn('🏷️ App.getService not available');
-                }
-            });
+            // Bridge tag:click events - DISABILITATO, ora gestito direttamente da TrackNodesService
+            // window.EventBus.on('tag:click', (data) => {
+            //     TrackNodesService handles tag clicks directly now
+            // });
         }
     },
 

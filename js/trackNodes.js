@@ -7,7 +7,7 @@ const TrackNodes = {
     // Click counter removed - now managed centrally by Playlist module
     
     /**
-     * Create a new track node
+     * Create a new track node - Bridge to TrackNodesService
      * @param {Object} track - Track data object
      * @param {number} x - X position
      * @param {number} y - Y position
@@ -16,226 +16,56 @@ const TrackNodes = {
      * @returns {HTMLElement} The created node element
      */
     create(track, x, y, parentNode = null, connectionTag = null) {
-        const { allNodes, canvasContent } = AppState;
-        const node = document.createElement('div');
-        node.className = 'track-node';
-        node.id = `node-${AppState.incrementNodeCounter()}`;
-        
-        // Store connection tag info but ALL nodes get neutral gray color
-        if (connectionTag) {
-            const category = tagUtils.getTagType(connectionTag);
-            node.dataset.connectionTag = connectionTag;
-        }
-        
-        // ALL nodes use neutral gray color - no category-based coloring
-        node.dataset.tagCategory = 'neutral';
-        node.classList.add('node-neutral');
-        
-        // Add track data so UI tooltip system can use it
-        node.dataset.track = JSON.stringify(track);
-        
-        if (parentNode) {
-            node.dataset.parentId = parentNode.id;
-            const parentLeft = parseInt(parentNode.style.left) || 0;
-            const parentTop = parseInt(parentNode.style.top) || 0;
-            node.style.left = `${parentLeft + 100}px`;
-            node.style.top = `${parentTop}px`;
+        // Delegate to TrackNodesService - NO FALLBACK
+        if (window.App && window.App.getService) {
+            const trackNodesService = window.App.getService('tracknodes');
+            if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                return trackNodesService.createNode(track, x, y, parentNode, connectionTag);
+            } else {
+                throw new Error('TrackNodesService is required but not available');
+            }
         } else {
-            const { canvas } = AppState;
-            const canvasRect = canvas.getBoundingClientRect();
-            node.style.left = `${canvasRect.width / 2 - 40}px`;
-            node.style.top = `${canvasRect.height / 2 - 40}px`;
+            throw new Error('App.getService is required but not available');
         }
-
-        const playBtn = this.createPlayButton(track);
-        const title = Utils.createTextElement('div', 'title', track.title);
-        const artist = Utils.createTextElement('div', 'artist', track.artist);
-        const tagsContainer = this.createTagsContainer(track, node);
-
-        node.appendChild(playBtn);
-        node.appendChild(title);
-        node.appendChild(artist);
-        node.appendChild(tagsContainer);
-        
-
-        
-        // Force clickable styles
-        node.style.pointerEvents = 'auto';
-        node.style.zIndex = '100';
-        node.style.position = 'absolute';
-        
-        // Add click handler - now handled centrally by Playlist module
-        node.addEventListener('click', async (e) => {
-            // Only handle non-tag, non-button, non-input clicks
-            if (e.target.classList.contains('play-btn') || 
-                e.target.classList.contains('add-tag-btn') ||
-                e.target.classList.contains('tooltip-add-tag-input') ||
-                e.target.closest('.play-btn') ||
-                e.target.closest('.add-tag-interface') ||
-                e.target.classList.contains('tag') ||
-                e.target.tagName === 'INPUT') {
-                return;
-            }
-            
-            // Emit node click event through EventBus
-            if (window.EventBus) {
-                window.EventBus.emit('node:click', {
-                    track: track,
-                    node: node,
-                    connectionTag: connectionTag || 'direct-selection'
-                });
-            } else if (window.App && window.App.getService) {
-                // Direct service call if EventBus not available
-                const playlistService = window.App.getService('playlist');
-                if (playlistService && typeof playlistService.handleNodeClick === 'function') {
-                    playlistService.handleNodeClick(track, node, connectionTag || 'direct-selection');
-                }
-            }
-        });
-        
-        canvasContent.appendChild(node);
-        
-        const nodeData = {
-            element: node,
-            track: track
-        };
-
-        if (AppState.selectedTagForNextNode) {
-            nodeData.selectedTag = AppState.selectedTagForNextNode;
-            AppState.setSelectedTagForNextNode(null);
-        }
-        
-        allNodes.push(nodeData);
-        
-        const parentId = parentNode ? parentNode.id : null;
-        Tree.addNode(node.id, node, track, parentId, connectionTag);
-        
-        if (parentNode) {
-            node.classList.add('growing');
-            setTimeout(() => {
-                node.classList.remove('growing');
-            }, 600);
-        }
-        
-
-        return node;
     },
 
     /**
-     * Create a play button for a track
+     * Create a play button for a track - Bridge to TrackNodesService
      * @param {Object} track - Track data object
      * @returns {HTMLElement} The play button element
      */
     createPlayButton(track) {
-        const playBtn = document.createElement('button');
-        playBtn.className = 'play-btn';
-        playBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.togglePlay(playBtn, track);
-        });
-        return playBtn;
+        // Delegate to TrackNodesService - NO FALLBACK
+        if (window.App && window.App.getService) {
+            const trackNodesService = window.App.getService('tracknodes');
+            if (trackNodesService && typeof trackNodesService.createPlayButton === 'function') {
+                return trackNodesService.createPlayButton(track);
+            } else {
+                throw new Error('TrackNodesService createPlayButton method is required but not available');
+            }
+        } else {
+            throw new Error('App.getService is required but not available');
+        }
     },
 
     /**
-     * Create tags container for a track node
+     * Create tags container for a track node - Bridge to TrackNodesService
      * @param {Object} track - Track data object
      * @param {HTMLElement} node - The node element
      * @returns {HTMLElement} The tags container element
      */
     createTagsContainer(track, node) {
-        const tagsContainer = document.createElement('div');
-        tagsContainer.className = 'tags-container';
-
-        // Title
-        const title = document.createElement('div');
-        title.className = 'tooltip-title';
-        title.textContent = `${track.title} - ${track.artist}`;
-        tagsContainer.appendChild(title);
-
-        // Tags container
-        const tagsWrapper = document.createElement('div');
-        tagsWrapper.className = 'tooltip-tags';
-
-        track.tags.forEach(tagWithValue => {
-            const tagInfo = tagUtils.parseTag(tagWithValue);
-            const tagType = tagInfo.type;
-            const tagValue = tagInfo.value;
-            const tag = document.createElement('div');
-            tag.className = `tooltip-tag tag-${tagType}`;
-            tag.textContent = tagValue;
-            tag.dataset.tagValue = tagWithValue;
-            
-            // Connect tag clicks to EventBus -> TagService (clean single path)
-            tag.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                
-                // Emit event through EventBus (single path)
-                if (window.EventBus) {
-                    window.EventBus.emit('tag:click', {
-                        element: tag,
-                        tagValue: tagWithValue,
-                        sourceNode: node,
-                        sourceTrack: track
-                    });
-                } else {
-                    // Fallback if EventBus not available
-                    TrackNodes.createBranchesDirectly(tagWithValue, node);
-                }
-            }, true);
-            
-            // Ensure styles exist for this category
-            this.ensureCategoryStyles(tagType);
-            
-            tagsWrapper.appendChild(tag);
-        });
-
-        // Add tag input directly in the tags wrapper
-        const addTagInput = document.createElement('input');
-        addTagInput.type = 'text';
-        addTagInput.placeholder = '+';
-        addTagInput.className = 'tooltip-add-tag-input';
-        addTagInput.style.width = '60px';
-        
-        // Prevent click propagation on input
-        addTagInput.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-        
-        // Also prevent mousedown to be safe
-        addTagInput.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-        
-        tagsWrapper.appendChild(addTagInput);
-        tagsContainer.appendChild(tagsWrapper);
-        
-        // Handle Enter key to add tag
-        addTagInput.addEventListener('keypress', async (e) => {
-            console.log('⌨️ TrackNodes input keypress:', e.key);
-            e.stopPropagation();
-            if (e.key === 'Enter') {
-                console.log('↩️ TrackNodes Enter key detected');
-                e.preventDefault();
-                const newTag = addTagInput.value.trim();
-                console.log('🏷️ TrackNodes new tag value:', newTag);
-                if (newTag && newTag.includes(':')) {
-                    console.log('✅ TrackNodes tag format valid, calling addTagToNode...');
-                    await TrackNodes.addTagToNode(node, track, newTag);
-                    addTagInput.value = '';
-                    
-                    // Refresh the container by recreating it
-                    const newTagsContainer = TrackNodes.createTagsContainer(track, node);
-                    node.replaceChild(newTagsContainer, tagsContainer);
-                } else {
-                    console.warn('⚠️ TrackNodes invalid tag format:', newTag);
-                }
+        // Delegate to TrackNodesService - NO FALLBACK
+        if (window.App && window.App.getService) {
+            const trackNodesService = window.App.getService('tracknodes');
+            if (trackNodesService && typeof trackNodesService.createTagsContainer === 'function') {
+                return trackNodesService.createTagsContainer(track, node);
+            } else {
+                throw new Error('TrackNodesService createTagsContainer method is required but not available');
             }
-        });
-
-        return tagsContainer;
+        } else {
+            throw new Error('App.getService is required but not available');
+        }
     },
 
     /**

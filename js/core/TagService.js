@@ -35,9 +35,10 @@ class TagService extends ServiceBase {
             this.onTagSourceChanged(sourceTrack);
         });
         // Subscribe to external events
-        this.subscribeToEvent('tag:click', (data) => {
-            this.handleTagClick(data.element, data.tagValue);
-        });
+        // DISABILITATO - ora gestito direttamente da TrackNodesService
+        // this.subscribeToEvent('tag:click', (data) => {
+        //     this.handleTagClick(data.element, data.tagValue);
+        // });
         this.subscribeToEvent('tags:clear', () => {
             this.clearSelection();
         });
@@ -194,6 +195,7 @@ class TagService extends ServiceBase {
             this.addTemporaryFeedback(tagElement, 'selected', this.config.selectionTimeout);
         }
         // Emit event for tree service to handle branch creation
+        console.log('🌿 TagService: Emitting tree:create-branches event', tagValue, 'via EventBus:', this.events);
         this.emitEvent('tree:create-branches', {
             tagValue,
             sourceNode: trackNode,
