@@ -72,8 +72,19 @@ const DataLoader = {
      * @returns {Promise<boolean>} Success status
      */
     async addTagToTrack(track, newTag) {
+        console.log('🗄️ DataLoader.addTagToTrack called:', {
+            trackTitle: track.title,
+            trackArtist: track.artist,
+            newTag: newTag
+        });
+        
         await this.initialize();
-        return await DataSourceAdapter.addTagToTrack(track, newTag);
+        console.log('✅ DataLoader initialized, calling DataSourceAdapter...');
+        
+        const result = await DataSourceAdapter.addTagToTrack(track, newTag);
+        console.log('📊 DataSourceAdapter.addTagToTrack result:', result);
+        
+        return result;
     },
 
     /**

@@ -850,7 +850,6 @@ body {
     border: 2px solid rgba(255, 255, 255, 0.2);
     padding: 8px;
     backdrop-filter: blur(20px);
-    z-index: 10;
 }
 
 .track-node:hover {
@@ -889,20 +888,26 @@ body {
     display: none; /* Hide tags by default */
 }
 
-.track-node:hover .tags-container,
-.track-node .tags-container.show-tooltip {
-    display: block;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+.tags-container.tooltip-visible {
+    display: block !important;
+    position: fixed;
     background: rgba(15, 15, 35, 0.95);
     border-radius: 8px;
     padding: 8px;
-    z-index: 10000 !important;
-    margin-top: 8px;
+    z-index: 999999999;
     min-width: 200px;
     max-width: 280px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+@keyframes tooltipShow {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
 }
 
 .track-node .tags-container .tooltip-title {

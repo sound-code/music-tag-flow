@@ -95,7 +95,11 @@ class UIService extends ServiceBase {
 
         // Initialize UI components
         this.initializeTooltips();
-        this.initializeTrackNodeTooltips();
+        this.initializeSimpleTrackTooltips();
+        
+        // Remove any existing external track node tooltip
+        this.removeExternalTrackNodeTooltip();
+        
         // NOTE: Legend popups handled by legacy ui.js to avoid duplication
         // this.initializeLegendPopups(); 
         this.initializeVisualEffects();
@@ -677,34 +681,72 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Initialize track node tooltip functionality
+     * Initialize track node tooltip functionality with delay management
      */
     initializeTrackNodeTooltips() {
-        // Check if DOM is ready
-        if (typeof document === 'undefined') {
-            return;
-        }
-
-        // Create external tooltip element
-        this.createTrackNodeTooltipElement();
-
-        // Track current active tooltip
-        this.currentActiveTooltip = null;
-
-        // Add event delegation for track nodes
+        // Use JavaScript to manage hover delays while keeping CSS tooltip styling
         document.addEventListener('mouseenter', (e) => {
             const trackNode = e.target.closest('.track-node');
             if (trackNode) {
-                this.showTrackNodeTooltip(trackNode);
+                this.showTrackNodeTooltipWithDelay(trackNode);
             }
         }, true);
 
         document.addEventListener('mouseleave', (e) => {
             const trackNode = e.target.closest('.track-node');
             if (trackNode) {
-                this.hideTrackNodeTooltip(trackNode);
+                this.hideTrackNodeTooltipWithDelay(trackNode);
             }
         }, true);
+
+        // Keep tooltip visible when hovering over it
+        document.addEventListener('mouseenter', (e) => {
+            const tagsContainer = e.target.closest('.tags-container');
+            if (tagsContainer) {
+                this.keepTooltipVisible(tagsContainer);
+            }
+        }, true);
+
+        document.addEventListener('mouseleave', (e) => {
+            const tagsContainer = e.target.closest('.tags-container');
+            if (tagsContainer) {
+                this.hideTooltipFromContainer(tagsContainer);
+            }
+        }, true);
+
+        // Hide tooltip when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.track-node') && !e.target.closest('.tags-container')) {
+                this.hideTrackNodeTooltipImmediate();
+            }
+        });
+
+        // Hide all tooltips when scrolling
+        document.addEventListener('scroll', () => {
+            this.hideTrackNodeTooltipImmediate();
+        }, true);
+    }
+
+    /**
+     * Remove external track node tooltip if it exists
+     */
+    removeExternalTrackNodeTooltip() {
+        if (this.elements.trackNodeTooltip) {
+            this.elements.trackNodeTooltip.remove();
+            this.elements.trackNodeTooltip = null;
+        }
+        
+        // Clear any active timeouts
+        if (this.timeouts.trackNodeShow) {
+            clearTimeout(this.timeouts.trackNodeShow);
+            this.timeouts.trackNodeShow = null;
+        }
+        if (this.timeouts.trackNodeHide) {
+            clearTimeout(this.timeouts.trackNodeHide);
+            this.timeouts.trackNodeHide = null;
+        }
+        
+        this.currentActiveTooltip = null;
     }
 
     /**
@@ -717,19 +759,20 @@ class UIService extends ServiceBase {
         this.elements.trackNodeTooltip.className = 'track-node-tooltip';
         this.elements.trackNodeTooltip.style.cssText = `
             position: fixed;
-            background: rgba(15, 15, 35, 0.95);
+            background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(30, 30, 60, 0.98) 100%);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            padding: 8px;
+            border-radius: 12px;
+            padding: 16px;
             min-width: 200px;
-            max-width: 280px;
+            max-width: 320px;
             z-index: 50000;
             display: none;
             opacity: 0;
             backdrop-filter: blur(20px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(99, 102, 241, 0.1);
             transition: opacity 0.2s ease;
             pointer-events: auto;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         `;
         document.body.appendChild(this.elements.trackNodeTooltip);
 
@@ -921,37 +964,442 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Position track node tooltip
+     * Show track node tooltip with delay (CSS-based)
      */
-    positionTrackNodeTooltip(trackNode) {
-        if (!this.elements.trackNodeTooltip) return;
-
-        const nodeRect = trackNode.getBoundingClientRect();
-        const tooltipRect = this.elements.trackNodeTooltip.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-
-        // Default position: below and centered on the node
-        let x = nodeRect.left + (nodeRect.width / 2) - (tooltipRect.width / 2);
-        let y = nodeRect.bottom + 10;
-
-        // Adjust if tooltip goes off screen
-        if (x + tooltipRect.width > viewportWidth) {
-            x = viewportWidth - tooltipRect.width - 10;
-        }
-        if (x < 10) {
-            x = 10;
-        }
-        if (y + tooltipRect.height > viewportHeight) {
-            y = nodeRect.top - tooltipRect.height - 10;
-        }
-        if (y < 10) {
-            y = 10;
+    showTrackNodeTooltipWithDelay(trackNode) {
+        // Hide any currently active tooltip first
+        if (this.currentActiveTooltip && this.currentActiveTooltip !== trackNode) {
+            this.hideTrackNodeTooltipImmediate();
         }
 
-        this.elements.trackNodeTooltip.style.left = `${x}px`;
-        this.elements.trackNodeTooltip.style.top = `${y}px`;
+        // Clear any existing hide timeout
+        if (this.timeouts.trackNodeHide) {
+            clearTimeout(this.timeouts.trackNodeHide);
+            this.timeouts.trackNodeHide = null;
+        }
+
+        // Show tooltip with delay
+        this.timeouts.trackNodeShow = setTimeout(() => {
+            const tagsContainer = trackNode.querySelector('.tags-container');
+            if (tagsContainer) {
+                tagsContainer.classList.add('show-tooltip');
+                this.currentActiveTooltip = trackNode;
+            }
+        }, this.config.tooltipDelay);
     }
+
+    /**
+     * Hide track node tooltip with delay (CSS-based)
+     */
+    hideTrackNodeTooltipWithDelay(trackNode) {
+        // Clear any existing show timeout
+        if (this.timeouts.trackNodeShow) {
+            clearTimeout(this.timeouts.trackNodeShow);
+            this.timeouts.trackNodeShow = null;
+        }
+
+        // Hide tooltip with delay
+        this.timeouts.trackNodeHide = setTimeout(() => {
+            const tagsContainer = trackNode.querySelector('.tags-container');
+            if (tagsContainer && !tagsContainer.matches(':hover')) {
+                tagsContainer.classList.remove('show-tooltip');
+                if (this.currentActiveTooltip === trackNode) {
+                    this.currentActiveTooltip = null;
+                }
+            }
+        }, this.config.tooltipHideDelay);
+    }
+
+    /**
+     * Keep tooltip visible when hovering over it
+     */
+    keepTooltipVisible(tagsContainer) {
+        // Clear any hide timeout
+        if (this.timeouts.trackNodeHide) {
+            clearTimeout(this.timeouts.trackNodeHide);
+            this.timeouts.trackNodeHide = null;
+        }
+        // Ensure tooltip stays visible
+        tagsContainer.classList.add('show-tooltip');
+    }
+
+    /**
+     * Hide tooltip when leaving container
+     */
+    hideTooltipFromContainer(tagsContainer) {
+        // Hide immediately when leaving tooltip area
+        setTimeout(() => {
+            if (!tagsContainer.matches(':hover') && !tagsContainer.closest('.track-node').matches(':hover')) {
+                tagsContainer.classList.remove('show-tooltip');
+                this.currentActiveTooltip = null;
+            }
+        }, 50);
+    }
+
+    /**
+     * Simple tooltip positioning on hover
+     */
+    initializeSimpleTooltips() {
+        document.addEventListener('mouseenter', (e) => {
+            const trackNode = e.target.closest('.track-node');
+            if (trackNode) {
+                const tagsContainer = trackNode.querySelector('.tags-container');
+                if (tagsContainer) {
+                    this.positionTooltipSimple(tagsContainer, trackNode);
+                }
+            }
+        }, true);
+    }
+    
+    /**
+     * Super simple track tooltip system with external tooltip
+     */
+    initializeSimpleTrackTooltips() {
+        // Create ONE external tooltip for all nodes
+        const externalTooltip = document.createElement('div');
+        externalTooltip.className = 'external-track-tooltip';
+        externalTooltip.style.cssText = `
+            position: fixed;
+            display: none;
+            background: rgba(15, 15, 35, 0.95);
+            border-radius: 8px;
+            padding: 8px;
+            z-index: 999999999;
+            min-width: 200px;
+            max-width: 280px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            pointer-events: auto;
+            color: white;
+            font-size: 12px;
+        `;
+        document.body.appendChild(externalTooltip);
+
+        let showTimeout = null;
+        let hideTimeout = null;
+        let currentNode = null;
+
+        // Show tooltip on hover
+        document.addEventListener('mouseenter', (e) => {
+            if (!e.target || typeof e.target.closest !== 'function') return;
+            
+            const trackNode = e.target.closest('.track-node');
+            if (trackNode) {
+                clearTimeout(hideTimeout);
+                currentNode = trackNode;
+
+                showTimeout = setTimeout(() => {
+                    const tagsContainer = trackNode.querySelector('.tags-container');
+                    if (tagsContainer) {
+                        // Copy content to external tooltip
+                        externalTooltip.innerHTML = tagsContainer.innerHTML;
+                        
+                        // Ensure all tags have data-tag-value attribute
+                        this.fixTooltipTagAttributes(externalTooltip);
+                        
+                        // Re-attach event listeners to tags
+                        this.attachTooltipEventListeners(externalTooltip, trackNode);
+                        
+                        // Position below node
+                        const rect = trackNode.getBoundingClientRect();
+                        externalTooltip.style.left = `${rect.left + rect.width/2 - 140}px`;
+                        externalTooltip.style.top = `${rect.bottom + 10}px`;
+                        
+                        externalTooltip.style.display = 'block';
+                    }
+                }, 300);
+            }
+        }, true);
+
+        // Hide tooltip on leave
+        document.addEventListener('mouseleave', (e) => {
+            if (!e.target || typeof e.target.closest !== 'function') return;
+            
+            const trackNode = e.target.closest('.track-node');
+            if (trackNode === currentNode || e.target === externalTooltip) {
+                clearTimeout(showTimeout);
+                
+                hideTimeout = setTimeout(() => {
+                    if (!externalTooltip.matches(':hover')) {
+                        externalTooltip.style.display = 'none';
+                        currentNode = null;
+                    }
+                }, 200);
+            }
+        }, true);
+
+        // Keep tooltip visible when hovering over it
+        externalTooltip.addEventListener('mouseenter', () => {
+            clearTimeout(hideTimeout);
+        });
+
+        externalTooltip.addEventListener('mouseleave', () => {
+            externalTooltip.style.display = 'none';
+            currentNode = null;
+        });
+    }
+
+    /**
+     * Fix tag attributes in tooltip to ensure they work with Tags.toggleSelection
+     */
+    fixTooltipTagAttributes(tooltip) {
+        const tagElements = tooltip.querySelectorAll('.tag, .tooltip-tag');
+        tagElements.forEach(tagElement => {
+            // If tag doesn't have data-tag-value, create it from textContent
+            if (!tagElement.dataset.tagValue) {
+                const tagText = tagElement.textContent || tagElement.getAttribute('data-tag');
+                if (tagText) {
+                    // Try to parse as category:value or use as-is
+                    if (tagText.includes(':')) {
+                        tagElement.dataset.tagValue = tagText;
+                    } else {
+                        // Try to find the full tag from the track's tags
+                        const trackData = this.getTrackDataFromTooltipContext(tooltip);
+                        if (trackData && trackData.tags) {
+                            const fullTag = trackData.tags.find(tag => 
+                                tag.includes(':') && tag.split(':')[1] === tagText
+                            );
+                            if (fullTag) {
+                                tagElement.dataset.tagValue = fullTag;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Get track data context for tooltip
+     */
+    getTrackDataFromTooltipContext(tooltip) {
+        // Find the current node being displayed
+        const allNodes = document.querySelectorAll('.track-node');
+        for (const node of allNodes) {
+            if (node.dataset.track) {
+                try {
+                    return JSON.parse(node.dataset.track);
+                } catch (e) {
+                    continue;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Attach event listeners to tags and input in external tooltip
+     */
+    attachTooltipEventListeners(tooltip, trackNode) {
+        // Get track data from node's dataset (same as original system)
+        let trackData = null;
+        try {
+            if (trackNode.dataset.track) {
+                trackData = JSON.parse(trackNode.dataset.track);
+            }
+        } catch (error) {
+            console.warn('Error parsing track data from node:', error);
+            return;
+        }
+        
+        if (!trackData) {
+            console.warn('No track data found in node');
+            return;
+        }
+        
+        // Add click listeners to tags
+        const tagElements = tooltip.querySelectorAll('.tag, .tooltip-tag');
+        console.log('🔍 Found', tagElements.length, 'tag elements in tooltip');
+        
+        tagElements.forEach((tagElement, index) => {
+            console.log(`🏷️ Tag ${index}:`, {
+                textContent: tagElement.textContent,
+                dataset: tagElement.dataset,
+                className: tagElement.className
+            });
+            
+            tagElement.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                
+                console.log('🖱️ Tag clicked:', {
+                    textContent: tagElement.textContent,
+                    tagValue: tagElement.dataset.tagValue,
+                    hasTagsModule: typeof Tags !== 'undefined',
+                    hasToggleSelection: typeof Tags !== 'undefined' && Tags.toggleSelection
+                });
+                
+                // Check if tag is inside track node (crucial for node generation)
+                const parentTrackNode = tagElement.closest('.track-node');
+                console.log('🏠 Parent track node found:', !!parentTrackNode);
+                
+                // Use existing Tags.toggleSelection system
+                if (typeof Tags !== 'undefined' && Tags.toggleSelection) {
+                    console.log('🚀 Calling Tags.toggleSelection with:', tagElement);
+                    
+                    // IMPORTANT: The tag needs to be inside a track-node for branch creation
+                    if (!parentTrackNode) {
+                        console.warn('⚠️ Tag is not inside a track-node, moving it there temporarily');
+                        // Temporarily append to track node for the click
+                        trackNode.appendChild(tagElement);
+                    }
+                    
+                    await Tags.toggleSelection(tagElement);
+                    console.log('✅ Tags.toggleSelection completed');
+                } else {
+                    console.error('❌ Tags.toggleSelection not available');
+                }
+                
+                // Hide tooltip after click
+                tooltip.style.display = 'none';
+            });
+        });
+        
+        // Add functionality to input field if present
+        let inputElement = tooltip.querySelector('.tooltip-add-tag-input');
+        console.log('📝 Input field found in tooltip:', !!inputElement);
+        
+        // If no input field exists, create one
+        if (!inputElement) {
+            console.log('➕ Creating input field manually');
+            inputElement = document.createElement('input');
+            inputElement.type = 'text';
+            inputElement.placeholder = '+';
+            inputElement.className = 'tooltip-add-tag-input';
+            inputElement.style.cssText = `
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                color: white;
+                background: rgba(0, 100, 255, 0.8);
+                border: 2px solid rgba(255, 255, 255, 0.8);
+                outline: none;
+                transition: all 0.2s ease;
+                cursor: text;
+                text-transform: none;
+                letter-spacing: 0.02em;
+                line-height: 1.2;
+                width: 100px;
+                height: 24px;
+                margin-top: 8px;
+                display: block;
+                position: relative;
+                z-index: 999999;
+                pointer-events: auto;
+            `;
+            tooltip.appendChild(inputElement);
+            console.log('➕ Input element appended to tooltip:', inputElement);
+        }
+        
+        if (inputElement) {
+            console.log('🎯 Input element event listener attached');
+            
+            // Debug: Add focus event to test if input is working
+            inputElement.addEventListener('focus', () => {
+                console.log('🔍 Input field focused');
+            });
+            
+            inputElement.addEventListener('blur', () => {
+                console.log('🔍 Input field blurred');
+            });
+            
+            inputElement.addEventListener('input', (e) => {
+                console.log('🔍 Input value changed:', e.target.value);
+            });
+            
+            inputElement.addEventListener('keydown', (e) => {
+                console.log('⌨️ Keydown in tooltip input:', e.key);
+            });
+            
+            // FORCE TEST: Add a test button to directly call addTagToNode
+            const testButton = document.createElement('button');
+            testButton.textContent = 'TEST';
+            testButton.style.cssText = `
+                background: red;
+                color: white;
+                border: none;
+                padding: 2px 4px;
+                margin-left: 5px;
+                cursor: pointer;
+            `;
+            testButton.addEventListener('click', async (e) => {
+                console.log('🧪 TEST BUTTON CLICKED - forcing addTagToNode call');
+                const testTag = 'test:debug';
+                
+                if (typeof TrackNodes !== 'undefined' && TrackNodes.addTagToNode) {
+                    console.log('🔧 TrackNodes.addTagToNode is available, calling...');
+                    await TrackNodes.addTagToNode(trackNode, trackData, testTag);
+                } else {
+                    console.error('❌ TrackNodes.addTagToNode not available');
+                }
+            });
+            
+            tooltip.appendChild(testButton);
+            
+            inputElement.addEventListener('keypress', async (e) => {
+                console.log('⌨️ Key pressed in tooltip input:', e.key);
+                if (e.key === 'Enter') {
+                    console.log('↩️ Enter key detected');
+                    const newTag = e.target.value.trim();
+                    console.log('🏷️ New tag value:', newTag);
+                    if (newTag && newTag.includes(':')) {
+                        console.log('✅ Tag format valid (contains :)');
+                        // Use existing TrackNodes.addTagToNode system
+                        if (typeof TrackNodes !== 'undefined' && TrackNodes.addTagToNode) {
+                            console.log('🔧 TrackNodes.addTagToNode is available');
+                            console.log('💾 Adding tag to database:', {
+                                newTag,
+                                trackData: {
+                                    title: trackData.title,
+                                    artist: trackData.artist,
+                                    album: trackData.album,
+                                    isGenerated: trackData.generated || (trackData.id && trackData.id.startsWith('generated_'))
+                                }
+                            });
+                            
+                            await TrackNodes.addTagToNode(trackNode, trackData, newTag);
+                            
+                            console.log('✅ TrackNodes.addTagToNode completed');
+                            
+                            // Force refresh tooltip with latest track data
+                            setTimeout(() => {
+                                try {
+                                    // Get the updated track data from the node
+                                    const updatedTrackData = JSON.parse(trackNode.dataset.track);
+                                    
+                                    // Get updated tags container or recreate
+                                    const updatedTagsContainer = trackNode.querySelector('.tags-container');
+                                    if (updatedTagsContainer) {
+                                        tooltip.innerHTML = updatedTagsContainer.innerHTML;
+                                        
+                                        // Ensure all tags have proper data attributes
+                                        this.fixTooltipTagAttributes(tooltip);
+                                        
+                                        // Re-attach all event listeners with updated data
+                                        this.attachTooltipEventListeners(tooltip, trackNode);
+                                        
+                                        console.log('✅ Tooltip refreshed with updated tags:', updatedTrackData.tags);
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error refreshing tooltip:', error);
+                                }
+                            }, 100); // Small delay to ensure DOM updates are complete
+                        } else {
+                            console.error('❌ TrackNodes.addTagToNode not available');
+                        }
+                        
+                        e.target.value = '';
+                    } else {
+                        console.warn('⚠️ Invalid tag format. Must contain ":" (e.g., "mood:happy")');
+                    }
+                } else {
+                    console.log('ℹ️ Key other than Enter pressed:', e.key);
+                }
+            });
+        }
+    }
+
 }
 
 // Make available globally
