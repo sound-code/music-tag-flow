@@ -9,7 +9,7 @@ class Application {
         this.eventBus = null;
         this.serviceManager = null;
         this.isInitialized = false;
-        this.legacyModules = ['Tree', 'DragDrop', 'UI', 'RealTimeClock'];
+        this.legacyModules = ['Tree', 'DragDrop', 'UI'];
     }
 
     /**
@@ -175,6 +175,11 @@ class Application {
                 autoStart: true
             });
         }
+        
+        this.serviceManager.registerService('clock', ClockService, [], {
+            required: false,
+            autoStart: true
+        });
         
         // StatsService replaced by StatsComponent
         

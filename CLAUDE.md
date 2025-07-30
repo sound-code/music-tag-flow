@@ -57,6 +57,7 @@ The application is transitioning from a monolithic approach to a service-based a
 - **SearchService.js** - Real-time search functionality across tracks/artists/albums
 - **PlaylistService.js** - Playlist management and export functionality
 - **PhasesService.js** - Playlist phase visualization (time-based concentric circles)
+- **ClockService.js** - Real-time playlist duration clock management
 - **StatsService.js** - Statistics tracking and display
 - **LegendService.js** - Tag color legend management
 
@@ -78,7 +79,6 @@ The application is transitioning from a monolithic approach to a service-based a
 - **dragDrop.js**, **tree.js**, **tags.js** - Feature facades bridging to services
 - **ui.js** - UI utilities and user interactions
 - **utils.js** - Shared utility functions and track generation
-- **realTimeClock.js** - Clock functionality (uses global namespace pattern)
 
 ### Key Architecture Patterns
 
@@ -200,6 +200,7 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - ✅ Search → SearchService
 - ✅ Playlist → PlaylistService
 - ✅ Phases → PhasesService (phases.js removed)
+- ✅ RealTimeClock → ClockService (realTimeClock.js removed)
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
 

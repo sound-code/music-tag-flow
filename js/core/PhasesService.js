@@ -86,7 +86,7 @@ class PhasesService extends ServiceBase {
             this.handleClockStopped();
         });
         
-        // Listen for time elapsed events from RealTimeClock
+        // Listen for time elapsed events from ClockService
         this.subscribeToEvent('time:elapsed', (data) => {
             this.handleTimeElapsed(data);
         });
@@ -241,7 +241,7 @@ class PhasesService extends ServiceBase {
      * @private
      */
     isClockRunning() {
-        return window.RealTimeClock && window.RealTimeClock.isRunning;
+        return this.getState('clock.isRunning') || false;
     }
 
     /**
@@ -330,7 +330,7 @@ class PhasesService extends ServiceBase {
     }
     
     /**
-     * Handle time elapsed events from RealTimeClock
+     * Handle time elapsed events from ClockService
      * @param {Object} data - Time data {totalSeconds, minutes, timeString, timestamp}
      * @private
      */
