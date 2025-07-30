@@ -38,6 +38,7 @@ npm run dev        # Run Electron with devtools
 - No testing framework or build tools are configured - the application runs directly without compilation or bundling
 - No linting or type checking configured - maintain code quality manually
 - When asked to run lint/typecheck commands, ask user for the appropriate commands and suggest adding them to CLAUDE.md
+- Manual testing files exist in `tests/` directory for specific functionality validation
 
 ## Architecture
 
@@ -236,6 +237,11 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - Events: For actions/commands that trigger behavior
 - Don't use events for state synchronization
 
+**Service Event Bridges**:
+- Services may need internal bridges to handle events they emit (like DragDropService)
+- Use `setupServiceBridges()` pattern to connect service events to other services
+- Bridge pattern: Service emits event → Internal bridge listens → Calls appropriate service method
+
 ## Electron-Specific Features
 
 When running in Electron:
@@ -259,3 +265,24 @@ Database schema includes:
 - Artists, Albums, Tracks tables
 - Tag associations
 - Playlist metadata
+
+## Debugging and Development Tips
+
+**Console Debugging**: 
+- DragDropService uses 🔥 prefixed console.log for debugging
+- TrackNodesService uses specific logging patterns
+- Check browser console (F12) for service initialization and event flow
+
+**Common Development Issues**:
+- **Drag & Drop Not Working**: Check if DragDropService bridges are set up correctly in `setupServiceBridges()`
+- **Nodes Positioning Incorrectly**: Verify TreeService positioning logic and collision detection
+- **Service Not Found**: Ensure service is registered in main.js and ServiceManager has initialized
+- **Events Not Firing**: Check EventBus subscriptions and service initialization order
+
+**Manual Testing Workflow**:
+1. Start local server: `python -m http.server 8000`
+2. Open browser to `http://localhost:8000`
+3. Open browser console (F12) for debugging
+4. Test drag & drop from library to center canvas
+5. Verify tree generation and node positioning
+6. Test search, playlist, and other interactive features
