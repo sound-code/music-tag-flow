@@ -31,8 +31,7 @@ const Tags = {
         
         let trackNode = tagElement.closest('.track-node');
         if (trackNode) {
-            // DISABLED - now handled by EventBus system
-            
+            // Visual feedback only - actual functionality handled by EventBus
             tagElement.classList.add('selected');
             setTimeout(() => {
                 tagElement.classList.remove('selected');

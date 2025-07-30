@@ -197,7 +197,7 @@ const UI = {
         // Track current hover state
         this.currentHoverTarget = null;
 
-        // TOOLTIP HANDLING DISABLED - now handled by UIService to avoid conflicts
+        // Tooltip handling delegated to UIService for consistency
         // UIService handles all tooltips for track-item and track-list-item
         // CSS hover handles track-node tooltips
 

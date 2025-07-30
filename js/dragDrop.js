@@ -91,21 +91,7 @@ const DragDrop = {
                 }
             });
 
-            // Bridge tag click events to create additional branches - DISABLED
-            window.EventBus.on('tag:click-from-node', (data) => {
-                // DISABLED - use the new tag:click event instead
-            });
-
-            // Bridge TagService tree:create-branches events - RIMOSSO 
-            // Ora gestito da TrackNodesService, rimuovere per evitare duplicazioni
-            // window.EventBus.on('tree:create-branches', (data) => {
-            //     TrackNodesService handles this now
-            // });
-
-            // Bridge tag:click events - DISABILITATO, ora gestito direttamente da TrackNodesService
-            // window.EventBus.on('tag:click', (data) => {
-            //     TrackNodesService handles tag clicks directly now
-            // });
+            // Legacy event bridges removed - now handled by TrackNodesService
         }
     },
 
