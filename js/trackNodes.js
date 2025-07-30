@@ -69,491 +69,125 @@ const TrackNodes = {
     },
 
     /**
-     * NEW METHOD: Create branches directly for a tag - bypasses all existing systems
+     * Create branches directly for a tag - Bridge to TreeService
      * @param {string} tagValue - The tag value (e.g., "mood:confident")
      * @param {HTMLElement} sourceNode - The source node to branch from
      */
     async createBranchesDirectly(tagValue, sourceNode) {
-        const callId = Date.now();
-        console.trace('🌿 Call stack trace');
-        
-        // Prevent multiple calls for the same tag+node combination
-        const callKey = `${tagValue}-${sourceNode.id}`;
-        if (this._activeCalls && this._activeCalls.has(callKey)) {
-            console.warn(`🚫 [${callId}] Duplicate call prevented for ${callKey}`);
-            return;
-        }
-        
-        // Initialize active calls tracking
-        if (!this._activeCalls) {
-            this._activeCalls = new Set();
-        }
-        this._activeCalls.add(callKey);
-        
-        try {
-            // Get source track data
-            const sourceTrackData = JSON.parse(sourceNode.dataset.track);
-            
-            // Generate EXACTLY 5 tracks with this tag using DataLoader
-            const relatedTracks = await DataLoader.generateTracksWithTag(tagValue, sourceTrackData);
-            
-            if (!relatedTracks || relatedTracks.length === 0) {
-                console.warn(`🌿 [${callId}] No related tracks found for tag:`, tagValue);
-                return;
-            }
-            
-            
-            // Filter out identical tracks and take EXACTLY 5
-            const filteredTracks = relatedTracks.filter(track => 
-                !(track.title === sourceTrackData.title && track.artist === sourceTrackData.artist)
-            );
-            
-            // Take EXACTLY 5 tracks, no more, no less
-            const tracksToCreate = filteredTracks.slice(0, 5);
-            
-            // Create each node with proper delay
-            tracksToCreate.forEach((track, i) => {
-                setTimeout(() => {
-                    
-                    // Create new node positioned around the source
-                    const newNode = this.create(track, 0, 0, sourceNode, tagValue);
-                    
-                    // Add to playlist via EventBus or direct service call
-                    if (window.EventBus) {
-                        window.EventBus.emit('node:click', {
-                            track: track,
-                            node: newNode,
-                            connectionTag: tagValue || 'direct-selection'
-                        });
-                    } else if (window.App && window.App.getService) {
-                        const playlistService = window.App.getService('playlist');
-                        if (playlistService && typeof playlistService.addTrack === 'function') {
-                            playlistService.addTrack(track, tagValue || 'direct-selection');
-                        }
-                    }
-                    
-                }, i * 300); // Stagger creation
-            });
-            
-            // Show notification
-            if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification(`🌿 Created ${tracksToCreate.length} branches for ${tagUtils.getTagValue(tagValue)}`);
-            }
-            
-        } catch (error) {
-            console.error(`🌿 [${callId}] Error creating branches:`, error);
-        } finally {
-            // Clean up after 5 seconds
-            setTimeout(() => {
-                this._activeCalls.delete(callKey);
-            }, 5000);
-        }
-    },
-
-    /**
-     * Toggle play state for a track
-     * @param {HTMLElement} playBtn - The play button element
-     * @param {Object} track - Track data object
-     */
-    togglePlay(playBtn, track) {
-        document.querySelectorAll('.play-btn.playing, .list-play-btn.playing')
-            .forEach(btn => {
-                if (btn !== playBtn) {
-                    btn.classList.remove('playing');
+        // Delegate to TreeService for proper tree management
+        if (window.App && window.App.getService) {
+            const treeService = window.App.getService('tree');
+            if (treeService && typeof treeService.createBranchesForTag === 'function') {
+                // Get source track data
+                try {
+                    const sourceTrackData = JSON.parse(sourceNode.dataset.track);
+                    await treeService.createBranchesForTag(tagValue, sourceNode, sourceTrackData);
+                } catch (error) {
+                    console.error('Error creating branches via TreeService:', error);
                 }
-            });
-        
-        playBtn.classList.toggle('playing');
-        
-        if (playBtn.classList.contains('playing')) {
-            Utils.showNotification(`Now playing: ${track.title} by ${track.artist}`);
+            } else {
+                console.warn('TreeService not available for createBranchesDirectly');
+            }
         }
     },
 
+    // togglePlay removed - now handled by TrackNodesService.handlePlayButtonClick
+
     /**
-     * Add a track to the tree by creating a branch
+     * Add a track to the tree and playlist - Bridge to multiple services
      * @param {Object} track - Track data object
      * @param {string} connectionTag - The tag that connects this track to its parent
      * @param {HTMLElement} parentNode - Parent node
      * @param {HTMLElement} clickedContainer - The container that was clicked (if any)
      */
     addToPlaylist(track, connectionTag, parentNode, clickedContainer = null) {
-        // Create new node as child of parent
-        let newNode;
-        if (parentNode) {
-            newNode = this.create(track, 0, 0, parentNode, connectionTag);
-        } else {
-            // First node (root)
-            newNode = this.create(track, AppState.canvas.offsetWidth / 2, AppState.canvas.offsetHeight / 2);
-        }
-        
-        const nodeData = {
-            element: newNode,
-            track: track,
-            selectedTag: connectionTag
-        };
-        
-        // Find and update the node data if it already exists
-        const existingIndex = AppState.allNodes.findIndex(n => n.element === newNode);
-        if (existingIndex !== -1) {
-            AppState.allNodes[existingIndex] = nodeData;
-        }
-        
-        
-        // Close the specific container that was clicked
-        if (clickedContainer) {
-            const containerIndex = AppState.allContainers.indexOf(clickedContainer);
-            if (containerIndex > -1) {
-                AppState.allContainers.splice(containerIndex, 1);
-            }
-            
-                if (clickedContainer === AppState.currentMultiTagContainer) {
-                AppState.setCurrentMultiTagContainer(null);
-                Tags.clearSelected();
-            }
-            
-            clickedContainer.remove();
-            Utils.updateCanvasSize();
-        }
-        
-        Utils.showNotification(`Added "${track.title}" connected by "${tagUtils.getTagValue(connectionTag)}" tag`);
-    },
-
-    /**
-     * Create a branch with multiple tracks for a selected tag - DISABLED TO PREVENT DUPLICATION
-     * @param {string} tag - The tag to create branches for
-     * @param {HTMLElement} sourceNode - The source node
-     */
-    async createBranchesForTag(tag, sourceNode) {
-        return; // DISABLED
-        // Get the source track to exclude it from generated tracks
-        let sourceTrack = null;
-        try {
-            const sourceTrackData = sourceNode.dataset.track;
-            if (sourceTrackData) {
-                sourceTrack = this.safeParseTrackData(sourceTrackData);
-            }
-        } catch (error) {
-        }
-        
-        // Generate tracks with this tag using DataLoader, excluding the source track
-        const tracks = await DataLoader.generateTracksWithTag(tag, sourceTrack);
-        
-        // Create up to 5 branches to show more variety
-        const numBranches = Math.min(5, tracks.length);
-        
-        for (let i = 0; i < numBranches; i++) {
-            setTimeout(() => {
-                const track = tracks[i];
-                
-                // RULE ENFORCEMENT: Double-check that we're not creating identical node
-                if (sourceTrack && 
-                    track.title === sourceTrack.title && 
-                    track.artist === sourceTrack.artist && 
-                    track.album === sourceTrack.album) {
-                    return; // Skip this track
+        if (window.App && window.App.getService) {
+            // 1. Create node via TreeService
+            const treeService = window.App.getService('tree');
+            if (treeService) {
+                let position = { x: 400, y: 300 }; // Default center
+                if (!parentNode && AppState && AppState.canvas) {
+                    position = { 
+                        x: AppState.canvas.offsetWidth / 2, 
+                        y: AppState.canvas.offsetHeight / 2 
+                    };
                 }
-                
-                this.addToPlaylist(track, tag, sourceNode);
-            }, i * 200); // Stagger creation for animation effect
+                treeService.addNode(track, position, parentNode, connectionTag);
+            }
+            
+            // 2. Add to playlist via PlaylistService
+            const playlistService = window.App.getService('playlist');
+            if (playlistService && typeof playlistService.addTrack === 'function') {
+                playlistService.addTrack(track, connectionTag);
+            }
+            
+            // 3. Handle container cleanup (keep legacy for now)
+            if (clickedContainer) {
+                const containerIndex = AppState.allContainers.indexOf(clickedContainer);
+                if (containerIndex > -1) {
+                    AppState.allContainers.splice(containerIndex, 1);
+                }
+                if (clickedContainer === AppState.currentMultiTagContainer) {
+                    AppState.setCurrentMultiTagContainer(null);
+                    if (typeof Tags !== 'undefined' && Tags.clearSelected) {
+                        Tags.clearSelected();
+                    }
+                }
+                clickedContainer.remove();
+                if (typeof Utils !== 'undefined' && Utils.updateCanvasSize) {
+                    Utils.updateCanvasSize();
+                }
+            }
         }
-        
-        Utils.showNotification(`Created ${numBranches} branches for "${tagUtils.getTagValue(tag)}" tag`);
     },
 
-    // addToPlaylistDisplay method removed - now handled centrally by Playlist.addTrackToPlaylist
-
-    // recenterTreeOnTrack method removed - now handled centrally by Playlist.recenterTreeOnTrack
+    // createBranchesForTag removed - functionality moved to TreeService
 
 
 
     /**
-     * Add a new tag to an existing node
+     * Add a new tag to an existing node - Bridge to TrackNodesService
      * @param {HTMLElement} node - The node element
      * @param {Object} track - Track data object  
      * @param {string} newTag - New tag to add (format: "category:value")
      */
     async addTagToNode(node, track, newTag) {
-        // Add tag to track data
-        if (!track.tags.includes(newTag)) {
-            track.tags.push(newTag);
-            
-            // Update original track data only if it's from the library (not generated)
-            const isGenerated = track.generated || (track.id && track.id.startsWith('generated_'));
-            
-            if (!isGenerated) {
-                await this.updateOriginalTrackData(track, newTag);
+        // Delegate to TrackNodesService
+        if (window.App && window.App.getService) {
+            const trackNodesService = window.App.getService('tracknodes');
+            if (trackNodesService && typeof trackNodesService.addTagToNode === 'function') {
+                await trackNodesService.addTagToNode(node, track, newTag);
+            } else {
+                throw new Error('TrackNodesService addTagToNode method is required but not available');
             }
-        }
-        
-        // Update the visual tags container by recreating it completely (always do this)
-        const oldTagsContainer = node.querySelector('.tags-container');
-        if (oldTagsContainer) {
-            // Recreate the entire tags container with updated track data
-            const newTagsContainer = this.createTagsContainer(track, node);
-            node.replaceChild(newTagsContainer, oldTagsContainer);
-        }
-        
-        // Ensure styles exist for the new tag category (for tooltips)
-        const category = tagUtils.getTagType(newTag);
-        this.ensureCategoryStyles(category);
-        
-        // Node ALWAYS keeps neutral gray color (never changes)
-        node.dataset.tagCategory = 'neutral';
-        if (!node.classList.contains('node-neutral')) {
-            node.classList.add('node-neutral');
-        }
-        
-        // Update the node's dataset with the new track data
-        node.dataset.track = JSON.stringify(track);
-        
-        // Force refresh any open tooltips to show the new tag
-        if (UI && UI.tooltip && UI.tooltip.style.display === 'block') {
-            UI.tooltip.style.display = 'none';
-        }
-        
-        // Also clear the tooltip's current hover target to force refresh
-        if (UI && UI.currentHoverTarget) {
-            UI.currentHoverTarget = null;
-        }
-        
-        Utils.showNotification(`✅ Tag "${newTag}" added to "${track.title}"`);
-    },
-
-    /**
-     * Ensure CSS styles exist for a category
-     * @param {string} category - Category name
-     */
-    ensureCategoryStyles(category) {
-        // Check if styles already exist
-        const existingStyle = document.querySelector(`#category-styles-${category}`);
-        if (existingStyle) return;
-        
-        // Get color from centralized TagUtils
-        const color = tagUtils.getTagColor(`${category}:test`);
-        
-        // Create style element
-        const style = document.createElement('style');
-        style.id = `category-styles-${category}`;
-        style.textContent = `
-            /* Tooltip tag styles for ${category} */
-            .tooltip-tag.tag-${category} {
-                background: linear-gradient(135deg, ${color}, ${this.darkenColor(color, 20)});
-                border-color: ${this.hexToRgba(color, 0.3)};
-            }
-            
-            /* Node styling for ${category} */
-            .track-node.node-tag-${category} {
-                background: linear-gradient(135deg, ${this.hexToRgba(color, 0.9)}, ${this.hexToRgba(this.darkenColor(color, 20), 0.9)});
-                border: 2px solid ${this.hexToRgba(color, 0.6)};
-                box-shadow: 0 4px 20px ${this.hexToRgba(color, 0.3)};
-            }
-            
-            .track-node.node-tag-${category}:hover {
-                background: linear-gradient(135deg, ${color}, ${this.darkenColor(color, 20)});
-                box-shadow: 0 6px 24px ${this.hexToRgba(color, 0.4)};
-            }
-            
-            /* Legend popup tag styles for ${category} */
-            .legend-popup-tag.tag-${category} {
-                color: ${color};
-                border-color: ${this.hexToRgba(color, 0.3)};
-            }
-        `;
-        
-        document.head.appendChild(style);
-    },
-
-    /**
-     * Darken a hex color by a percentage
-     * @param {string} color - Hex color
-     * @param {number} percent - Percentage to darken (0-100)
-     * @returns {string} Darkened hex color
-     */
-    darkenColor(color, percent) {
-        const num = parseInt(color.replace("#", ""), 16);
-        const amt = Math.round(2.55 * percent);
-        const R = (num >> 16) - amt;
-        const G = (num >> 8 & 0x00FF) - amt;
-        const B = (num & 0x0000FF) - amt;
-        return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-            (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
-    },
-
-    /**
-     * Convert hex color to rgba
-     * @param {string} hex - Hex color
-     * @param {number} alpha - Alpha value (0-1)
-     * @returns {string} RGBA color string
-     */
-    hexToRgba(hex, alpha) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    },
-
-    /**
-     * Safely decode and parse track data from HTML dataset
-     * @param {string} trackDataString - Raw track data string
-     * @returns {Object|null} Parsed track data or null if parsing fails
-     */
-    safeParseTrackData(trackDataString) {
-        let cleanString = '';
-        try {
-            // More comprehensive HTML entity decoding
-            cleanString = trackDataString;
-            
-            // Create a temporary element to decode HTML entities
-            const tempElement = document.createElement('div');
-            tempElement.innerHTML = cleanString;
-            cleanString = tempElement.textContent || tempElement.innerText || '';
-            
-            // Additional manual replacements for common issues
-            cleanString = cleanString
-                .replace(/&apos;/g, "'")
-                .replace(/&quot;/g, '"')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&#39;/g, "'")
-                .replace(/&nbsp;/g, ' ')
-                .trim();
-            
-            // Check if the string looks like valid JSON before parsing
-            if (!cleanString.startsWith('{')) {
-                return null;
-            }
-            
-            // If string doesn't end with }, try to fix truncated JSON
-            if (!cleanString.endsWith('}')) {
-                
-                // Try to get the track data from the element's text content or other attributes
-                const trackElement = this.findTrackElementByPartialData(cleanString);
-                if (trackElement) {
-                    return this.reconstructTrackDataFromElement(trackElement);
-                }
-                
-                return null;
-            }
-            
-            return JSON.parse(cleanString);
-        } catch (error) {
-            return null;
+        } else {
+            throw new Error('App.getService is required but not available');
         }
     },
 
-    /**
-     * Find track element by partial JSON data (for truncated datasets)
-     * @param {string} partialJson - Partial JSON string
-     * @returns {HTMLElement|null} Track element or null
-     */
-    findTrackElementByPartialData(partialJson) {
-        try {
-            // Try to extract title from partial JSON
-            const titleMatch = partialJson.match(/"title":"([^"]+)"/);
-            if (titleMatch) {
-                const partialTitle = titleMatch[1];
-                const trackItems = document.querySelectorAll('.track-item');
-                
-                for (const item of trackItems) {
-                    const titleElement = item.querySelector('.track-title');
-                    if (titleElement && titleElement.textContent.includes(partialTitle)) {
-                        return item;
-                    }
-                }
-            }
-        } catch (error) {
-        }
-        return null;
-    },
+    // ensureCategoryStyles, darkenColor, hexToRgba removed - now handled by TrackNodesService
+
+    // safeParseTrackData, findTrackElementByPartialData, reconstructTrackDataFromElement removed - now handled by TrackNodesService
 
     /**
-     * Reconstruct track data from element's DOM content
-     * @param {HTMLElement} trackElement - Track element
-     * @returns {Object|null} Reconstructed track data
-     */
-    reconstructTrackDataFromElement(trackElement) {
-        try {
-            const titleElement = trackElement.querySelector('.track-title');
-            
-            if (!titleElement) {
-                return null;
-            }
-            
-            const title = titleElement.textContent.trim();
-            
-            // Try to find artist and album from parent containers
-            const albumFolder = trackElement.closest('.album-folder');
-            const artistFolder = trackElement.closest('.artist-folder');
-            
-            let artist = 'Unknown Artist';
-            let album = 'Unknown Album';
-            
-            if (artistFolder) {
-                const artistNameElement = artistFolder.querySelector('.artist-name');
-                if (artistNameElement) {
-                    artist = artistNameElement.textContent.trim();
-                }
-            }
-            
-            if (albumFolder) {
-                const albumNameElement = albumFolder.querySelector('.album-name');
-                if (albumNameElement) {
-                    album = albumNameElement.textContent.trim();
-                }
-            }
-            
-            // Basic track data - tags will be empty array for safety
-            const reconstructedData = {
-                title: title,
-                artist: artist,
-                album: album,
-                tags: [] // Start with empty tags to avoid issues
-            };
-            
-            return reconstructedData;
-        } catch (error) {
-            return null;
-        }
-    },
-
-    /**
-     * Update the original track data in the HTML library
+     * Update the original track data - Bridge to DataSourceAdapter
      * @param {Object} track - Track data object
      * @param {string} newTag - New tag to add
      */
     async updateOriginalTrackData(track, newTag) {
-        // Find the original track element in the library
-        const trackItems = document.querySelectorAll('.track-item');
-        let found = false;
-        
-        trackItems.forEach((item, index) => {
-            const originalTrackData = this.safeParseTrackData(item.dataset.track);
-            
-            if (originalTrackData) {
-                if (originalTrackData.title === track.title && 
-                    originalTrackData.artist === track.artist && 
-                    originalTrackData.album === track.album) {
-                    
-                    found = true;
-                    
-                    // Add the new tag to the original data
-                    if (!originalTrackData.tags.includes(newTag)) {
-                        originalTrackData.tags.push(newTag);
-                        // Update the dataset with the new track data
-                        item.dataset.track = JSON.stringify(originalTrackData);
-                    }
-                }
+        // Delegate to DataSourceAdapter which handles both localStorage and database
+        if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.addTagToTrack) {
+            try {
+                await DataSourceAdapter.addTagToTrack(track, newTag);
+            } catch (error) {
+                console.error('❌ Error updating track data:', error);
             }
-        });
-        if (found) {
-            // Persist the tag to the database
+        } else if (typeof DataLoader !== 'undefined' && DataLoader.addTagToTrack) {
+            // Fallback to DataLoader
             try {
                 await DataLoader.addTagToTrack(track, newTag);
             } catch (error) {
-                console.error('❌ Error saving tag to database:', error);
+                console.error('❌ Error updating track data via DataLoader:', error);
             }
         }
     },
