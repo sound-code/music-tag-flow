@@ -62,20 +62,26 @@ const DragDrop = {
     setupDragDropServiceBridge(dragDropService) {
         // Listen for DragDropService events and handle with legacy modules
         if (window.EventBus) {
-            // Bridge tree creation events to legacy TrackNodes
+            // Bridge tree creation events to TrackNodesService
             window.EventBus.on('tree:create-root-node', (data) => {
-                if (typeof TrackNodes !== 'undefined' && TrackNodes.create) {
-                    const rootNode = TrackNodes.create(data.trackData, data.x, data.y);
-                    // Store root node reference for tree building
-                    this._currentRootNode = rootNode;
+                if (window.App && window.App.getService) {
+                    const trackNodesService = window.App.getService('tracknodes');
+                    if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                        const rootNode = trackNodesService.createNode(data.trackData, data.x, data.y);
+                        // Store root node reference for tree building
+                        this._currentRootNode = rootNode;
+                    }
                 }
             });
 
             window.EventBus.on('tree:create-child-node', (data) => {
-                if (typeof TrackNodes !== 'undefined' && TrackNodes.create) {
-                    const childNode = TrackNodes.create(data.trackData, 0, 0, data.parentNode || this._currentRootNode, data.connectionTag);
-                    if (data.callback) {
-                        data.callback(childNode);
+                if (window.App && window.App.getService) {
+                    const trackNodesService = window.App.getService('tracknodes');
+                    if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                        const childNode = trackNodesService.createNode(data.trackData, 0, 0, data.parentNode || this._currentRootNode, data.connectionTag);
+                        if (data.callback) {
+                            data.callback(childNode);
+                        }
                     }
                 }
             });
@@ -91,7 +97,6 @@ const DragDrop = {
                 }
             });
 
-            // Legacy event bridges removed - now handled by TrackNodesService
         }
     },
 
@@ -99,7 +104,7 @@ const DragDrop = {
      * Initialize legacy-specific features not in DragDropService
      */
     initializeLegacyFeatures() {
-        // Tags now handled directly in TrackNodes with onclick
+        // Tags now handled directly by TrackNodesService with onclick
     },
 
     /**
@@ -238,11 +243,6 @@ const DragDrop = {
                 return;
             }
             
-            // Check if required modules are available
-            if (typeof TrackNodes === 'undefined') {
-                Utils.showNotification('❌ TrackNodes module not loaded');
-                return;
-            }
             
             if (typeof tagUtils === 'undefined') {
                 Utils.showNotification('❌ TagUtils not loaded');
@@ -302,7 +302,17 @@ const DragDrop = {
          Utils.showNotification(`🌱 Building your ${maxLevels}-level musical tree from "${rootTrackData.title}"...`);
          
          // Create root node
-         const rootNode = TrackNodes.create(rootTrackData, AppState.canvas.offsetWidth / 2, AppState.canvas.offsetHeight / 2);
+         let rootNode = null;
+         if (window.App && window.App.getService) {
+             const trackNodesService = window.App.getService('tracknodes');
+             if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                 rootNode = trackNodesService.createNode(rootTrackData, AppState.canvas.offsetWidth / 2, AppState.canvas.offsetHeight / 2);
+             }
+         }
+         if (!rootNode) {
+             console.error('Failed to create root node');
+             return;
+         }
          
          // Build tree levels with staggered timing for smooth animation
          setTimeout(async () => await this.buildTreeLevel(rootNode, rootTrackData, 1, maxLevels), animationDelay * 2);
@@ -365,7 +375,13 @@ const DragDrop = {
                             return; // Skip this track
                         }
                         
-                        const childNode = TrackNodes.create(childTrack, 0, 0, parentNode, tag);
+                        let childNode = null;
+                        if (window.App && window.App.getService) {
+                            const trackNodesService = window.App.getService('tracknodes');
+                            if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                                childNode = trackNodesService.createNode(childTrack, 0, 0, parentNode, tag);
+                            }
+                        }
                          
                          // Recursively build next level
                          if (currentLevel < maxLevels) {

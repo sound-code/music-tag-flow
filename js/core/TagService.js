@@ -35,10 +35,6 @@ class TagService extends ServiceBase {
             this.onTagSourceChanged(sourceTrack);
         });
         // Subscribe to external events
-        // DISABILITATO - ora gestito direttamente da TrackNodesService
-        // this.subscribeToEvent('tag:click', (data) => {
-        //     this.handleTagClick(data.element, data.tagValue);
-        // });
         this.subscribeToEvent('tags:clear', () => {
             this.clearSelection();
         });

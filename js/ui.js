@@ -870,15 +870,23 @@ const UI = {
                             
                             // Find the track node this tooltip belongs to
                             const trackNode = trackElement.closest('.track-node');
-                            if (trackNode && typeof TrackNodes !== 'undefined' && TrackNodes.createBranchesForTag) {
-                                // Add visual feedback
-                                tagElement.classList.add('selected');
-                                setTimeout(() => {
-                                    tagElement.classList.remove('selected');
-                                }, 1000);
-                                
-                                // Create branches for this tag
-                                await TrackNodes.createBranchesForTag(tag, trackNode);
+                            if (trackNode && window.App && window.App.getService) {
+                                const treeService = window.App.getService('tree');
+                                if (treeService && typeof treeService.createBranchesForTag === 'function') {
+                                    // Add visual feedback
+                                    tagElement.classList.add('selected');
+                                    setTimeout(() => {
+                                        tagElement.classList.remove('selected');
+                                    }, 1000);
+                                    
+                                    // Get source track data
+                                    try {
+                                        const sourceTrackData = JSON.parse(trackNode.dataset.track);
+                                        await treeService.createBranchesForTag(tag, trackNode, sourceTrackData);
+                                    } catch (error) {
+                                        console.error('Error creating branches via TreeService:', error);
+                                    }
+                                }
                                 
                                 // Hide tooltip after click
                                 this.hideTooltip();
@@ -910,8 +918,11 @@ const UI = {
                         if (tagValue && tagValue.includes(':')) {
                             // Find the track node this tooltip belongs to
                             const trackNode = trackElement.closest('.track-node');
-                            if (trackNode && typeof TrackNodes !== 'undefined' && TrackNodes.addTagToNode) {
-                                await TrackNodes.addTagToNode(trackNode, trackData, tagValue);
+                            if (trackNode && window.App && window.App.getService) {
+                                const trackNodesService = window.App.getService('tracknodes');
+                                if (trackNodesService && typeof trackNodesService.addTagToNode === 'function') {
+                                    await trackNodesService.addTagToNode(trackNode, trackData, tagValue);
+                                }
                                 addTagInput.value = '';
                                 
                                 // Refresh tooltip to show new tag

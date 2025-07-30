@@ -181,7 +181,45 @@ const Containers = {
                 effectiveSelectedTag = Array.from(AppState.selectedTags).join(', ');
             }
             
-            TrackNodes.addToPlaylist(track, effectiveSelectedTag, sourceNode, parentContainer);
+            // Use services directly instead of TrackNodes facade
+            if (window.App && window.App.getService) {
+                // 1. Create node via TreeService
+                const treeService = window.App.getService('tree');
+                if (treeService) {
+                    let position = { x: 400, y: 300 }; // Default center
+                    if (!sourceNode && AppState && AppState.canvas) {
+                        position = { 
+                            x: AppState.canvas.offsetWidth / 2, 
+                            y: AppState.canvas.offsetHeight / 2 
+                        };
+                    }
+                    treeService.addNode(track, position, sourceNode, effectiveSelectedTag);
+                }
+                
+                // 2. Add to playlist via PlaylistService
+                const playlistService = window.App.getService('playlist');
+                if (playlistService && typeof playlistService.addTrack === 'function') {
+                    playlistService.addTrack(track, effectiveSelectedTag);
+                }
+                
+                // 3. Handle container cleanup
+                if (parentContainer) {
+                    const containerIndex = AppState.allContainers.indexOf(parentContainer);
+                    if (containerIndex > -1) {
+                        AppState.allContainers.splice(containerIndex, 1);
+                    }
+                    if (parentContainer === AppState.currentMultiTagContainer) {
+                        AppState.setCurrentMultiTagContainer(null);
+                        if (typeof Tags !== 'undefined' && Tags.clearSelected) {
+                            Tags.clearSelected();
+                        }
+                    }
+                    parentContainer.remove();
+                    if (typeof Utils !== 'undefined' && Utils.updateCanvasSize) {
+                        Utils.updateCanvasSize();
+                    }
+                }
+            }
         });
         
         trackItem.appendChild(trackInfo);
