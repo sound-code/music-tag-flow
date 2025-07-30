@@ -381,33 +381,38 @@ class TrackNodesService extends ServiceBase {
     }
     
     /**
-     * Integrazione con TreeService (legacy compatibility)
+     * Integrazione con TreeService
      * @param {HTMLElement} node - Elemento nodo
      * @param {Object} track - Dati track
      * @param {HTMLElement} parentNode - Nodo genitore
      * @param {string} connectionTag - Tag connessione
      */
     integrateWithTreeService(node, track, parentNode, connectionTag) {
-        if (typeof Tree !== 'undefined' && Tree.addNode) {
-            const parentId = parentNode ? parentNode.id : null;
-            
-            try {
-                // Let Tree.addNode handle the parent validation and node management
-                Tree.addNode(node.id, node, track, parentId, connectionTag);
-                // Tree integration successful
-            } catch (error) {
-                // Error integrating with Tree service
-                if (parentId && error.message && error.message.includes('parent')) {
-                    try {
-                        const parentTrackData = JSON.parse(parentNode.dataset.track);
-                        const parentParentId = parentNode.dataset.parentId || null;
-                        const parentConnectionTag = parentNode.dataset.connectionTag || null;
-                        
-                        Tree.addNode(parentId, parentNode, parentTrackData, parentParentId, parentConnectionTag);
-                        Tree.addNode(node.id, node, track, parentId, connectionTag);
-                    } catch (retryError) {
-                        // Failed to add parent node, continuing without Tree integration
-                    }
+        // Get TreeService directly instead of using Tree facade
+        const treeService = window.App?.getService('tree');
+        if (!treeService) {
+            return; // TreeService not available
+        }
+        
+        const parentId = parentNode ? parentNode.id : null;
+        
+        try {
+            // Use TreeService.addNodeWithPositioning directly
+            treeService.addNodeWithPositioning(node.id, node, track, parentId, connectionTag);
+        } catch (error) {
+            // Error integrating with TreeService
+            if (parentId && error.message && error.message.includes('parent')) {
+                try {
+                    const parentTrackData = JSON.parse(parentNode.dataset.track);
+                    const parentParentId = parentNode.dataset.parentId || null;
+                    const parentConnectionTag = parentNode.dataset.connectionTag || null;
+                    
+                    // Add parent first, then child
+                    treeService.addNodeWithPositioning(parentId, parentNode, parentTrackData, parentParentId, parentConnectionTag);
+                    treeService.addNodeWithPositioning(node.id, node, track, parentId, connectionTag);
+                } catch (retryError) {
+                    // Failed to add parent node, continuing without TreeService integration
+                    console.warn('TrackNodesService: Failed to integrate with TreeService', retryError);
                 }
             }
         }

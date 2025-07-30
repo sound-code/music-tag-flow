@@ -151,8 +151,9 @@ const Utils = {
                 let nodeX = parseInt(nodeData.element.style.left) || 0;
                 let nodeY = parseInt(nodeData.element.style.top) || 0;
                 
-                if ((nodeX === 0 && nodeY === 0) && window.Tree && Tree.nodes) {
-                    const treeNode = Tree.nodes.get(nodeData.element.id);
+                if ((nodeX === 0 && nodeY === 0)) {
+                    const treeService = window.App?.getService('tree');
+                    const treeNode = treeService?.nodes?.get(nodeData.element.id);
                     if (treeNode && treeNode.position) {
                         nodeX = treeNode.position.x - 40;
                         nodeY = treeNode.position.y - 40;

@@ -88,8 +88,9 @@ window.PlaylistUIHandler = (() => {
             window.AppState.allContainers.forEach(container => container.remove());
             
             // Clear tree structure
-            if (window.Tree && window.Tree.clearTree) {
-                window.Tree.clearTree();
+            const treeService = window.App?.getService('tree');
+            if (treeService) {
+                treeService.clearTreeStructure();
             }
             
             // Clear selected tags

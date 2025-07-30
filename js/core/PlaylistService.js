@@ -218,8 +218,9 @@ class PlaylistService extends ServiceBase {
                 window.AppState.allContainers.forEach(container => container.remove());
                 
                 // Clear tree state
-                if (window.Tree && window.Tree.clearTree) {
-                    window.Tree.clearTree();
+                const treeService = window.App?.getService('tree');
+                if (treeService) {
+                    treeService.clearTreeStructure();
                 }
                 
                 // Clear state completely
@@ -421,7 +422,8 @@ class PlaylistService extends ServiceBase {
      */
     hasExistingTree() {
         const treeRootFromState = this.getState('tree.rootNode');
-        const treeRootFromLegacy = window.Tree && window.Tree.rootNode;
+        const treeService = window.App?.getService('tree');
+        const treeRootFromLegacy = treeService ? treeService.rootNode : null;
         const treeRootFromAppState = window.AppState && window.AppState.allNodes && window.AppState.allNodes.length > 0;
         
         return treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromAppState;

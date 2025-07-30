@@ -77,7 +77,6 @@ The application is transitioning from a monolithic approach to a service-based a
 **Legacy Modules** (being migrated to services):
 - **main.js** - Application entry point and service initialization
 - **state.js** - Legacy AppState (use StateManager for new code)
-- **tree.js** - Feature facades bridging to services
 - **ui.js** - UI utilities and user interactions
 - **utils.js** - Shared utility functions and track generation
 
@@ -204,7 +203,7 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - ✅ RealTimeClock → ClockService (realTimeClock.js removed)
 - ✅ DragDrop → DragDropService (dragDrop.js removed)
 - ✅ Tags → TagService (tags.js removed)
-- ✅ Tree → TreeService (tree.js converted to facade)
+- ✅ Tree → TreeService (tree.js completely removed)
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
 

@@ -600,8 +600,9 @@ const UI = {
         });
 
         // Rimuovi TUTTE le classi di evidenziazione dai rami
-        if (typeof Tree !== 'undefined' && Tree.connections) {
-            const connections = Tree.connections;
+        const treeService = window.App?.getService('tree');
+        if (treeService && treeService.connections) {
+            const connections = treeService.connections;
             connections.forEach((connection, connectionId) => {
                 if (connection.svgPath) {
                     connection.svgPath.classList.remove('branch-highlighted', 'branch-dimmed');
@@ -685,9 +686,10 @@ const UI = {
      * Evidenzia i rami/connessioni per tutte le categorie selezionate
      */
     highlightMultipleCategoriesBranches() {
-        // Accedi alle connessioni dal modulo Tree se disponibile
-        if (typeof Tree !== 'undefined' && Tree.connections) {
-            const connections = Tree.connections;
+        // Accedi alle connessioni dal TreeService se disponibile
+        const treeService = window.App?.getService('tree');
+        if (treeService && treeService.connections) {
+            const connections = treeService.connections;
             
             connections.forEach((connection, connectionId) => {
                 const connectionTag = connection.tag;
