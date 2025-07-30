@@ -7,6 +7,8 @@ const FileScanner = require('../components/FileScanner');
 const TrackRepository = require('../components/TrackRepository');
 const DatabaseScanService = require('../components/DatabaseScanService');
 const DatabaseSearchService = require('../components/DatabaseSearchService');
+const TagGenerationService = require('../services/TagGenerationService');
+const TrackEnrichmentService = require('../services/TrackEnrichmentService');
 
 /**
  * Configure and register all services in the DI container
@@ -21,8 +23,12 @@ function configureServices(dbPath = null) {
     container.registerSingleton('metadataExtractor', () => new MetadataExtractor(), []);
     container.registerSingleton('fileScanner', () => new FileScanner(), []);
 
+    // Business Logic Services (Singletons)
+    container.registerSingleton('tagGenerationService', () => new TagGenerationService(), []);
+    container.registerSingleton('trackEnrichmentService', (tagGen) => new TrackEnrichmentService(tagGen), ['tagGenerationService']);
+
     // Repository Layer (Singletons)
-    container.registerSingleton('trackRepository', (db) => new TrackRepository(db), ['databaseManager']);
+    container.registerSingleton('trackRepository', (db, enrichment) => new TrackRepository(db, enrichment), ['databaseManager', 'trackEnrichmentService']);
 
     // Service Layer (Singletons)
     container.registerSingleton('searchEngine', (db) => new DatabaseSearchService(db), ['databaseManager']);

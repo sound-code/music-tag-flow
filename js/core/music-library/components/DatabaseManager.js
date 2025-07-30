@@ -113,14 +113,11 @@ class DatabaseManager {
                 trackData.year, trackData.genre, trackData.track_number, trackData.tags
             ];
 
-            this.db.run(sql, params, function(err) {
+            this.db.run(sql, params, (err) => {
                 if (err) {
                     console.error('Error inserting track:', err);
                     resolve(false);
                 } else {
-                    // ❌ TODO: Move business logic to service layer
-                    // this.updateArtistCount(trackData.artist);
-                    // this.updateAlbumCount(trackData.album, trackData.artist, trackData.year);
                     resolve(true);
                 }
             });
@@ -472,7 +469,7 @@ class DatabaseManager {
                         
                         // Update the track with new tags
                         const updateSql = `UPDATE tracks SET tags = ? WHERE id = ?`;
-                        this.db.run(updateSql, [JSON.stringify(existingTags), row.id], function(updateErr) {
+                        this.db.run(updateSql, [JSON.stringify(existingTags), row.id], (updateErr) => {
                             if (updateErr) {
                                 console.error('Error updating track tags:', updateErr);
                                 resolve(false);
