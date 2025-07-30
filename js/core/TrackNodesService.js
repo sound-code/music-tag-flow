@@ -171,7 +171,6 @@ class TrackNodesService extends ServiceBase {
      * @returns {HTMLElement} Elemento nodo creato
      */
     createNode(track, x, y, parentNode = null, connectionTag = null) {
-        console.log('🏗️ TrackNodesService: Creating node for', track.title);
         try {
             // Ottieni riferimenti dal state
             const canvasContent = this.getCanvasContentElement();
@@ -449,7 +448,6 @@ class TrackNodesService extends ServiceBase {
      * @returns {HTMLElement} Container tags
      */
     createTagsContainer(track, node) {
-        console.log('🏭 TrackNodesService: Creating tags container for', track.title);
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'tags-container';
         // Hidden container - tags are shown via UIService tooltip system
@@ -559,12 +557,10 @@ class TrackNodesService extends ServiceBase {
     handleTagElementClick(tagWithValue, node, track, tagElement) {
         // Previeni click multipli
         if (tagElement.dataset.processing === 'true') {
-            console.log('🚫 Click già in elaborazione per:', tagWithValue);
             return;
         }
         
         tagElement.dataset.processing = 'true';
-        console.log('🏷️ TrackNodesService: Tag clicked, creating branches directly', tagWithValue);
         
         // Gestisci direttamente la creazione dei branch - no eventi esterni
         this.createBranchesDirectly(tagWithValue, node).then(() => {
@@ -904,12 +900,10 @@ class TrackNodesService extends ServiceBase {
      * @param {HTMLElement} sourceNode - Nodo sorgente per il branching
      */
     async createBranchesDirectly(tagValue, sourceNode) {
-        console.log('🌟 createBranchesDirectly called with:', tagValue, sourceNode.id);
         
         // Previeni chiamate multiple per la stessa combinazione tag+nodo
         const callKey = `${tagValue}-${sourceNode.id}`;
         if (this.activeCalls.has(callKey)) {
-            console.log('❌ Duplicate call prevented for:', callKey);
             return;
         }
         

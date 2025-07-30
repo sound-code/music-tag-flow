@@ -195,7 +195,6 @@ class TagService extends ServiceBase {
             this.addTemporaryFeedback(tagElement, 'selected', this.config.selectionTimeout);
         }
         // Emit event for tree service to handle branch creation
-        console.log('🌿 TagService: Emitting tree:create-branches event', tagValue, 'via EventBus:', this.events);
         this.emitEvent('tree:create-branches', {
             tagValue,
             sourceNode: trackNode,

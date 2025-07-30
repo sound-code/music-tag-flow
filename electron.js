@@ -158,7 +158,6 @@ ipcMain.handle('add-tag-to-track', async (event, track, tag) => {
     // Check if musicLibrary has addTagToTrack method
     if (musicLibrary.addTagToTrack) {
       const result = await musicLibrary.addTagToTrack(track, tag);
-      console.log(`💾 Tag "${tag}" ${result ? 'successfully added' : 'failed to add'} to "${track.title}"`);
       return result;
     } else {
       console.warn('💾 addTagToTrack method not available in music library');

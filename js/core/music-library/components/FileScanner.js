@@ -28,7 +28,6 @@ class FileScanner {
             // Remove duplicates and sort
             files = [...new Set(files)].sort();
             
-            console.log(`Found ${files.length} audio files in ${directory}`);
             
             return files;
         } catch (error) {

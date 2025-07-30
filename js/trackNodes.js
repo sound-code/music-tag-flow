@@ -277,7 +277,6 @@ const TrackNodes = {
         // Add tag to track data
         if (!track.tags.includes(newTag)) {
             track.tags.push(newTag);
-            console.log(`➕ Tag "${newTag}" added to "${track.title}"`);
             
             // Update original track data only if it's from the library (not generated)
             const isGenerated = track.generated || (track.id && track.id.startsWith('generated_'));

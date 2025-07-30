@@ -1064,16 +1064,20 @@ class UIService extends ServiceBase {
 
         // Add event delegation for track nodes
         document.addEventListener('mouseenter', (e) => {
-            const trackNode = e.target.closest('.track-node');
-            if (trackNode) {
-                this.showTrackNodeTooltip(trackNode);
+            if (e.target && e.target.closest) {
+                const trackNode = e.target.closest('.track-node');
+                if (trackNode) {
+                    this.showTrackNodeTooltip(trackNode);
+                }
             }
         }, true);
 
         document.addEventListener('mouseleave', (e) => {
-            const trackNode = e.target.closest('.track-node');
-            if (trackNode) {
-                this.hideTrackNodeTooltip(trackNode);
+            if (e.target && e.target.closest) {
+                const trackNode = e.target.closest('.track-node');
+                if (trackNode) {
+                    this.hideTrackNodeTooltip(trackNode);
+                }
             }
         }, true);
     }
@@ -1305,8 +1309,79 @@ class UIService extends ServiceBase {
             });
         }
 
+        // Add input for new tags
+        const addTagInput = document.createElement('input');
+        addTagInput.type = 'text';
+        addTagInput.placeholder = 'categoria:valore';
+        addTagInput.className = 'tooltip-add-tag-input';
+        addTagInput.style.cssText = `
+            margin-top: 8px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        `;
+        
+        // Handle Enter key for adding new tag
+        addTagInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const newTag = addTagInput.value.trim();
+                
+                if (newTag && newTag.includes(':')) {
+                    // Delegate to TrackNodesService for adding the tag
+                    if (window.App && window.App.getService) {
+                        const trackNodesService = window.App.getService('tracknodes');
+                        if (trackNodesService && typeof trackNodesService.addTagToNode === 'function') {
+                            try {
+                                // Use addTagToNode instead of handleNewTagInput since we don't need to replace containers in tooltip
+                                await trackNodesService.addTagToNode(trackNode, trackData, newTag);
+                                
+                                // Clear input and hide tooltip after successful add
+                                addTagInput.value = '';
+                                this.hideTrackNodeTooltipImmediate();
+                                
+                                // Emit the same event that handleNewTagInput would emit
+                                const eventBus = window.App.getService('eventbus');
+                                if (eventBus && typeof eventBus.emit === 'function') {
+                                    eventBus.emit('tracknode:tag-added', {
+                                        node: trackNode,
+                                        track: trackData,
+                                        newTag: newTag
+                                    });
+                                }
+                                
+                            } catch (error) {
+                                // Show error feedback
+                                addTagInput.style.borderColor = '#ef4444';
+                                addTagInput.placeholder = 'Errore durante aggiunta tag';
+                                setTimeout(() => {
+                                    addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                                    addTagInput.placeholder = 'categoria:valore';
+                                }, 2000);
+                            }
+                        }
+                    }
+                } else {
+                    // Show error feedback
+                    addTagInput.style.borderColor = '#ef4444';
+                    addTagInput.placeholder = 'Formato: categoria:valore';
+                    setTimeout(() => {
+                        addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                        addTagInput.placeholder = 'categoria:valore';
+                    }, 2000);
+                }
+            }
+        });
+
         this.elements.trackNodeTooltip.appendChild(title);
         this.elements.trackNodeTooltip.appendChild(tagsContainer);
+        this.elements.trackNodeTooltip.appendChild(addTagInput);
     }
 
     /**

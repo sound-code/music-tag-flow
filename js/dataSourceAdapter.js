@@ -1000,33 +1000,24 @@ class JsonDataAdapter {
             const trackKey = `${track.artist}|${track.album}|${track.title}`;
             const customTagsKey = 'musicTagFlow_customTags';
             
-            console.log('💾 Saving custom tag to localStorage:', {
-                trackKey,
-                newTag
-            });
             
             // Get existing custom tags
             let customTags = {};
             const existingData = localStorage.getItem(customTagsKey);
             if (existingData) {
                 customTags = JSON.parse(existingData);
-                console.log('📦 Existing custom tags:', customTags);
             } else {
-                console.log('📦 No existing custom tags, creating new storage');
             }
             
             // Add new tag to this track
             if (!customTags[trackKey]) {
                 customTags[trackKey] = [];
-                console.log('🆕 Created new entry for track:', trackKey);
             }
             
             if (!customTags[trackKey].includes(newTag)) {
                 customTags[trackKey].push(newTag);
                 localStorage.setItem(customTagsKey, JSON.stringify(customTags));
-                console.log('✅ Custom tag saved to localStorage:', customTags[trackKey]);
             } else {
-                console.log('ℹ️ Custom tag already exists in localStorage');
             }
         } catch (error) {
             console.error('❌ Error saving custom tag to localStorage:', error);
@@ -1042,12 +1033,9 @@ class JsonDataAdapter {
             const customTagsKey = 'musicTagFlow_customTags';
             const existingData = localStorage.getItem(customTagsKey);
             
-            console.log('🔄 Loading custom tags from localStorage...');
-            console.log('📦 localStorage data:', existingData);
             
             if (existingData) {
                 const customTags = JSON.parse(existingData);
-                console.log('🏷️ Parsed custom tags:', customTags);
                 
                 let mergedCount = 0;
                 
@@ -1057,17 +1045,13 @@ class JsonDataAdapter {
                         for (const track of album.tracks) {
                             const trackKey = `${track.artist}|${track.album}|${track.title}`;
                             if (customTags[trackKey]) {
-                                console.log(`🎯 Found custom tags for: ${track.title} by ${track.artist}`);
-                                console.log('📋 Custom tags to add:', customTags[trackKey]);
                                 
                                 // Add custom tags that aren't already present
                                 customTags[trackKey].forEach(customTag => {
                                     if (!track.tags.includes(customTag)) {
                                         track.tags.push(customTag);
                                         mergedCount++;
-                                        console.log(`✅ Added custom tag "${customTag}" to ${track.title}`);
                                     } else {
-                                        console.log(`ℹ️ Custom tag "${customTag}" already exists in ${track.title}`);
                                     }
                                 });
                             }
@@ -1075,9 +1059,7 @@ class JsonDataAdapter {
                     }
                 }
                 
-                console.log(`🎉 Merged ${mergedCount} custom tags into library`);
             } else {
-                console.log('ℹ️ No custom tags found in localStorage');
             }
         } catch (error) {
             console.error('❌ Error loading custom tags from localStorage:', error);
@@ -1506,7 +1488,6 @@ class DatabaseAdapter {
      */
     async addTagToTrack(track, newTag) {
         if (!this.initialized || !window.electronAPI) {
-            console.log('💾 Database not available, tag not saved to database');
             return false;
         }
 
@@ -1514,7 +1495,6 @@ class DatabaseAdapter {
             if (window.electronAPI.addTagToTrack) {
                 const result = await window.electronAPI.addTagToTrack(track, newTag);
                 if (result) {
-                    console.log('💾 Tag saved to database successfully');
                     
                     // Emit database updated event to refresh legend and other components
                     if (window.EventBus && window.EventBus.emit) {
@@ -1533,15 +1513,12 @@ class DatabaseAdapter {
                         }, 100);
                     }
                 } else {
-                    console.log('💾 Database save failed');
                 }
                 return result;
             } else {
-                console.log('💾 Database API method not available');
                 return false;
             }
         } catch (error) {
-            console.log('💾 Database error:', error.message);
             return false;
         }
     }
