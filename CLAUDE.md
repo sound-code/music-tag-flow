@@ -78,6 +78,7 @@ The application is transitioning from a monolithic approach to a service-based a
 - **dragDrop.js**, **tree.js**, **tags.js** - Feature facades bridging to services
 - **ui.js** - UI utilities and user interactions
 - **utils.js** - Shared utility functions and track generation
+- **realTimeClock.js** - Clock functionality (uses global namespace pattern)
 
 ### Key Architecture Patterns
 
@@ -92,6 +93,8 @@ The application is transitioning from a monolithic approach to a service-based a
 - `search:query:update` - Search query initiated
 - `library:toggle` - Music library visibility toggle
 - `stats:updated` - Statistics data updated
+- `phases:toggle` / `phases:show` / `phases:hide` - Phases view control
+- `time:elapsed` - Real-time clock updates for progress line
 
 **State Management**: 
 - Use `StateManager` for new code with reactive subscriptions
@@ -195,7 +198,8 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 **Completed Migrations**:
 - ✅ TrackNodes → TrackNodesService
 - ✅ Search → SearchService
-- ✅ Playlist → PlaylistService  
+- ✅ Playlist → PlaylistService
+- ✅ Phases → PhasesService (phases.js removed)
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
 
