@@ -17,25 +17,30 @@ MusicTagFlow is a web-based musical playlist application that creates interactiv
 
 ## Development Commands
 
-This is a client-side only application with no build process. To develop:
+This is a client-side only application that can run in both browser and Electron environments:
 
 ```bash
-# Serve the application locally
+# Browser development (recommended for most development)
 python -m http.server 8000
 # or
 npx serve .
 # or
-php -S localhost:8000
+npm run serve
+
+# Electron development (for desktop app features)
+npm start          # Run Electron app
+npm run dev        # Run Electron with devtools
+
+# Open http://localhost:8000 in browser for web version
 ```
 
-Then open http://localhost:8000 in your browser.
-
-**No testing framework or build tools are configured** - the application runs directly in the browser without compilation or bundling.
+**No testing framework or build tools are configured** - the application runs directly without compilation or bundling.
 
 ## Architecture
 
-### Module Structure
-The application uses a modular JavaScript architecture with global namespace pattern:
+### Service-Based Architecture
+
+The application is transitioning from a monolithic approach to a service-based architecture. Core functionality is organized into services managed by `ServiceManager` with dependency injection and lifecycle management.
 
 **Core Services** (`js/core/`):
 - **ServiceManager.js** - Centralized service management and dependency injection
@@ -44,16 +49,13 @@ The application uses a modular JavaScript architecture with global namespace pat
 - **UIService.js** - Tooltip management, visual effects, and category highlighting
 - **TreeService.js** - Tree visualization, positioning algorithms, and SVG rendering
 - **DragDropService.js** - Drag & drop functionality and auto-tree generation
+- **TrackNodesService.js** - Track node creation, tag management, and UI interactions
 - **TagService.js** - Tag selection system and multi-tag filtering
 - **SearchService.js** - Real-time search functionality across tracks/artists/albums
 - **PlaylistService.js** - Playlist management and export functionality
-
-**Legacy Modules** (being migrated):
-- **main.js** - Application entry point and module initialization coordinator
-- **state.js** - Legacy state management (transitioning to StateManager)
-- **dragDrop.js**, **tree.js**, **trackNodes.js**, **tags.js**, **search.js**, **playlist.js** - Feature modules
-- **ui.js** - UI utilities and user interactions
-- **utils.js** - Shared utility functions and track generation
+- **PhasesService.js** - Playlist phase visualization (time-based concentric circles)
+- **StatsService.js** - Statistics tracking and display
+- **LegendService.js** - Tag color legend management
 
 **Music Library System** (`js/core/music-library/`):
 - **MusicLibraryFacade.js** - Main interface for music library operations
@@ -61,113 +63,155 @@ The application uses a modular JavaScript architecture with global namespace pat
 - **FileScanner.js** - File system scanning and metadata extraction
 - **TrackRepository.js** - Track data storage and retrieval
 
+**Legacy Modules** (being migrated to services):
+- **main.js** - Application entry point and service initialization
+- **state.js** - Legacy AppState (use StateManager for new code)
+- **dragDrop.js**, **tree.js**, **tags.js**, **search.js** - Feature facades bridging to services
+- **ui.js** - UI utilities and user interactions
+- **utils.js** - Shared utility functions and track generation
+
 ### Key Architecture Patterns
 
-**Service-Based Architecture**: Core functionality organized into services managed by ServiceManager with dependency injection and lifecycle management.
-
-**Event-Driven Communication**: Services communicate via EventBus for loose coupling and reactive updates. Key events include:
+**Event-Driven Communication**: Services communicate via EventBus for loose coupling. Key events:
 - `playlist:clear` - Clear tree visualization (keeps playlist data)  
 - `playlist:track-added` - New track added to playlist
-- `node:click` - Track node clicked for playlist addition
+- `tree:node-created` - Node created in tree
 - `tree:cleared` - Tree visualization cleared
 - `ui:notification` - Display user notifications
+- `tooltip:show` / `tooltip:hide` - Tooltip management
 
 **State Management**: 
-- New: StateManager provides reactive state management with subscriptions
-- Legacy: Global `AppState` object (being migrated to StateManager)
-- Both systems coexist during migration period
+- Use `StateManager` for new code with reactive subscriptions
+- Legacy `AppState` remains for backward compatibility
+- State paths follow dot notation: `app.selectedTags`, `tree.nodes`, etc.
 
-**Tree Generation**: 3-level automatic tree generation:
-- Level 0 → Level 1: 5 nodes in perfect circle (360°)  
-- Level 1 → Level 2: 3 nodes in semi-circle (180°) per parent
-- Configurable via service configuration objects
+**Tree Generation Configuration**:
+```javascript
+// In TreeService.config or DragDropService.config
+{
+    maxLevels: 2,              // Total tree depth after root
+    branchesPerTag: 1,         // Tracks per tag
+    levelConfigs: {
+        1: { tagsPerLevel: 5 }, // Level 1: 5 nodes in circle
+        2: { tagsPerLevel: 3 }  // Level 2: 3 nodes per semi-circle
+    },
+    animationDelay: 400,       // Between level generation
+    branchDelay: 150          // Between individual branches
+}
+```
 
-**Tag System**: 10 tag categories (emotion, energy, mood, style, occasion, weather, intensity, rating, tempo, vibe) with color-coded visualization and branch connections.
-
-**Positioning Algorithm**: Tree uses collision detection with minimum safe distances, structured concentric positioning, and automatic layout updates.
-
-**Music Library Integration**: SQLite-based music library with file scanning, metadata extraction, and track enrichment services.
+**Tag System**: 10 categories with consistent color mapping:
+- emotion (pink), energy (orange), mood (purple), style (blue)
+- occasion (green), weather (light blue), intensity (red)
+- rating (yellow), tempo (teal), vibe (indigo)
 
 ### Data Flow
 
-**New Service-Based Flow**:
-1. User drags track → `DragDropService.handleDrop()` → `TreeService.createAutoTree()`
-2. Auto-generation → `TreeService.buildTreeLevel()` → `TreeService.addNode()`
-3. Tree positioning → `TreeService.calculatePositions()` → `TreeService.applyPositions()`
-4. SVG connections → `TreeService.drawConnection()` with animated curves
-5. State updates → `StateManager.setState()` → Event emission → Service reactions
+1. **Track Drop**: User drags track → `DragDropService.handleDrop()` → `TreeService.createAutoTree()`
+2. **Tree Building**: `TreeService.buildTreeLevel()` → `TrackNodesService.createNode()` → `TreeService.addNode()`
+3. **Positioning**: `TreeService.calculatePositions()` → Collision detection → `TreeService.applyPositions()`
+4. **Connections**: `TreeService.drawConnection()` → SVG path with curve animation
+5. **State Update**: Service methods → `StateManager.setState()` → Event emission → UI updates
 
-**Legacy Flow** (being migrated):
-1. User drags track → `DragDrop.handleDrop()` → `createAutoTree()`
-2. Auto-generation → `buildTreeLevel()` → `TrackNodes.create()` → `Tree.addNode()`
-3. Tree positioning → `calculateTreePositions()` → `applyPositions()`
-4. SVG connections → `drawConnection()` with animated curves
+### Critical Implementation Details
 
-### HTML Structure
-- **Sidebar**: Music library with expandable artist/album folders, search, and color legend
-- **Canvas**: Main visualization area with drop zone and scrollable content
-- **Controls**: Clear tree, clear tags, save playlist buttons
-- **Breadcrumb**: Navigation indicator
+**Track Data Format**:
+```javascript
+{
+    title: "Song Name",
+    artist: "Artist Name", 
+    album: "Album Name",
+    tags: ["mood:energetic", "energy:high", "style:electronic"]
+}
+```
 
-### Styling System
-- CSS custom properties for tag colors
-- Backdrop blur effects and glassmorphism design
-- Smooth animations for tree growth and SVG path drawing
-- Responsive grid layout with fixed sidebar
+**Service Registration** (in main.js):
+```javascript
+serviceManager.registerService('serviceName', ServiceClass, ['dependency1', 'dependency2']);
+```
 
-## Key Implementation Details
+**Event Subscription Pattern**:
+```javascript
+// In service initialize() method
+this.subscribeToEvent('event:name', (data) => this.handleEvent(data));
+```
 
-**Track Data Format**: Each track contains `{title, artist, album, tags[]}` where tags are "type:value" strings.
-
-**Node Positioning**: Uses polar coordinates with collision avoidance. Root positioned at canvas center, children arranged in geometric patterns.
-
-**SVG Animations**: Curved branch connections with `stroke-dasharray` animation and color coding based on connection tags.
-
-**Canvas Sizing**: Dynamic canvas resizing based on content bounds with generous padding for tree spread.
-
-**Search Implementation**: Real-time filtering with word-start matching across title/artist/album fields.
-
-**Clear Tree Functionality**: The "Clear Tree" button (`clearMindmap()`) clears the tree visualization while preserving playlist data and timer. Uses EventBus communication with fallback to direct service calls.
+**Tooltip System**: Centralized in UIService, supports both library items and track nodes with unified hover behavior and 300ms delays.
 
 ## Common Modification Patterns
 
-**Service Configuration**: Modify service-specific configs in service constructors - timing, delays, limits, visual settings.
+**Adding a New Service**:
+1. Create class extending `ServiceBase` in `js/core/`
+2. Register in `main.js` with dependencies
+3. Implement `initialize()` method for event subscriptions
+4. Use `this.stateManager` and `this.eventBus` for integration
 
-**Adjusting Tree Structure**: 
-- New: Modify `TreeService.config` - `maxLevels`, `branchesPerTag`, level-specific configurations
-- Legacy: Modify `DragDrop.config` (being migrated)
+**Modifying Tree Structure**:
+- Adjust `TreeService.config` for levels, branches, timing
+- Level-specific settings in `levelConfigs` object
+- Animation timing via `animationDelay` and `branchDelay`
 
-**Adding Tag Types**: Update `tagValuesByType` objects in `utils.js` and color mappings in service configuration.
+**Adding New Tag Type**:
+1. Add to `tagValuesByType` in `utils.js`
+2. Add color mapping in `TreeService.ensureCategoryStyles()`
+3. Update any tag-specific UI components
 
-**Changing Node Styling**: CSS classes follow pattern `.track-node`, `.node-tag-{category}`, `.tag.{tagtype}`.
+**State Management**:
+```javascript
+// Get state
+const tags = this.stateManager.getState('app.selectedTags');
 
-**Animation Timing**: 
-- New: Controlled via service configuration objects and CSS transitions
-- Legacy: Controlled via `animationDelay`, `branchDelay` in drag-drop config
+// Set state (triggers subscriptions)
+this.stateManager.setState('tree.nodes', newNodes);
 
-**Adding New Services**: Extend `ServiceBase`, register in `ServiceManager`, follow event-driven patterns.
+// Subscribe to state changes
+this.subscribeToState('app.selectedTags', (tags) => this.onTagsChanged(tags));
+```
 
-**State Management**: Use `StateManager.setState()` and `StateManager.getState()` for reactive updates.
+**Event Communication**:
+```javascript
+// Emit event
+this.eventBus.emit('tree:node-created', { node, track, parent });
 
-**Event System Integration**: When connecting UI actions to services, emit events via `EventBus.emit()` rather than direct method calls. Services subscribe to events in their `initialize()` method using `this.subscribeToEvent()`.
+// Subscribe to event (in initialize())
+this.subscribeToEvent('playlist:clear', () => this.clearTree());
+```
 
-## Architecture Migration Notes
+## Architecture Migration Status
 
-The codebase is currently transitioning from a monolithic approach to a service-based architecture:
+**Completed Migrations**:
+- ✅ TrackNodes → TrackNodesService
+- ✅ Playlist → PlaylistService  
+- ✅ Centralized tooltip system in UIService
+- ✅ EventBus communication patterns
 
-- **Core services** in `js/core/` represent the new architecture
-- **Legacy modules** in `js/` root are being gradually migrated
-- Both systems coexist during the transition period
-- New features should use the service-based approach
-- When modifying existing features, consider migrating to services
+**In Progress**:
+- 🔄 Legacy modules acting as facades to services
+- 🔄 AppState → StateManager migration
 
-The codebase emphasizes smooth user experience with staggered animations, collision-free positioning, and intuitive drag-and-drop interactions.
+**Migration Guidelines**:
+- New features use service-based architecture
+- When modifying legacy code, consider migrating to services
+- Maintain backward compatibility during transition
+- Update both CLAUDE.md and code comments when completing migrations
 
 ## Critical Bug Fix Patterns
 
-**EventBus Communication Issues**: If UI actions don't trigger expected service responses, check that:
-1. Events are properly emitted with correct event names
-2. Services are initialized and subscribing to events in `initialize()` method  
-3. Event handlers call the correct service methods (e.g., `playlist:clear` should call `clearPlaylistAndTree()` not `clearPlaylist()`)
+**Clear Tree Functionality**: 
+- `playlist:clear` event must call `PlaylistService.clearPlaylistAndTree()` (not just `clearPlaylist()`)
+- This preserves playlist data while clearing visualization
 
-**Service Initialization**: Services must extend `ServiceBase` and be registered in `ServiceManager` via `main.js`. The initialization order is handled automatically by dependency resolution.
+**Service Initialization Order**:
+- ServiceManager handles dependency resolution automatically
+- Services must properly chain `super.initialize()` calls
+- Event subscriptions go in `initialize()` method
+
+**Tooltip Conflicts**:
+- All tooltips managed by UIService
+- Use `UIService.showTooltip()` / `hideTooltip()` 
+- Never create standalone tooltip elements
+
+**State vs Event Usage**:
+- State: For data that components need to read/react to
+- Events: For actions/commands that trigger behavior
+- Don't use events for state synchronization
