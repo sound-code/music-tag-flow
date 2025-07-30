@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ IMPORTANT: Before Making Any Code Changes
+
+**ALWAYS read both CLAUDE.md and DEVELOPMENT_PRACTICES.md before executing any modifications to ensure:**
+- Consistency with existing architecture and patterns
+- Adherence to code quality standards
+- Proper error handling and robustness
+- Optimal performance and user experience
+- Security and accessibility compliance
+
 ## Project Overview
 
 MusicTagFlow is a web-based musical playlist application that creates interactive mind maps from music tracks. Users drag tracks from a music library to generate tree-like visualizations based on musical tags (emotion, energy, mood, style, etc.). The application features a 3-level auto-generated tree structure with animated curved connections between nodes.
