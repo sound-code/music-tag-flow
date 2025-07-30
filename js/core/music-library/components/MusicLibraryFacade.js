@@ -87,6 +87,12 @@ class MusicLibraryFacade {
         return await trackRepository.clearAll();
     }
 
+    async addTagToTrack(track, tag) {
+        this._ensureInitialized();
+        const trackRepository = this.container.resolve('trackRepository');
+        return await trackRepository.addTagToTrack(track, tag);
+    }
+
     // Utility operations (delegate to various services)
     async getAvailableTags() {
         this._ensureInitialized();

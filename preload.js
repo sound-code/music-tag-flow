@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getStats: () => ipcRenderer.invoke('get-stats'),
   searchTracks: (query, options) => ipcRenderer.invoke('search-tracks', query, options),
   getAllTracks: (limit) => ipcRenderer.invoke('get-all-tracks', limit),
+  addTagToTrack: (track, tag) => ipcRenderer.invoke('add-tag-to-track', track, tag),
   clearDatabase: () => ipcRenderer.invoke('clear-database'),
   
   // Listen for scan progress updates

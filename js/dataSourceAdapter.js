@@ -276,27 +276,16 @@ const DataSourceAdapter = {
      * @returns {Promise<boolean>} Success status
      */
     async addTagToTrack(track, newTag) {
-        console.log('🔌 DataSourceAdapter.addTagToTrack called:', {
-            trackTitle: track.title,
-            trackArtist: track.artist,
-            newTag: newTag
-        });
-        
         const adapter = this.getPrimaryAdapter();
-        console.log('🔧 Primary adapter:', adapter);
         
         if (!adapter) {
-            console.error('❌ No primary adapter available');
             return false;
         }
         
         if (adapter.addTagToTrack) {
-            console.log('✅ Adapter has addTagToTrack method, calling...');
             const result = await adapter.addTagToTrack(track, newTag);
-            console.log('🎯 Adapter addTagToTrack result:', result);
             return result;
         } else {
-            console.error('❌ Adapter does not have addTagToTrack method');
             return false;
         }
     },
@@ -975,6 +964,23 @@ class JsonDataAdapter {
                 // Save to localStorage for persistence across refreshes
                 this.saveCustomTagsToLocalStorage(track, newTag);
                 
+                // Emit database updated event to refresh legend and other components
+                if (window.EventBus && window.EventBus.emit) {
+                    window.EventBus.emit('database:updated', {
+                        type: 'tag_added',
+                        track: track,
+                        tag: newTag,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                // Also directly refresh legend if available
+                if (window.LegendService && window.LegendService.forceRefreshLegend) {
+                    setTimeout(() => {
+                        window.LegendService.forceRefreshLegend();
+                    }, 100);
+                }
+                
                 return true;
             } else {
                 return false;
@@ -1490,6 +1496,54 @@ class DatabaseAdapter {
             tags: uiTags,
             source: 'database'
         };
+    }
+
+    /**
+     * Add a tag to a track in the database
+     * @param {Object} track - Track object with title, artist, album
+     * @param {string} newTag - New tag to add (format: "category:value")
+     * @returns {Promise<boolean>} Success status
+     */
+    async addTagToTrack(track, newTag) {
+        if (!this.initialized || !window.electronAPI) {
+            console.log('💾 Database not available, tag not saved to database');
+            return false;
+        }
+
+        try {
+            if (window.electronAPI.addTagToTrack) {
+                const result = await window.electronAPI.addTagToTrack(track, newTag);
+                if (result) {
+                    console.log('💾 Tag saved to database successfully');
+                    
+                    // Emit database updated event to refresh legend and other components
+                    if (window.EventBus && window.EventBus.emit) {
+                        window.EventBus.emit('database:updated', {
+                            type: 'tag_added',
+                            track: track,
+                            tag: newTag,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    // Also directly refresh legend if available
+                    if (window.LegendService && window.LegendService.forceRefreshLegend) {
+                        setTimeout(() => {
+                            window.LegendService.forceRefreshLegend();
+                        }, 100);
+                    }
+                } else {
+                    console.log('💾 Database save failed');
+                }
+                return result;
+            } else {
+                console.log('💾 Database API method not available');
+                return false;
+            }
+        } catch (error) {
+            console.log('💾 Database error:', error.message);
+            return false;
+        }
     }
 }
 

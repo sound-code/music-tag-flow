@@ -1210,44 +1210,24 @@ class UIService extends ServiceBase {
         
         // Add click listeners to tags
         const tagElements = tooltip.querySelectorAll('.tag, .tooltip-tag');
-        console.log('🔍 Found', tagElements.length, 'tag elements in tooltip');
         
         tagElements.forEach((tagElement, index) => {
-            console.log(`🏷️ Tag ${index}:`, {
-                textContent: tagElement.textContent,
-                dataset: tagElement.dataset,
-                className: tagElement.className
-            });
             
             tagElement.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 
-                console.log('🖱️ Tag clicked:', {
-                    textContent: tagElement.textContent,
-                    tagValue: tagElement.dataset.tagValue,
-                    hasTagsModule: typeof Tags !== 'undefined',
-                    hasToggleSelection: typeof Tags !== 'undefined' && Tags.toggleSelection
-                });
-                
                 // Check if tag is inside track node (crucial for node generation)
                 const parentTrackNode = tagElement.closest('.track-node');
-                console.log('🏠 Parent track node found:', !!parentTrackNode);
                 
                 // Use existing Tags.toggleSelection system
                 if (typeof Tags !== 'undefined' && Tags.toggleSelection) {
-                    console.log('🚀 Calling Tags.toggleSelection with:', tagElement);
-                    
                     // IMPORTANT: The tag needs to be inside a track-node for branch creation
                     if (!parentTrackNode) {
-                        console.warn('⚠️ Tag is not inside a track-node, moving it there temporarily');
                         // Temporarily append to track node for the click
                         trackNode.appendChild(tagElement);
                     }
                     
                     await Tags.toggleSelection(tagElement);
-                    console.log('✅ Tags.toggleSelection completed');
-                } else {
-                    console.error('❌ Tags.toggleSelection not available');
                 }
                 
                 // Hide tooltip after click
@@ -1257,11 +1237,9 @@ class UIService extends ServiceBase {
         
         // Add functionality to input field if present
         let inputElement = tooltip.querySelector('.tooltip-add-tag-input');
-        console.log('📝 Input field found in tooltip:', !!inputElement);
         
         // If no input field exists, create one
         if (!inputElement) {
-            console.log('➕ Creating input field manually');
             inputElement = document.createElement('input');
             inputElement.type = 'text';
             inputElement.placeholder = '+';
@@ -1289,78 +1267,18 @@ class UIService extends ServiceBase {
                 pointer-events: auto;
             `;
             tooltip.appendChild(inputElement);
-            console.log('➕ Input element appended to tooltip:', inputElement);
         }
         
         if (inputElement) {
-            console.log('🎯 Input element event listener attached');
             
-            // Debug: Add focus event to test if input is working
-            inputElement.addEventListener('focus', () => {
-                console.log('🔍 Input field focused');
-            });
-            
-            inputElement.addEventListener('blur', () => {
-                console.log('🔍 Input field blurred');
-            });
-            
-            inputElement.addEventListener('input', (e) => {
-                console.log('🔍 Input value changed:', e.target.value);
-            });
-            
-            inputElement.addEventListener('keydown', (e) => {
-                console.log('⌨️ Keydown in tooltip input:', e.key);
-            });
-            
-            // FORCE TEST: Add a test button to directly call addTagToNode
-            const testButton = document.createElement('button');
-            testButton.textContent = 'TEST';
-            testButton.style.cssText = `
-                background: red;
-                color: white;
-                border: none;
-                padding: 2px 4px;
-                margin-left: 5px;
-                cursor: pointer;
-            `;
-            testButton.addEventListener('click', async (e) => {
-                console.log('🧪 TEST BUTTON CLICKED - forcing addTagToNode call');
-                const testTag = 'test:debug';
-                
-                if (typeof TrackNodes !== 'undefined' && TrackNodes.addTagToNode) {
-                    console.log('🔧 TrackNodes.addTagToNode is available, calling...');
-                    await TrackNodes.addTagToNode(trackNode, trackData, testTag);
-                } else {
-                    console.error('❌ TrackNodes.addTagToNode not available');
-                }
-            });
-            
-            tooltip.appendChild(testButton);
             
             inputElement.addEventListener('keypress', async (e) => {
-                console.log('⌨️ Key pressed in tooltip input:', e.key);
                 if (e.key === 'Enter') {
-                    console.log('↩️ Enter key detected');
                     const newTag = e.target.value.trim();
-                    console.log('🏷️ New tag value:', newTag);
                     if (newTag && newTag.includes(':')) {
-                        console.log('✅ Tag format valid (contains :)');
                         // Use existing TrackNodes.addTagToNode system
                         if (typeof TrackNodes !== 'undefined' && TrackNodes.addTagToNode) {
-                            console.log('🔧 TrackNodes.addTagToNode is available');
-                            console.log('💾 Adding tag to database:', {
-                                newTag,
-                                trackData: {
-                                    title: trackData.title,
-                                    artist: trackData.artist,
-                                    album: trackData.album,
-                                    isGenerated: trackData.generated || (trackData.id && trackData.id.startsWith('generated_'))
-                                }
-                            });
-                            
                             await TrackNodes.addTagToNode(trackNode, trackData, newTag);
-                            
-                            console.log('✅ TrackNodes.addTagToNode completed');
                             
                             // Force refresh tooltip with latest track data
                             setTimeout(() => {
@@ -1378,23 +1296,15 @@ class UIService extends ServiceBase {
                                         
                                         // Re-attach all event listeners with updated data
                                         this.attachTooltipEventListeners(tooltip, trackNode);
-                                        
-                                        console.log('✅ Tooltip refreshed with updated tags:', updatedTrackData.tags);
                                     }
                                 } catch (error) {
                                     console.error('❌ Error refreshing tooltip:', error);
                                 }
                             }, 100); // Small delay to ensure DOM updates are complete
-                        } else {
-                            console.error('❌ TrackNodes.addTagToNode not available');
                         }
                         
                         e.target.value = '';
-                    } else {
-                        console.warn('⚠️ Invalid tag format. Must contain ":" (e.g., "mood:happy")');
                     }
-                } else {
-                    console.log('ℹ️ Key other than Enter pressed:', e.key);
                 }
             });
         }

@@ -147,6 +147,29 @@ ipcMain.handle('get-all-tracks', async (event, limit = 100) => {
   }
 });
 
+// Add tag to track
+ipcMain.handle('add-tag-to-track', async (event, track, tag) => {
+  if (!musicLibrary || !musicLibrary.isReady()) {
+    console.error('Music library system not ready');
+    return false;
+  }
+  
+  try {
+    // Check if musicLibrary has addTagToTrack method
+    if (musicLibrary.addTagToTrack) {
+      const result = await musicLibrary.addTagToTrack(track, tag);
+      console.log(`💾 Tag "${tag}" ${result ? 'successfully added' : 'failed to add'} to "${track.title}"`);
+      return result;
+    } else {
+      console.warn('💾 addTagToTrack method not available in music library');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error adding tag to track:', error);
+    return false;
+  }
+});
+
 // Clear database
 ipcMain.handle('clear-database', async () => {
   if (!musicLibrary || !musicLibrary.isReady()) {

@@ -432,38 +432,17 @@ const TrackNodes = {
      * @param {string} newTag - New tag to add (format: "category:value")
      */
     async addTagToNode(node, track, newTag) {
-        console.log('🚀 addTagToNode called:', {
-            trackTitle: track.title,
-            trackArtist: track.artist,
-            newTag: newTag,
-            currentTags: track.tags
-        });
-        
         // Add tag to track data
         if (!track.tags.includes(newTag)) {
-            console.log('✅ Tag not already present, adding to track...');
             track.tags.push(newTag);
+            console.log(`➕ Tag "${newTag}" added to "${track.title}"`);
             
             // Update original track data only if it's from the library (not generated)
             const isGenerated = track.generated || (track.id && track.id.startsWith('generated_'));
             
-            console.log('🔍 Track analysis:', {
-                title: track.title,
-                artist: track.artist,
-                isGenerated,
-                hasGeneratedFlag: !!track.generated,
-                hasGeneratedId: !!(track.id && track.id.startsWith('generated_')),
-                trackId: track.id
-            });
-            
             if (!isGenerated) {
-                console.log('📝 Track is from library, updating original data...');
                 await this.updateOriginalTrackData(track, newTag);
-            } else {
-                console.log('🤖 Track is generated, skipping database save');
             }
-        } else {
-            console.log('ℹ️ Tag already exists in track, skipping add');
         }
         
         // Update the visual tags container by recreating it completely (always do this)
@@ -472,9 +451,6 @@ const TrackNodes = {
             // Recreate the entire tags container with updated track data
             const newTagsContainer = this.createTagsContainer(track, node);
             node.replaceChild(newTagsContainer, oldTagsContainer);
-            console.log('🔄 Tags container recreated with new tag:', newTag);
-        } else {
-            console.warn('⚠️ .tags-container not found in node');
         }
         
         // Ensure styles exist for the new tag category (for tooltips)
@@ -708,71 +684,36 @@ const TrackNodes = {
      * @param {string} newTag - New tag to add
      */
     async updateOriginalTrackData(track, newTag) {
-        console.log('🔍 updateOriginalTrackData called:', {
-            trackTitle: track.title,
-            trackArtist: track.artist,
-            trackAlbum: track.album,
-            newTag: newTag
-        });
-        
         // Find the original track element in the library
         const trackItems = document.querySelectorAll('.track-item');
-        console.log('📂 Found', trackItems.length, 'track items in library');
-        
-        
         let found = false;
-        let validTracks = 0;
         
         trackItems.forEach((item, index) => {
             const originalTrackData = this.safeParseTrackData(item.dataset.track);
             
             if (originalTrackData) {
-                validTracks++;
-                
                 if (originalTrackData.title === track.title && 
                     originalTrackData.artist === track.artist && 
                     originalTrackData.album === track.album) {
                     
                     found = true;
-                    console.log('🎯 Found matching track in library:', originalTrackData.title);
                     
                     // Add the new tag to the original data
                     if (!originalTrackData.tags.includes(newTag)) {
                         originalTrackData.tags.push(newTag);
-                        console.log('📝 Updated track tags:', originalTrackData.tags);
-                        
                         // Update the dataset with the new track data
                         item.dataset.track = JSON.stringify(originalTrackData);
-                        console.log('💾 Updated dataset for library item');
-                    } else {
-                        console.log('ℹ️ Tag already exists in original track data');
                     }
                 }
-            } else {
-                console.warn(`⚠️ Could not parse track data for item ${index}`);
             }
         });
-        
-        
-        // If we couldn't parse most tracks, there might be a systematic issue
-        if (validTracks < trackItems.length * 0.5) {
-        }
-        
         if (found) {
-            console.log('💾 Attempting to save tag to database:', { track: track.title, newTag });
             // Persist the tag to the database
             try {
-                const success = await DataLoader.addTagToTrack(track, newTag);
-                if (success) {
-                    console.log('✅ Tag successfully saved to database');
-                } else {
-                    console.warn('⚠️ DataLoader.addTagToTrack returned false');
-                }
+                await DataLoader.addTagToTrack(track, newTag);
             } catch (error) {
                 console.error('❌ Error saving tag to database:', error);
             }
-        } else {
-            console.warn('⚠️ Track not found in library, cannot save to database');
         }
     },
 

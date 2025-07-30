@@ -257,6 +257,21 @@ class TrackRepository extends ITrackRepository {
     async clearAll() {
         return this.db.clearDatabase();
     }
+
+    async addTagToTrack(track, tag) {
+        if (!this.db.isReady()) {
+            throw new Error('Database not ready');
+        }
+
+        try {
+            // Use the database manager to add tag to track
+            const success = await this.db.addTagToTrack(track, tag);
+            return success;
+        } catch (error) {
+            console.error('Error adding tag to track in repository:', error);
+            return false;
+        }
+    }
 }
 
 module.exports = TrackRepository; 

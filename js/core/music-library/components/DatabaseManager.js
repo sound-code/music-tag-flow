@@ -429,6 +429,70 @@ class DatabaseManager {
         });
     }
 
+    addTagToTrack(track, tag) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                resolve(false);
+                return;
+            }
+
+            try {
+                // Find the track by title, artist, and album
+                const findSql = `SELECT id, tags FROM tracks WHERE title = ? AND artist = ? AND album = ?`;
+                
+                this.db.get(findSql, [track.title, track.artist, track.album], (err, row) => {
+                    if (err) {
+                        console.error('Error finding track:', err);
+                        resolve(false);
+                        return;
+                    }
+                    
+                    if (!row) {
+                        console.warn('Track not found in database:', track.title, 'by', track.artist);
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Parse existing tags
+                    let existingTags = [];
+                    if (row.tags) {
+                        try {
+                            existingTags = JSON.parse(row.tags);
+                            if (!Array.isArray(existingTags)) {
+                                existingTags = [];
+                            }
+                        } catch (e) {
+                            existingTags = [];
+                        }
+                    }
+                    
+                    // Add new tag if not already present
+                    if (!existingTags.includes(tag)) {
+                        existingTags.push(tag);
+                        
+                        // Update the track with new tags
+                        const updateSql = `UPDATE tracks SET tags = ? WHERE id = ?`;
+                        this.db.run(updateSql, [JSON.stringify(existingTags), row.id], function(updateErr) {
+                            if (updateErr) {
+                                console.error('Error updating track tags:', updateErr);
+                                resolve(false);
+                                return;
+                            }
+                            
+                            resolve(true);
+                        });
+                    } else {
+                        // Tag already exists
+                        resolve(true);
+                    }
+                });
+            } catch (error) {
+                console.error('Error adding tag to track:', error);
+                resolve(false);
+            }
+        });
+    }
+
     clearDatabase() {
         if (!this.db) return false;
         
