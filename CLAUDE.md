@@ -204,11 +204,12 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - ✅ RealTimeClock → ClockService (realTimeClock.js removed)
 - ✅ DragDrop → DragDropService (dragDrop.js removed)
 - ✅ Tags → TagService (tags.js removed)
+- ✅ Tree → TreeService (tree.js converted to facade)
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
 
 **In Progress**:
-- 🔄 Legacy modules acting as facades to services
+- 🔄 UI → UIService migration (partially completed, legend functionality remains)
 - 🔄 AppState → StateManager migration
 
 **Migration Guidelines**:
