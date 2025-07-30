@@ -40,7 +40,7 @@ class PlaylistService extends ServiceBase {
             this.handleNodeClick(data.track, data.node, data.connectionTag);
         });
         this.subscribeToEvent('playlist:clear', () => {
-            this.clearPlaylist();
+            this.clearPlaylistAndTree();
         });
         this.subscribeToEvent('playlist:remove', (data) => {
             this.removeTrack(data.index);
