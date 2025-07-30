@@ -296,16 +296,19 @@ class UIService extends ServiceBase {
                     e.stopPropagation();
                     
                     if (tooltipType === 'library') {
-                        // For library track items, delegate to Tags.toggleSelection
-                        if (typeof Tags !== 'undefined' && Tags.toggleSelection) {
-                            const tempTag = document.createElement('div');
-                            tempTag.className = `tag ${tagWithValue.split(':')[0]}`;
-                            tempTag.dataset.tagValue = tagWithValue;
-                            tempTag.textContent = tagValue;
-                            
-                            trackElement.appendChild(tempTag);
-                            await Tags.toggleSelection(tempTag);
-                            tempTag.remove();
+                        // For library track items, delegate to TagService
+                        if (window.App && window.App.getService) {
+                            const tagService = window.App.getService('tags');
+                            if (tagService && typeof tagService.handleTagClick === 'function') {
+                                const tempTag = document.createElement('div');
+                                tempTag.className = `tag ${tagWithValue.split(':')[0]}`;
+                                tempTag.dataset.tagValue = tagWithValue;
+                                tempTag.textContent = tagValue;
+                                
+                                trackElement.appendChild(tempTag);
+                                await tagService.handleTagClick(tempTag);
+                                tempTag.remove();
+                            }
                         }
                         this.hideTooltip();
                     } else if (tooltipType === 'node') {

@@ -210,8 +210,11 @@ const Containers = {
                     }
                     if (parentContainer === AppState.currentMultiTagContainer) {
                         AppState.setCurrentMultiTagContainer(null);
-                        if (typeof Tags !== 'undefined' && Tags.clearSelected) {
-                            Tags.clearSelected();
+                        if (window.App && window.App.getService) {
+                            const tagService = window.App.getService('tags');
+                            if (tagService && typeof tagService.clearSelection === 'function') {
+                                tagService.clearSelection();
+                            }
                         }
                     }
                     parentContainer.remove();
@@ -271,7 +274,12 @@ const Containers = {
             tag.dataset.tagValue = tagWithValue;
             tag.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                await Tags.toggleSelection(tag);
+                if (window.App && window.App.getService) {
+                    const tagService = window.App.getService('tags');
+                    if (tagService && typeof tagService.handleTagClick === 'function') {
+                        await tagService.handleTagClick(tag);
+                    }
+                }
             });
             tagsContainer.appendChild(tag);
         });
