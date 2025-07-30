@@ -85,6 +85,11 @@ class PhasesService extends ServiceBase {
         this.subscribeToEvent('clock:stopped', () => {
             this.handleClockStopped();
         });
+        
+        // Listen for time elapsed events from RealTimeClock
+        this.subscribeToEvent('time:elapsed', (data) => {
+            this.handleTimeElapsed(data);
+        });
     }
 
     /**
@@ -206,11 +211,11 @@ class PhasesService extends ServiceBase {
     initializeProgressLine() {
         if (!this.elements.progressLine) return;
         
-        // Set initial position (zero length line at center)
-        this.elements.progressLine.setAttribute('x1', '50%');
-        this.elements.progressLine.setAttribute('y1', '50%');
-        this.elements.progressLine.setAttribute('x2', '50%');
-        this.elements.progressLine.setAttribute('y2', '50%');
+        // Set initial position (zero length line at center using SVG coordinates)
+        this.elements.progressLine.setAttribute('x1', '400');
+        this.elements.progressLine.setAttribute('y1', '400');
+        this.elements.progressLine.setAttribute('x2', '400');
+        this.elements.progressLine.setAttribute('y2', '400');
         this.elements.progressLine.setAttribute('stroke', '#ff6b6b'); // Start with red
     }
 
@@ -314,7 +319,80 @@ class PhasesService extends ServiceBase {
      * @private
      */
     handleClockStopped() {
-        // Could reset progress line or perform cleanup
+        // Reset progress line to initial state
+        if (this.elements.progressLine) {
+            this.elements.progressLine.setAttribute('x1', '400');
+            this.elements.progressLine.setAttribute('y1', '400');
+            this.elements.progressLine.setAttribute('x2', '400');
+            this.elements.progressLine.setAttribute('y2', '400');
+            this.elements.progressLine.setAttribute('stroke', '#ff6b6b');
+        }
+    }
+    
+    /**
+     * Handle time elapsed events from RealTimeClock
+     * @param {Object} data - Time data {totalSeconds, minutes, timeString, timestamp}
+     * @private
+     */
+    handleTimeElapsed(data) {
+        // Only update progress line if phases view is active
+        if (this.isPhasesActive()) {
+            this.updateProgressLine(data.totalSeconds);
+        }
+    }
+    
+    /**
+     * Update the progress line based on elapsed time
+     * The line grows horizontally from center to the right
+     * 2 minutes per circle: 0-2min (circle 1), 2-4min (circle 2), 4-6min (circle 3), 6-8min (circle 4)
+     * @param {number} totalSeconds - Total elapsed seconds
+     * @private
+     */
+    updateProgressLine(totalSeconds) {
+        if (!this.elements.progressLine) return;
+        
+        // Calculate current radius based on time (2 minutes per phase)
+        const totalMinutes = totalSeconds / 60;
+        let radius;
+        if (totalMinutes <= 2) {
+            radius = (totalMinutes / 2) * 100; // 0-100px in 2 minutes
+        } else if (totalMinutes <= 4) {
+            radius = 100 + ((totalMinutes - 2) / 2) * 100; // 100-200px in next 2 minutes
+        } else if (totalMinutes <= 6) {
+            radius = 200 + ((totalMinutes - 4) / 2) * 100; // 200-300px in next 2 minutes
+        } else if (totalMinutes <= 8) {
+            radius = 300 + ((totalMinutes - 6) / 2) * 100; // 300-400px in next 2 minutes
+        } else {
+            radius = 400; // Cap at 400px
+        }
+        
+        // SVG center coordinates (viewBox is 800x800, center is 400,400)
+        const centerX = 400;
+        const centerY = 400;
+        
+        // Calculate end position (horizontal line growing to the right)
+        const endX = centerX + radius;
+        const endY = centerY; // Keep Y constant for horizontal line
+        
+        // Update line position (horizontal line from center growing to the right)
+        this.elements.progressLine.setAttribute('x1', centerX);
+        this.elements.progressLine.setAttribute('y1', centerY);
+        this.elements.progressLine.setAttribute('x2', endX);
+        this.elements.progressLine.setAttribute('y2', endY);
+        
+        // Update line color based on current phase (changes every 2 minutes)
+        let color;
+        if (totalMinutes < 2) {
+            color = '#ff6b6b'; // Phase 1 color (red) - 0-2 minutes
+        } else if (totalMinutes < 4) {
+            color = '#4ecdc4'; // Phase 2 color (teal) - 2-4 minutes
+        } else if (totalMinutes < 6) {
+            color = '#45b7d1'; // Phase 3 color (blue) - 4-6 minutes
+        } else {
+            color = '#96ceb4'; // Phase 4 color (green) - 6-8+ minutes
+        }
+        
+        this.elements.progressLine.setAttribute('stroke', color);
     }
 }
 
