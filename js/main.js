@@ -30,6 +30,9 @@ class Application {
             // 4. Setup event-driven communication
             this.setupEventIntegration();
             
+            // 4.5. Setup AppState-StateManager bridge for backward compatibility
+            this.setupAppStateBridge();
+            
             // 5. Initialize legacy modules (bridge mode)
             await this.initializeLegacyBridge();
             
@@ -106,6 +109,21 @@ class Application {
         this.stateManager.set('playlist', {
             entries: [],
             isTreeBuilding: false
+        });
+        
+        // Initialize DOM elements in StateManager
+        this.stateManager.set('dom', {
+            canvas: document.querySelector('.mindmap-canvas'),
+            canvasContent: document.querySelector('.canvas-content'),
+            dropZone: document.querySelector('.drop-zone'),
+            breadcrumb: document.getElementById('breadcrumb'),
+            searchField: document.getElementById('searchField'),
+            clearSearchBtn: document.getElementById('clearSearch'),
+            searchResults: document.getElementById('searchResults'),
+            searchResultsList: document.getElementById('searchResultsList'),
+            musicLibrary: document.getElementById('musicLibrary'),
+            allNodes: [],
+            allContainers: []
         });
         
         this.stateManager.set('ui', {
@@ -284,6 +302,73 @@ class Application {
             
         } catch (error) {
             // Don't throw - app can still work with services
+        }
+    }
+
+    /**
+     * Setup bridge between AppState and StateManager for backward compatibility
+     */
+    setupAppStateBridge() {
+        if (!window.AppState || !this.stateManager) return;
+
+        // Sync essential DOM elements from AppState to StateManager if they exist
+        const domElements = ['canvas', 'canvasContent', 'dropZone', 'breadcrumb'];
+        domElements.forEach(element => {
+            if (window.AppState[element]) {
+                this.stateManager.set(`dom.${element}`, window.AppState[element]);
+            }
+        });
+
+        // Sync essential state from AppState to StateManager
+        if (window.AppState.allNodes) {
+            this.stateManager.set('dom.allNodes', window.AppState.allNodes);
+        }
+        if (window.AppState.allContainers) {
+            this.stateManager.set('dom.allContainers', window.AppState.allContainers);
+        }
+        if (window.AppState.selectedTags) {
+            this.stateManager.set('ui.selectedTags', window.AppState.selectedTags);
+        }
+        if (window.AppState.playlistEntries) {
+            this.stateManager.set('playlist.entries', window.AppState.playlistEntries);
+        }
+
+        // Create proxy for AppState setters to update StateManager
+        const originalSetters = {
+            setHasUsedDropZone: window.AppState.setHasUsedDropZone,
+            setCurrentMultiTagContainer: window.AppState.setCurrentMultiTagContainer,
+            setCurrentTagSourceTrack: window.AppState.setCurrentTagSourceTrack,
+            clearState: window.AppState.clearState,
+            clearTreeState: window.AppState.clearTreeState
+        };
+
+        // Bridge AppState setters to StateManager
+        if (originalSetters.setHasUsedDropZone) {
+            window.AppState.setHasUsedDropZone = (value) => {
+                this.stateManager.set('app.hasUsedDropZone', value);
+                originalSetters.setHasUsedDropZone.call(window.AppState, value);
+            };
+        }
+
+        if (originalSetters.setCurrentMultiTagContainer) {
+            window.AppState.setCurrentMultiTagContainer = (container) => {
+                this.stateManager.set('app.currentMultiTagContainer', container);
+                originalSetters.setCurrentMultiTagContainer.call(window.AppState, container);
+            };
+        }
+
+        if (originalSetters.clearTreeState) {
+            window.AppState.clearTreeState = () => {
+                // Clear tree state in StateManager
+                this.stateManager.set('dom.allNodes', []);
+                this.stateManager.set('dom.allContainers', []);
+                this.stateManager.set('tree.nodes', []);
+                this.stateManager.set('tree.connections', []);
+                this.stateManager.set('ui.selectedTags', new Set());
+                
+                // Call original AppState function
+                originalSetters.clearTreeState.call(window.AppState);
+            };
         }
     }
 

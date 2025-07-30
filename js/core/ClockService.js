@@ -32,11 +32,19 @@ class ClockService extends ServiceBase {
      * @private
      */
     initializeDOMElements() {
-        // Try to get elements from AppState first
-        this.clockElement = window.AppState?.realTimeClock;
-        this.clockTimeElement = window.AppState?.clockTime;
+        // Try to get elements from StateManager first
+        this.clockElement = this.getState('dom.realTimeClock');
+        this.clockTimeElement = this.getState('dom.clockTime');
         
-        // If not found in AppState, try direct DOM access
+        // If not found in StateManager, try AppState (backward compatibility)
+        if (!this.clockElement) {
+            this.clockElement = window.AppState?.realTimeClock;
+        }
+        if (!this.clockTimeElement) {
+            this.clockTimeElement = window.AppState?.clockTime;
+        }
+        
+        // If still not found, try direct DOM access
         if (!this.clockElement) {
             this.clockElement = document.getElementById('realTimeClock');
         }
@@ -44,7 +52,15 @@ class ClockService extends ServiceBase {
             this.clockTimeElement = document.getElementById('clockTime');
         }
         
-        // Update AppState if elements were found
+        // Store in StateManager if elements were found
+        if (this.clockElement) {
+            this.setState('dom.realTimeClock', this.clockElement);
+        }
+        if (this.clockTimeElement) {
+            this.setState('dom.clockTime', this.clockTimeElement);
+        }
+        
+        // Maintain backward compatibility with AppState
         if (this.clockElement && window.AppState) {
             window.AppState.realTimeClock = this.clockElement;
         }

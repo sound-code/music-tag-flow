@@ -107,14 +107,14 @@ class DragDropService extends ServiceBase {
         
         // Use event delegation for dynamically added track items
         document.addEventListener('dragstart', (e) => {
-            const trackItem = e.target.closest('.track-item, .track-list-item');
+            const trackItem = e.target.closest('.track-item, .track-list-item, .search-result-item');
             if (trackItem && trackItem.dataset.track) {
                 this.handleDragStart(e, trackItem);
             }
         });
 
         document.addEventListener('dragend', (e) => {
-            const trackItem = e.target.closest('.track-item, .track-list-item');
+            const trackItem = e.target.closest('.track-item, .track-list-item, .search-result-item');
             if (trackItem) {
                 this.handleDragEnd(e, trackItem);
             }
@@ -174,6 +174,8 @@ class DragDropService extends ServiceBase {
         }
         
         const trackData = element.dataset.track;
+        
+        // Extract track data from element
         
         if (!trackData) {
             this.emitEvent('notification:show', {

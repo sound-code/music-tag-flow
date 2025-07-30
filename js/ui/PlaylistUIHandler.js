@@ -9,9 +9,21 @@ window.PlaylistUIHandler = (() => {
      * @param {Array} entries - Playlist entries
      */
     function updateDisplay(entries) {
-        // Get breadcrumb element
-        const breadcrumb = document.getElementById('breadcrumb') || 
-                          (window.AppState && window.AppState.breadcrumb);
+        // Get breadcrumb element - prefer StateManager, fallback to AppState
+        let breadcrumb = document.getElementById('breadcrumb');
+        
+        if (!breadcrumb) {
+            // Try StateManager if available - StateManager is not registered as a service
+            const stateManager = window.App?.stateManager || window.AppStateManager || window.StateManager;
+            if (stateManager) {
+                breadcrumb = stateManager.get('dom.breadcrumb');
+            }
+            
+            // Fallback to AppState for backward compatibility
+            if (!breadcrumb && window.AppState) {
+                breadcrumb = window.AppState.breadcrumb;
+            }
+        }
         
         if (!breadcrumb) return;
         
@@ -77,33 +89,69 @@ window.PlaylistUIHandler = (() => {
      * Clear tree elements from DOM
      */
     function clearTreeFromDOM() {
-        // Clear tree elements from DOM
-        if (window.AppState) {
-            window.AppState.allNodes.forEach(nodeData => {
-                if (nodeData.element) {
-                    nodeData.element.remove();
-                }
-            });
+        // Get StateManager instance - StateManager is not registered as a service
+        const stateManager = window.App?.stateManager || window.AppStateManager || window.StateManager;
+        
+        // Clear tree elements from DOM - prefer StateManager, fallback to AppState
+        let allNodes = [];
+        let allContainers = [];
+        let dropZone = null;
+        
+        if (stateManager) {
+            allNodes = stateManager.get('dom.allNodes') || [];
+            allContainers = stateManager.get('dom.allContainers') || [];
+            dropZone = stateManager.get('dom.dropZone');
             
-            window.AppState.allContainers.forEach(container => container.remove());
-            
-            // Clear tree structure
-            const treeService = window.App?.getService('tree');
-            if (treeService) {
-                treeService.clearTreeStructure();
+            // StateManager data retrieved
+        }
+        
+        // Fallback to AppState if StateManager doesn't have data or doesn't exist
+        if ((!allNodes || allNodes.length === 0) && window.AppState) {
+            allNodes = window.AppState.allNodes || [];
+            allContainers = window.AppState.allContainers || [];
+            dropZone = dropZone || window.AppState.dropZone;
+        }
+        
+        // Clear tree elements
+        allNodes.forEach(nodeData => {
+            if (nodeData.element) {
+                nodeData.element.remove();
             }
-            
-            // Clear selected tags
-            document.querySelectorAll('.tag.selected').forEach(tag => {
-                tag.classList.remove('selected');
-            });
-            
-            // Clear only tree state, keep playlist entries and clock running
+        });
+        
+        allContainers.forEach(container => container.remove());
+        
+        // Clear tree structure via TreeService
+        const treeService = window.App?.getService('tree');
+        if (treeService) {
+            treeService.clearTreeStructure();
+        }
+        
+        // Clear selected tags
+        document.querySelectorAll('.tag.selected').forEach(tag => {
+            tag.classList.remove('selected');
+        });
+        
+        // Clear tree state - prefer StateManager
+        if (stateManager) {
+            // Reset tree state in StateManager
+            stateManager.set('dom.allNodes', []);
+            stateManager.set('dom.allContainers', []);
+            stateManager.set('tree.nodes', []);
+            stateManager.set('tree.connections', []);
+        } else if (window.AppState && window.AppState.clearTreeState) {
+            // Fallback to AppState for backward compatibility
             window.AppState.clearTreeState();
-            
-            // Show drop zone again so user can drag new tracks
-            if (window.AppState.dropZone) {
-                window.AppState.dropZone.style.display = 'flex';
+        }
+        
+        // Show drop zone again so user can drag new tracks
+        if (dropZone) {
+            dropZone.style.display = 'flex';
+        } else {
+            // Fallback to DOM query
+            const dropZoneElement = document.querySelector('.drop-zone');
+            if (dropZoneElement) {
+                dropZoneElement.style.display = 'flex';
             }
         }
     }

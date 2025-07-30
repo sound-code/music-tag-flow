@@ -437,6 +437,8 @@ class SearchService extends ServiceBase {
         resultItem.draggable = true;
         resultItem.dataset.track = JSON.stringify(track);
         
+        // Search result created successfully
+        
         const resultInfo = document.createElement('div');
         resultInfo.className = 'search-result-info';
         

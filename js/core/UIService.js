@@ -101,8 +101,8 @@ class UIService extends ServiceBase {
         
         this.initializeSimpleTrackTooltips(); // Create track node tooltips
         
-        // NOTE: Legend popups handled by legacy ui.js to avoid duplication
-        // this.initializeLegendPopups(); 
+        // Initialize legend popups (migrated from ui.js)
+        this.initializeLegendPopups(); 
         this.initializeVisualEffects();
         this.setupEventListeners();
     }
@@ -512,7 +512,239 @@ class UIService extends ServiceBase {
         }
     }
 
-    // Legend functionality removed - handled by ui.js to avoid conflicts
+    /**
+     * Create legend popup DOM element
+     */
+    createLegendPopupElement() {
+        if (this.elements.legendPopup) return;
+
+        this.elements.legendPopup = document.createElement('div');
+        this.elements.legendPopup.className = 'legend-popup';
+        this.elements.legendPopup.style.cssText = `
+            position: fixed;
+            background: rgba(45, 45, 45, 0.95);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 10001;
+            display: none;
+            opacity: 0;
+            max-width: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.2s ease;
+        `;
+        document.body.appendChild(this.elements.legendPopup);
+
+        // Legend popup hover behavior
+        this.elements.legendPopup.addEventListener('mouseenter', () => {
+            if (this.timeouts.legendHide) {
+                clearTimeout(this.timeouts.legendHide);
+                this.timeouts.legendHide = null;
+            }
+        });
+
+        this.elements.legendPopup.addEventListener('mouseleave', () => {
+            this.hideLegendPopup();
+        });
+    }
+
+    /**
+     * Setup legend event listeners for dynamic legend items
+     */
+    setupLegendEventListeners() {
+        // Listen for legend re-rendering from LegendService
+        this.subscribeToEvent('legend:rendered', () => {
+            setTimeout(() => {
+                this.attachLegendEventHandlers();
+            }, 200);
+        });
+        
+        // Initial attachment
+        setTimeout(() => {
+            this.attachLegendEventHandlers();
+        }, 100);
+        
+        // Global escape key handler for clearing highlights
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.highlightedCategories.size > 0) {
+                this.clearCategoryHighlight();
+            }
+        });
+
+        // Global click handler for clearing highlights when clicking outside legend
+        document.addEventListener('click', (e) => {
+            const legendItem = e.target.closest('.legend-item');
+            if (!legendItem && this.highlightedCategories.size > 0) {
+                this.clearCategoryHighlight();
+            }
+        });
+    }
+
+    /**
+     * Attach event handlers to legend items (can be called multiple times)
+     */
+    attachLegendEventHandlers() {
+        const legendItems = document.querySelectorAll('.legend-item');
+
+        legendItems.forEach((item) => {
+            // Remove existing listeners to prevent duplicates
+            const existingListeners = item._uiEventListeners;
+            if (existingListeners) {
+                existingListeners.forEach(({ event, handler }) => {
+                    item.removeEventListener(event, handler);
+                });
+            }
+            
+            // Create new event handlers array
+            item._uiEventListeners = [];
+            
+            // Click handler for category highlighting
+            const clickHandler = (e) => {
+                e.preventDefault();
+                const category = this.getCategoryFromLegendItem(item);
+                if (category) {
+                    this.toggleCategoryHighlight(category, item);
+                }
+            };
+            item.addEventListener('click', clickHandler);
+            item._uiEventListeners.push({ event: 'click', handler: clickHandler });
+            
+            // Mouseenter handler for popup
+            const mouseenterHandler = (e) => {
+                if (this.timeouts.legendHide) {
+                    clearTimeout(this.timeouts.legendHide);
+                    this.timeouts.legendHide = null;
+                }
+                
+                const category = this.getCategoryFromLegendItem(item);
+                if (category) {
+                    if (this.timeouts.legendShow) {
+                        clearTimeout(this.timeouts.legendShow);
+                    }
+                    this.timeouts.legendShow = setTimeout(() => {
+                        this.showLegendPopup(category, e, item);
+                    }, this.config.legendPopupDelay);
+                }
+            };
+            item.addEventListener('mouseenter', mouseenterHandler);
+            item._uiEventListeners.push({ event: 'mouseenter', handler: mouseenterHandler });
+                
+            // Mouseleave handler
+            const mouseleaveHandler = () => {
+                if (this.timeouts.legendShow) {
+                    clearTimeout(this.timeouts.legendShow);
+                    this.timeouts.legendShow = null;
+                }
+                
+                this.timeouts.legendHide = setTimeout(() => {
+                    this.hideLegendPopup();
+                }, 300);
+            };
+            item.addEventListener('mouseleave', mouseleaveHandler);
+            item._uiEventListeners.push({ event: 'mouseleave', handler: mouseleaveHandler });
+                
+            // Mousemove handler for popup positioning
+            const mousemoveHandler = (e) => {
+                if (this.elements.legendPopup && this.elements.legendPopup.style.display === 'block') {
+                    this.updateLegendPopupPosition(e);
+                }
+            };
+            item.addEventListener('mousemove', mousemoveHandler);
+            item._uiEventListeners.push({ event: 'mousemove', handler: mousemoveHandler });
+        });
+    }
+
+    /**
+     * Enhanced show legend popup with real database tags
+     * @param {string} category - Category name
+     * @param {Event} event - Mouse event for positioning
+     * @param {HTMLElement} legendItem - Legend item element
+     */
+    showLegendPopup(category, event, legendItem) {
+        if (!this.elements.legendPopup) {
+            this.createLegendPopupElement();
+        }
+
+        // Try to get real tags from the legend item's data attribute
+        let tags = null;
+        if (legendItem && legendItem.dataset.tags) {
+            try {
+                tags = JSON.parse(legendItem.dataset.tags);
+            } catch (e) {
+                console.warn('Failed to parse legend tags:', e);
+            }
+        }
+        
+        // Fallback to static tags if no database tags found
+        if (!tags || tags.length === 0) {
+            const categoryTags = {
+                emotion: ['excited', 'mysterious', 'empowering', 'vulnerable', 'romantic', 'sassy'],
+                energy: ['high', 'laid-back', 'vibrant', 'intimate', 'bold', 'minimal'],
+                mood: ['confident', 'melancholic', 'euphoric', 'playful', 'smooth', 'dark'],
+                style: ['pop', 'disco', 'alternative', 'indie', 'hip-hop', 'r&b'],
+                occasion: ['dance', 'solitude', 'freedom', 'rebellion', 'self-care', 'club'],
+                weather: ['golden', 'shadow', 'clarity', 'sparkle', 'quiet', 'stormy'],
+                intensity: ['powerful', 'emotional', 'deep', 'fierce', 'determined', 'gentle'],
+                rating: ['hit', 'viral', 'beautiful', 'anthem', 'unstoppable', 'classic'],
+                tempo: ['ballad', 'anthem', 'hypnotic', 'driving', 'perfect', 'slow'],
+                vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic']
+            };
+            tags = categoryTags[category] || [];
+        }
+
+        if (tags.length === 0) {
+            return; // No tags to show
+        }
+
+        // Create popup content
+        this.elements.legendPopup.innerHTML = '';
+        
+        const title = document.createElement('div');
+        title.className = 'legend-popup-title';
+        title.style.cssText = `
+            font-weight: bold; 
+            margin-bottom: 8px; 
+            color: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 4px;
+        `;
+        title.textContent = `${category.charAt(0).toUpperCase() + category.slice(1)} Tags`;
+
+        const tagsContainer = document.createElement('div');
+        tagsContainer.className = 'legend-popup-tags';
+        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 4px;';
+
+        tags.forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'legend-popup-tag';
+            tagElement.textContent = tag;
+            tagElement.style.cssText = `
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 500;
+                color: white;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+                background: rgba(99, 102, 241, 0.7);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
+            tagElement.classList.add(`tag-${category}`);
+            tagsContainer.appendChild(tagElement);
+        });
+
+        this.elements.legendPopup.appendChild(title);
+        this.elements.legendPopup.appendChild(tagsContainer);
+
+        // Position and show popup
+        this.updateLegendPopupPosition(event);
+        this.elements.legendPopup.style.display = 'block';
+        this.elements.legendPopup.style.opacity = '1';
+    }
 
     /**
      * Handle notification visual effects
@@ -632,24 +864,28 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Get category from legend item element
+     * Get category from legend item element - enhanced version
      * @param {HTMLElement} legendItem - Legend item element
      * @returns {string|null} Category name
      */
     getCategoryFromLegendItem(legendItem) {
+        // First try to get category from dataset (preferred method from LegendService)
+        if (legendItem.dataset && legendItem.dataset.category) {
+            return legendItem.dataset.category;
+        }
+        
+        // Fallback: extract from CSS class (supports any category dynamically)
         const colorElement = legendItem.querySelector('.legend-color');
         if (colorElement) {
             const classList = Array.from(colorElement.classList);
-            // Look for category-specific legend classes (with legend- prefix)
-            const categoryClasses = ['legend-emotion', 'legend-energy', 'legend-mood', 'legend-style', 
-                                   'legend-occasion', 'legend-weather', 'legend-intensity', 'legend-rating', 
-                                   'legend-tempo', 'legend-vibe'];
-            
-            const legendClass = classList.find(cls => categoryClasses.includes(cls));
+            // Look for any legend-* class (not just hardcoded ones)
+            const legendClass = classList.find(cls => cls.startsWith('legend-') && cls !== 'legend-color');
             if (legendClass) {
-                return legendClass.replace('legend-', '');
+                const category = legendClass.replace('legend-', '');
+                return category;
             }
         }
+        
         return null;
     }
 
@@ -753,7 +989,7 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Toggle category highlight
+     * Toggle category highlight with advanced multi-selection support
      * @param {string} category - Category to toggle
      * @param {HTMLElement} legendItem - Legend item element
      */
@@ -764,12 +1000,46 @@ class UIService extends ServiceBase {
 
         const currentCategories = this.getState('ui.highlightedCategories') || new Set();
         
+        // If the category is already selected, remove it
         if (currentCategories.has(category)) {
             currentCategories.delete(category);
             legendItem?.classList.remove('legend-active');
+            
+            // If no more categories selected, reset everything completely
+            if (currentCategories.size === 0) {
+                this.resetAllNodesAndBranches();
+                
+                // Remove all multi-selection styles from legend
+                const allLegendItems = document.querySelectorAll('.legend-item');
+                allLegendItems.forEach(item => {
+                    item.classList.remove('legend-active', 'multi-selection');
+                });
+                
+                // Show feedback
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('🔄 Filtri categoria rimossi - visualizzazione normale ripristinata');
+                }
+                
+                this.setState('ui.highlightedCategories', currentCategories);
+                this.highlightedCategories = currentCategories;
+                return;
+            }
         } else {
+            // Add the new category
             currentCategories.add(category);
             legendItem?.classList.add('legend-active');
+        }
+
+        // Update legend multi-selection styles
+        this.updateLegendMultiSelectionStyles(currentCategories);
+
+        // Recreate highlighting for all selected categories
+        this.updateMultipleCategoriesHighlight(currentCategories);
+        
+        // Show feedback for selected categories
+        const selectedCategories = Array.from(currentCategories);
+        if (typeof Utils !== 'undefined' && Utils.showNotification) {
+            Utils.showNotification(`📌 Categorie selezionate: ${selectedCategories.join(', ')}`);
         }
 
         this.setState('ui.highlightedCategories', currentCategories);
@@ -784,20 +1054,189 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Clear category highlights
+     * Reset all nodes and branches to normal state
+     */
+    resetAllNodesAndBranches() {
+        // Remove ALL highlighting classes from nodes
+        const allNodes = document.querySelectorAll('.track-node');
+        allNodes.forEach(node => {
+            node.classList.remove('category-highlighted', 'category-dimmed');
+        });
+
+        // Remove highlighting from branches via TreeService
+        const treeService = window.App?.getService('tree');
+        if (treeService && treeService.connections) {
+            const connections = treeService.connections;
+            connections.forEach((connection) => {
+                if (connection.svgPath) {
+                    connection.svgPath.classList.remove('branch-highlighted', 'branch-dimmed');
+                }
+                if (connection.textElement) {
+                    connection.textElement.classList.remove('branch-text-highlighted', 'branch-text-dimmed');
+                }
+            });
+        }
+
+        // Clean any other highlighting elements
+        const highlightedElements = document.querySelectorAll('.category-highlighted, .category-dimmed, .branch-highlighted, .branch-dimmed, .branch-text-highlighted, .branch-text-dimmed');
+        highlightedElements.forEach(element => {
+            element.classList.remove('category-highlighted', 'category-dimmed', 'branch-highlighted', 'branch-dimmed', 'branch-text-highlighted', 'branch-text-dimmed');
+        });
+    }
+
+    /**
+     * Update highlighting for multiple selected categories
+     * @param {Set} categories - Selected categories
+     */
+    updateMultipleCategoriesHighlight(categories) {
+        // If no categories selected, reset and exit
+        if (categories.size === 0) {
+            this.resetAllNodesAndBranches();
+            return;
+        }
+
+        // First remove all existing highlighting
+        const allNodes = document.querySelectorAll('.track-node');
+        allNodes.forEach(node => {
+            node.classList.remove('category-highlighted', 'category-dimmed');
+        });
+        
+        // Clear branch highlighting
+        this.clearBranchHighlight();
+
+        // Find all nodes that belong to selected categories
+        const selectedNodes = new Set();
+        categories.forEach(category => {
+            const categoryNodes = document.querySelectorAll(`.track-node.node-tag-${category}`);
+            categoryNodes.forEach(node => selectedNodes.add(node));
+        });
+        
+        // Highlight branches for ALL selected categories
+        this.highlightMultipleCategoriesBranches(categories);
+
+        // Apply highlighting to selected nodes
+        selectedNodes.forEach(node => {
+            node.classList.add('category-highlighted');
+        });
+
+        // Dim all other nodes
+        allNodes.forEach(node => {
+            if (!selectedNodes.has(node)) {
+                node.classList.add('category-dimmed');
+            }
+        });
+    }
+
+    /**
+     * Update legend multi-selection styles
+     * @param {Set} categories - Selected categories
+     */
+    updateLegendMultiSelectionStyles(categories) {
+        const activeLegendItems = document.querySelectorAll('.legend-active');
+        const isMultiSelection = categories.size > 1;
+        
+        activeLegendItems.forEach(item => {
+            if (isMultiSelection) {
+                item.classList.add('multi-selection');
+            } else {
+                item.classList.remove('multi-selection');
+            }
+        });
+    }
+
+    /**
+     * Highlight branches/connections for all selected categories
+     * @param {Set} categories - Selected categories
+     */
+    highlightMultipleCategoriesBranches(categories) {
+        // Access connections from TreeService if available
+        const treeService = window.App?.getService('tree');
+        if (treeService && treeService.connections) {
+            const connections = treeService.connections;
+            
+            connections.forEach((connection) => {
+                const connectionTag = connection.tag;
+                
+                // Extract category from tag (format "category:value")
+                let tagCategory = '';
+                if (typeof tagUtils !== 'undefined' && tagUtils.getTagType) {
+                    tagCategory = tagUtils.getTagType(connectionTag);
+                } else if (connectionTag && connectionTag.includes(':')) {
+                    tagCategory = connectionTag.split(':')[0];
+                }
+                
+                // Check if this branch belongs to one of the selected categories
+                if (categories.has(tagCategory)) {
+                    // Highlight this branch
+                    if (connection.svgPath) {
+                        connection.svgPath.classList.add('branch-highlighted');
+                        connection.svgPath.classList.remove('branch-dimmed');
+                    }
+                    if (connection.textElement) {
+                        connection.textElement.classList.add('branch-text-highlighted');
+                        connection.textElement.classList.remove('branch-text-dimmed');
+                    }
+                } else {
+                    // Dim other branches that don't belong to any selected category
+                    if (connection.svgPath) {
+                        connection.svgPath.classList.add('branch-dimmed');
+                        connection.svgPath.classList.remove('branch-highlighted');
+                    }
+                    if (connection.textElement) {
+                        connection.textElement.classList.add('branch-text-dimmed');
+                        connection.textElement.classList.remove('branch-text-highlighted');
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Clear highlighting from all branches
+     */
+    clearBranchHighlight() {
+        // Remove highlighted branch classes
+        const highlightedBranches = document.querySelectorAll('.branch-highlighted');
+        highlightedBranches.forEach(branch => {
+            branch.classList.remove('branch-highlighted');
+        });
+
+        const dimmedBranches = document.querySelectorAll('.branch-dimmed');
+        dimmedBranches.forEach(branch => {
+            branch.classList.remove('branch-dimmed');
+        });
+
+        // Remove highlighted branch text classes
+        const highlightedBranchTexts = document.querySelectorAll('.branch-text-highlighted');
+        highlightedBranchTexts.forEach(text => {
+            text.classList.remove('branch-text-highlighted');
+        });
+
+        const dimmedBranchTexts = document.querySelectorAll('.branch-text-dimmed');
+        dimmedBranchTexts.forEach(text => {
+            text.classList.remove('branch-text-dimmed');
+        });
+    }
+
+    /**
+     * Clear category highlights completely
      */
     clearCategoryHighlight() {
         const currentCategories = this.getState('ui.highlightedCategories') || new Set();
         if (currentCategories.size === 0) return;
 
-        this.setState('ui.highlightedCategories', new Set());
-        this.highlightedCategories = new Set();
+        // Use complete reset function
+        this.resetAllNodesAndBranches();
 
-        // Remove visual indicators
+        // Remove highlighting from ALL active legend items
         const activeLegendItems = document.querySelectorAll('.legend-active');
         activeLegendItems.forEach(item => {
-            item.classList.remove('legend-active');
+            item.classList.remove('legend-active', 'multi-selection');
         });
+
+        // Reset state
+        this.setState('ui.highlightedCategories', new Set());
+        this.highlightedCategories = new Set();
 
         this.emitEvent('ui:category-highlights-cleared', {
             clearedCategories: Array.from(currentCategories)
