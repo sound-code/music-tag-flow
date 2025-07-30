@@ -84,9 +84,12 @@ const TrackNodes = {
                     node: node,
                     connectionTag: connectionTag || 'direct-selection'
                 });
-            } else {
-                // Fallback to legacy handler if EventBus not available
-                Playlist.handleNodeClick(track, node, connectionTag || 'direct-selection');
+            } else if (window.App && window.App.getService) {
+                // Direct service call if EventBus not available
+                const playlistService = window.App.getService('playlist');
+                if (playlistService && typeof playlistService.handleNodeClick === 'function') {
+                    playlistService.handleNodeClick(track, node, connectionTag || 'direct-selection');
+                }
             }
         });
         
@@ -285,9 +288,18 @@ const TrackNodes = {
                     // Create new node positioned around the source
                     const newNode = this.create(track, 0, 0, sourceNode, tagValue);
                     
-                    // Add to playlist
-                    if (typeof Playlist !== 'undefined' && Playlist.addTrack) {
-                        Playlist.addTrack(track, tagValue);
+                    // Add to playlist via EventBus or direct service call
+                    if (window.EventBus) {
+                        window.EventBus.emit('node:click', {
+                            track: track,
+                            node: newNode,
+                            connectionTag: tagValue || 'direct-selection'
+                        });
+                    } else if (window.App && window.App.getService) {
+                        const playlistService = window.App.getService('playlist');
+                        if (playlistService && typeof playlistService.addTrack === 'function') {
+                            playlistService.addTrack(track, tagValue || 'direct-selection');
+                        }
                     }
                     
                 }, i * 300); // Stagger creation

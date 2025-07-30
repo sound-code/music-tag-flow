@@ -157,10 +157,9 @@ class PlaylistService extends ServiceBase {
         
         // Check tree building state from multiple sources
         const isTreeBuildingService = this.getState('tree.isBuilding');
-        const isTreeBuildingLegacy = window.Playlist && window.Playlist.isTreeBuilding;
         const isTreeBuildingAppState = this.getState('playlist.isTreeBuilding');
         
-        const isTreeBuilding = isTreeBuildingService || isTreeBuildingLegacy || isTreeBuildingAppState;
+        const isTreeBuilding = isTreeBuildingService || isTreeBuildingAppState;
         const isTreeStable = hasExistingTree && !isTreeBuilding;
         // Calculate if we should recenter (every N tracks)
         const nextSize = currentSize + 1;

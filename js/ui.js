@@ -1139,13 +1139,23 @@ window.toggleAlbum = function(header) {
     }
 };
 window.clearMindmap = () => {
-    if (typeof Playlist !== 'undefined' && Playlist.clear) {
-        Playlist.clear();
+    // Clear via EventBus or direct service call
+    if (window.EventBus) {
+        window.EventBus.emit('playlist:clear');
+    } else if (window.App && window.App.getService) {
+        const playlistService = window.App.getService('playlist');
+        if (playlistService && typeof playlistService.clearPlaylistAndTree === 'function') {
+            playlistService.clearPlaylistAndTree();
+        }
     }
 };
 window.savePlaylist = () => {
-    if (typeof Playlist !== 'undefined' && Playlist.save) {
-        Playlist.save();
+    // Save via direct service call
+    if (window.App && window.App.getService) {
+        const playlistService = window.App.getService('playlist');
+        if (playlistService && typeof playlistService.savePlaylist === 'function') {
+            playlistService.savePlaylist();
+        }
     }
 };
 
