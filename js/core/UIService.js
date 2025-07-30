@@ -235,52 +235,201 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Render tooltip content
+     * Centralized tooltip renderer for both library tracks and tree nodes
+     * @param {HTMLElement} tooltipContainer - The tooltip container element
      * @param {Object} trackData - Track data
-     * @param {HTMLElement} trackElement - Track element
+     * @param {HTMLElement} trackElement - Track element (library track or tree node)
+     * @param {string} tooltipType - Type of tooltip ('library' or 'node')
      */
-    renderTooltipContent(trackData, trackElement) {
-        this.elements.tooltip.innerHTML = '';
+    renderUnifiedTooltipContent(tooltipContainer, trackData, trackElement, tooltipType = 'library') {
+        tooltipContainer.innerHTML = '';
 
         // Title
         const title = document.createElement('div');
-        title.style.cssText = 'font-weight: bold; margin-bottom: 8px; color: #fff;';
+        title.className = 'tooltip-title';
+        title.style.cssText = `
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        `;
         title.textContent = `${trackData.title} - ${trackData.artist}`;
 
         // Tags container
         const tagsContainer = document.createElement('div');
-        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px;';
+        tagsContainer.className = 'tooltip-tags';
+        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;';
 
-        trackData.tags.forEach(tag => {
-            const tagElement = document.createElement('span');
-            tagElement.textContent = tagUtils.getTagValue(tag);
-            tagElement.style.cssText = `
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 12px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            `;
+        if (trackData.tags && trackData.tags.length > 0) {
+            trackData.tags.forEach(tagWithValue => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tooltip-tag';
+                tagElement.dataset.tagValue = tagWithValue;
+                
+                // Get the tag display value (remove type: prefix)
+                const tagValue = tagWithValue.includes(':') ? tagWithValue.split(':')[1] : tagWithValue;
+                
+                tagElement.style.cssText = `
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 10px;
+                    font-weight: 500;
+                    color: white;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    letter-spacing: 0.02em;
+                    line-height: 1;
+                    background: rgba(99, 102, 241, 0.7);
+                    border: 1px solid rgba(99, 102, 241, 0.3);
+                `;
+                
+                tagElement.style.setProperty('background', this.getTagColor(tagWithValue), 'important');
+                tagElement.textContent = tagValue;
 
-            const tagInfo = tagUtils.parseTag(tag);
-            tagElement.className = `tooltip-tag tag-${tagInfo.type}`;
-
-            // Tag click handler
-            tagElement.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                this.emitEvent('tag:click-from-tooltip', {
-                    tag,
-                    trackElement,
-                    trackData
+                // Tag click handler - different behavior for library vs node tooltips
+                tagElement.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (tooltipType === 'library') {
+                        // For library track items, delegate to Tags.toggleSelection
+                        if (typeof Tags !== 'undefined' && Tags.toggleSelection) {
+                            const tempTag = document.createElement('div');
+                            tempTag.className = `tag ${tagWithValue.split(':')[0]}`;
+                            tempTag.dataset.tagValue = tagWithValue;
+                            tempTag.textContent = tagValue;
+                            
+                            trackElement.appendChild(tempTag);
+                            await Tags.toggleSelection(tempTag);
+                            tempTag.remove();
+                        }
+                        this.hideTooltip();
+                    } else if (tooltipType === 'node') {
+                        // For tree nodes, delegate to TrackNodesService for branch creation
+                        if (window.App && window.App.getService) {
+                            const trackNodesService = window.App.getService('tracknodes');
+                            if (trackNodesService && typeof trackNodesService.handleTagElementClick === 'function') {
+                                trackNodesService.handleTagElementClick(tagWithValue, trackElement, trackData, tagElement);
+                            }
+                        }
+                        this.hideTrackNodeTooltipImmediate();
+                    }
                 });
-                this.hideTooltip();
-            });
 
-            tagsContainer.appendChild(tagElement);
+                tagsContainer.appendChild(tagElement);
+            });
+        }
+
+        // Add input for new tags
+        const addTagInput = document.createElement('input');
+        addTagInput.type = 'text';
+        addTagInput.placeholder = 'categoria:valore';
+        addTagInput.className = 'tooltip-add-tag-input';
+        addTagInput.style.cssText = `
+            margin-top: 8px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        `;
+        
+        // Handle Enter key for adding new tag
+        addTagInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const newTag = addTagInput.value.trim();
+                
+                if (newTag && newTag.includes(':')) {
+                    try {
+                        // Add tag to track data
+                        if (!trackData.tags.includes(newTag)) {
+                            trackData.tags.push(newTag);
+                            
+                            // Update the track element's dataset
+                            trackElement.dataset.track = JSON.stringify(trackData);
+                            
+                            // Save to database
+                            if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.addTagToTrack) {
+                                await DataSourceAdapter.addTagToTrack(trackData, newTag);
+                            } else if (typeof DataLoader !== 'undefined' && DataLoader.addTagToTrack) {
+                                await DataLoader.addTagToTrack(trackData, newTag);
+                            }
+                            
+                            // Clear input and hide tooltip
+                            addTagInput.value = '';
+                            
+                            if (tooltipType === 'library') {
+                                this.hideTooltip();
+                            } else {
+                                this.hideTrackNodeTooltipImmediate();
+                                
+                                // For tree nodes, emit event for potential tree updates
+                                const eventBus = window.App?.getService('eventbus');
+                                if (eventBus && typeof eventBus.emit === 'function') {
+                                    eventBus.emit('tracknode:tag-added', {
+                                        node: trackElement,
+                                        track: trackData,
+                                        newTag: newTag
+                                    });
+                                }
+                            }
+                            
+                            // Show success notification
+                            if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                                Utils.showNotification(`Tag "${newTag}" aggiunto a "${trackData.title}"`);
+                            }
+                        } else {
+                            // Tag already exists
+                            addTagInput.style.borderColor = '#fbbf24';
+                            addTagInput.placeholder = 'Tag già presente';
+                            setTimeout(() => {
+                                addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                                addTagInput.placeholder = 'categoria:valore';
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        console.error('Error adding tag:', error);
+                        // Show error feedback
+                        addTagInput.style.borderColor = '#ef4444';
+                        addTagInput.placeholder = 'Errore durante aggiunta tag';
+                        setTimeout(() => {
+                            addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                            addTagInput.placeholder = 'categoria:valore';
+                        }, 2000);
+                    }
+                } else {
+                    // Show error feedback
+                    addTagInput.style.borderColor = '#ef4444';
+                    addTagInput.placeholder = 'Formato: categoria:valore';
+                    setTimeout(() => {
+                        addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                        addTagInput.placeholder = 'categoria:valore';
+                    }, 2000);
+                }
+            }
         });
 
-        this.elements.tooltip.appendChild(title);
-        this.elements.tooltip.appendChild(tagsContainer);
+        tooltipContainer.appendChild(title);
+        tooltipContainer.appendChild(tagsContainer);
+        tooltipContainer.appendChild(addTagInput);
+    }
+
+    /**
+     * Render tooltip content for library tracks (uses centralized renderer)
+     * @param {Object} trackData - Track data
+     * @param {HTMLElement} trackElement - Track element
+     */
+    renderTooltipContent(trackData, trackElement) {
+        this.renderUnifiedTooltipContent(this.elements.tooltip, trackData, trackElement, 'library');
     }
 
     /**
@@ -681,52 +830,6 @@ class UIService extends ServiceBase {
         return categories.has(category);
     }
 
-    /**
-     * Initialize track node tooltip functionality with delay management
-     */
-    initializeTrackNodeTooltips() {
-        // Use JavaScript to manage hover delays while keeping CSS tooltip styling
-        document.addEventListener('mouseenter', (e) => {
-            const trackNode = e.target.closest('.track-node');
-            if (trackNode) {
-                this.showTrackNodeTooltipWithDelay(trackNode);
-            }
-        }, true);
-
-        document.addEventListener('mouseleave', (e) => {
-            const trackNode = e.target.closest('.track-node');
-            if (trackNode) {
-                this.hideTrackNodeTooltipWithDelay(trackNode);
-            }
-        }, true);
-
-        // Keep tooltip visible when hovering over it
-        document.addEventListener('mouseenter', (e) => {
-            const tagsContainer = e.target.closest('.tags-container');
-            if (tagsContainer) {
-                this.keepTooltipVisible(tagsContainer);
-            }
-        }, true);
-
-        document.addEventListener('mouseleave', (e) => {
-            const tagsContainer = e.target.closest('.tags-container');
-            if (tagsContainer) {
-                this.hideTooltipFromContainer(tagsContainer);
-            }
-        }, true);
-
-        // Hide tooltip when clicking elsewhere
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.track-node') && !e.target.closest('.tags-container')) {
-                this.hideTrackNodeTooltipImmediate();
-            }
-        });
-
-        // Hide all tooltips when scrolling
-        document.addEventListener('scroll', () => {
-            this.hideTrackNodeTooltipImmediate();
-        }, true);
-    }
 
     /**
      * Remove external track node tooltip if it exists
@@ -750,118 +853,6 @@ class UIService extends ServiceBase {
         this.currentActiveTooltip = null;
     }
 
-    /**
-     * Create external tooltip element for track nodes
-     */
-    createTrackNodeTooltipElement() {
-        if (this.elements.trackNodeTooltip) return;
-
-        this.elements.trackNodeTooltip = document.createElement('div');
-        this.elements.trackNodeTooltip.className = 'track-node-tooltip';
-        this.elements.trackNodeTooltip.style.cssText = `
-            position: fixed;
-            background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(30, 30, 60, 0.98) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 16px;
-            min-width: 200px;
-            max-width: 320px;
-            z-index: 50000;
-            display: none;
-            opacity: 0;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(99, 102, 241, 0.1);
-            transition: opacity 0.2s ease;
-            pointer-events: auto;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        `;
-        document.body.appendChild(this.elements.trackNodeTooltip);
-
-        // Add hover events to keep tooltip visible
-        this.elements.trackNodeTooltip.addEventListener('mouseenter', () => {
-            if (this.timeouts.trackNodeHide) {
-                clearTimeout(this.timeouts.trackNodeHide);
-                this.timeouts.trackNodeHide = null;
-            }
-        });
-
-        this.elements.trackNodeTooltip.addEventListener('mouseleave', () => {
-            this.hideTrackNodeTooltipImmediate();
-        });
-    }
-
-    /**
-     * Show track node tooltip with delay
-     */
-    showTrackNodeTooltip(trackNode) {
-        // Hide any currently active tooltip first
-        if (this.currentActiveTooltip && this.currentActiveTooltip !== trackNode) {
-            this.hideTrackNodeTooltipImmediate();
-        }
-
-        // Clear any existing hide timeout
-        if (this.timeouts.trackNodeHide) {
-            clearTimeout(this.timeouts.trackNodeHide);
-            this.timeouts.trackNodeHide = null;
-        }
-
-        // Show tooltip with delay
-        this.timeouts.trackNodeShow = setTimeout(() => {
-            if (!this.elements.trackNodeTooltip) return;
-
-            // Get track data from node
-            const trackData = this.getTrackDataFromNode(trackNode);
-            if (trackData && trackData.tags && trackData.tags.length > 0) {
-                // Render tooltip content
-                this.renderTrackNodeTooltipContent(trackData, trackNode);
-                
-                // Position tooltip
-                this.positionTrackNodeTooltip(trackNode);
-                
-                // Show tooltip
-                this.elements.trackNodeTooltip.style.display = 'block';
-                setTimeout(() => {
-                    if (this.elements.trackNodeTooltip.style.display === 'block') {
-                        this.elements.trackNodeTooltip.style.opacity = '1';
-                    }
-                }, 10);
-
-                this.currentActiveTooltip = trackNode;
-            }
-        }, this.config.tooltipDelay);
-    }
-
-    /**
-     * Hide track node tooltip with delay
-     */
-    hideTrackNodeTooltip(trackNode) {
-        // Clear any existing show timeout
-        if (this.timeouts.trackNodeShow) {
-            clearTimeout(this.timeouts.trackNodeShow);
-            this.timeouts.trackNodeShow = null;
-        }
-
-        // Hide tooltip with delay
-        this.timeouts.trackNodeHide = setTimeout(() => {
-            this.hideTrackNodeTooltipImmediate();
-        }, this.config.tooltipHideDelay);
-    }
-
-    /**
-     * Hide track node tooltip immediately (no delay)
-     */
-    hideTrackNodeTooltipImmediate() {
-        if (this.elements.trackNodeTooltip) {
-            this.elements.trackNodeTooltip.style.opacity = '0';
-            setTimeout(() => {
-                if (this.elements.trackNodeTooltip.style.opacity === '0') {
-                    this.elements.trackNodeTooltip.style.display = 'none';
-                    this.elements.trackNodeTooltip.innerHTML = '';
-                }
-            }, 200);
-            this.currentActiveTooltip = null;
-        }
-    }
 
     /**
      * Get track data from track node element
@@ -899,161 +890,10 @@ class UIService extends ServiceBase {
         return null;
     }
 
-    /**
-     * Render track node tooltip content
-     */
-    renderTrackNodeTooltipContent(trackData, trackNode) {
-        if (!this.elements.trackNodeTooltip) return;
 
-        this.elements.trackNodeTooltip.innerHTML = '';
-
-        // Title
-        const title = document.createElement('div');
-        title.className = 'tooltip-title';
-        title.style.cssText = `
-            color: #ffffff;
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 12px;
-            line-height: 1.3;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 8px;
-        `;
-        title.textContent = `${trackData.title} - ${trackData.artist}`;
-
-        // Tags container
-        const tagsContainer = document.createElement('div');
-        tagsContainer.className = 'tooltip-tags';
-        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px;';
-
-        if (trackData.tags && trackData.tags.length > 0) {
-            trackData.tags.forEach(tag => {
-                const tagElement = document.createElement('span');
-                tagElement.className = 'tooltip-tag';
-                tagElement.style.cssText = `
-                    padding: 2px 5px;
-                    border-radius: 4px;
-                    font-size: 8px;
-                    font-weight: 500;
-                    color: white;
-                    transition: all 0.2s ease;
-                    cursor: pointer;
-                    text-transform: uppercase;
-                    letter-spacing: 0.02em;
-                    line-height: 1;
-                    background: rgba(99, 102, 241, 0.7);
-                `;
-                tagElement.textContent = tag;
-
-                // Add click handler
-                tagElement.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.emitEvent('tag:click-from-track-node-tooltip', {
-                        tag,
-                        trackNode,
-                        trackData
-                    });
-                    this.hideTrackNodeTooltipImmediate();
-                });
-
-                tagsContainer.appendChild(tagElement);
-            });
-        }
-
-        this.elements.trackNodeTooltip.appendChild(title);
-        this.elements.trackNodeTooltip.appendChild(tagsContainer);
-    }
-
-    /**
-     * Show track node tooltip with delay (CSS-based)
-     */
-    showTrackNodeTooltipWithDelay(trackNode) {
-        // Hide any currently active tooltip first
-        if (this.currentActiveTooltip && this.currentActiveTooltip !== trackNode) {
-            this.hideTrackNodeTooltipImmediate();
-        }
-
-        // Clear any existing hide timeout
-        if (this.timeouts.trackNodeHide) {
-            clearTimeout(this.timeouts.trackNodeHide);
-            this.timeouts.trackNodeHide = null;
-        }
-
-        // Show tooltip with delay
-        this.timeouts.trackNodeShow = setTimeout(() => {
-            const tagsContainer = trackNode.querySelector('.tags-container');
-            if (tagsContainer) {
-                tagsContainer.classList.add('show-tooltip');
-                this.currentActiveTooltip = trackNode;
-            }
-        }, this.config.tooltipDelay);
-    }
-
-    /**
-     * Hide track node tooltip with delay (CSS-based)
-     */
-    hideTrackNodeTooltipWithDelay(trackNode) {
-        // Clear any existing show timeout
-        if (this.timeouts.trackNodeShow) {
-            clearTimeout(this.timeouts.trackNodeShow);
-            this.timeouts.trackNodeShow = null;
-        }
-
-        // Hide tooltip with delay
-        this.timeouts.trackNodeHide = setTimeout(() => {
-            const tagsContainer = trackNode.querySelector('.tags-container');
-            if (tagsContainer && !tagsContainer.matches(':hover')) {
-                tagsContainer.classList.remove('show-tooltip');
-                if (this.currentActiveTooltip === trackNode) {
-                    this.currentActiveTooltip = null;
-                }
-            }
-        }, this.config.tooltipHideDelay);
-    }
-
-    /**
-     * Keep tooltip visible when hovering over it
-     */
-    keepTooltipVisible(tagsContainer) {
-        // Clear any hide timeout
-        if (this.timeouts.trackNodeHide) {
-            clearTimeout(this.timeouts.trackNodeHide);
-            this.timeouts.trackNodeHide = null;
-        }
-        // Ensure tooltip stays visible
-        tagsContainer.classList.add('show-tooltip');
-    }
-
-    /**
-     * Hide tooltip when leaving container
-     */
-    hideTooltipFromContainer(tagsContainer) {
-        // Hide immediately when leaving tooltip area
-        setTimeout(() => {
-            if (!tagsContainer.matches(':hover') && !tagsContainer.closest('.track-node').matches(':hover')) {
-                tagsContainer.classList.remove('show-tooltip');
-                this.currentActiveTooltip = null;
-            }
-        }, 50);
-    }
-
-    /**
-     * Simple tooltip positioning on hover
-     */
-    initializeSimpleTooltips() {
-        document.addEventListener('mouseenter', (e) => {
-            const trackNode = e.target.closest('.track-node');
-            if (trackNode) {
-                const tagsContainer = trackNode.querySelector('.tags-container');
-                if (tagsContainer) {
-                    this.positionTooltipSimple(tagsContainer, trackNode);
-                }
-            }
-        }, true);
-    }
     
     /**
-     * Super simple track tooltip system with external tooltip
+     * Initialize track node tooltips with external tooltip system
      */
     initializeSimpleTrackTooltips() {
         // Create external tooltip element for track nodes
@@ -1143,8 +983,8 @@ class UIService extends ServiceBase {
             // Get track data from node
             const trackData = this.getTrackDataFromNode(trackNode);
             if (trackData && trackData.tags && trackData.tags.length > 0) {
-                // Render tooltip content
-                this.renderTrackNodeTooltipContent(trackData, trackNode);
+                // Render tooltip content using centralized renderer
+                this.renderUnifiedTooltipContent(this.elements.trackNodeTooltip, trackData, trackNode, 'node');
                 
                 // Position tooltip
                 this.positionTrackNodeTooltip(trackNode);
@@ -1238,151 +1078,76 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Render track node tooltip content
+     * Position track node tooltip
      */
-    renderTrackNodeTooltipContent(trackData, trackNode) {
+    positionTrackNodeTooltip(trackNode) {
         if (!this.elements.trackNodeTooltip) return;
 
-        this.elements.trackNodeTooltip.innerHTML = '';
-
-        // Title
-        const title = document.createElement('div');
-        title.className = 'tooltip-title';
-        title.style.cssText = `
-            color: #ffffff;
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 12px;
-            line-height: 1.3;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 8px;
-        `;
-        title.textContent = `${trackData.title} - ${trackData.artist}`;
-
-        // Tags container
-        const tagsContainer = document.createElement('div');
-        tagsContainer.className = 'tooltip-tags';
-        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px;';
-
-        if (trackData.tags && trackData.tags.length > 0) {
-            trackData.tags.forEach(tagWithValue => {
-                const tagElement = document.createElement('span');
-                tagElement.className = 'tooltip-tag';
-                tagElement.dataset.tagValue = tagWithValue;
-                
-                // Get the tag display value (remove type: prefix)
-                const tagValue = tagWithValue.includes(':') ? tagWithValue.split(':')[1] : tagWithValue;
-                
-                tagElement.style.cssText = `
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 10px;
-                    font-weight: 500;
-                    color: white;
-                    transition: all 0.2s ease;
-                    cursor: pointer;
-                    text-transform: uppercase;
-                    letter-spacing: 0.02em;
-                    line-height: 1;
-                    background: rgba(99, 102, 241, 0.7);
-                    border: 1px solid rgba(99, 102, 241, 0.3);
-                `;
-                
-                tagElement.style.setProperty('background', this.getTagColor(tagWithValue), 'important');
-                tagElement.textContent = tagValue;
-
-                // Add click handler for tag
-                tagElement.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Delegate to TrackNodesService for branch creation
-                    if (window.App && window.App.getService) {
-                        const trackNodesService = window.App.getService('tracknodes');
-                        if (trackNodesService && typeof trackNodesService.handleTagElementClick === 'function') {
-                            trackNodesService.handleTagElementClick(tagWithValue, trackNode, trackData, tagElement);
-                        }
-                    }
-                });
-
-                tagsContainer.appendChild(tagElement);
-            });
-        }
-
-        // Add input for new tags
-        const addTagInput = document.createElement('input');
-        addTagInput.type = 'text';
-        addTagInput.placeholder = 'categoria:valore';
-        addTagInput.className = 'tooltip-add-tag-input';
-        addTagInput.style.cssText = `
-            margin-top: 8px;
-            padding: 6px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            outline: none;
-            width: 100%;
-            box-sizing: border-box;
-        `;
+        const rect = trackNode.getBoundingClientRect();
+        const tooltipRect = this.elements.trackNodeTooltip.getBoundingClientRect();
         
-        // Handle Enter key for adding new tag
-        addTagInput.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const newTag = addTagInput.value.trim();
-                
-                if (newTag && newTag.includes(':')) {
-                    // Delegate to TrackNodesService for adding the tag
-                    if (window.App && window.App.getService) {
-                        const trackNodesService = window.App.getService('tracknodes');
-                        if (trackNodesService && typeof trackNodesService.addTagToNode === 'function') {
-                            try {
-                                // Use addTagToNode instead of handleNewTagInput since we don't need to replace containers in tooltip
-                                await trackNodesService.addTagToNode(trackNode, trackData, newTag);
-                                
-                                // Clear input and hide tooltip after successful add
-                                addTagInput.value = '';
-                                this.hideTrackNodeTooltipImmediate();
-                                
-                                // Emit the same event that handleNewTagInput would emit
-                                const eventBus = window.App.getService('eventbus');
-                                if (eventBus && typeof eventBus.emit === 'function') {
-                                    eventBus.emit('tracknode:tag-added', {
-                                        node: trackNode,
-                                        track: trackData,
-                                        newTag: newTag
-                                    });
-                                }
-                                
-                            } catch (error) {
-                                // Show error feedback
-                                addTagInput.style.borderColor = '#ef4444';
-                                addTagInput.placeholder = 'Errore durante aggiunta tag';
-                                setTimeout(() => {
-                                    addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                                    addTagInput.placeholder = 'categoria:valore';
-                                }, 2000);
-                            }
-                        }
-                    }
-                } else {
-                    // Show error feedback
-                    addTagInput.style.borderColor = '#ef4444';
-                    addTagInput.placeholder = 'Formato: categoria:valore';
-                    setTimeout(() => {
-                        addTagInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                        addTagInput.placeholder = 'categoria:valore';
-                    }, 2000);
-                }
-            }
-        });
-
-        this.elements.trackNodeTooltip.appendChild(title);
-        this.elements.trackNodeTooltip.appendChild(tagsContainer);
-        this.elements.trackNodeTooltip.appendChild(addTagInput);
+        // Position above the node by default
+        let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+        let top = rect.top - tooltipRect.height - 10;
+        
+        // Adjust if tooltip would go off screen
+        if (left < 10) left = 10;
+        if (left + tooltipRect.width > window.innerWidth - 10) {
+            left = window.innerWidth - tooltipRect.width - 10;
+        }
+        if (top < 10) {
+            // Position below if no room above
+            top = rect.bottom + 10;
+        }
+        
+        this.elements.trackNodeTooltip.style.left = `${left}px`;
+        this.elements.trackNodeTooltip.style.top = `${top}px`;
     }
+
+
+    /**
+     * Get track data from track node element
+     */
+    getTrackDataFromNode(trackNode) {
+        try {
+            // First try to get track data from dataset (preferred method)
+            if (trackNode.dataset.track) {
+                return JSON.parse(trackNode.dataset.track);
+            }
+
+            // Fallback: extract from DOM elements
+            const titleElement = trackNode.querySelector('.title');
+            const artistElement = trackNode.querySelector('.artist');
+            
+            if (titleElement && artistElement) {
+                const title = titleElement.textContent;
+                const artist = artistElement.textContent;
+                
+                // Look for tags in the tags-container
+                const tagsContainer = trackNode.querySelector('.tags-container');
+                let tags = [];
+                
+                if (tagsContainer) {
+                    const tagElements = tagsContainer.querySelectorAll('.tooltip-tag, .tag');
+                    tags = Array.from(tagElements).map(el => {
+                        return el.dataset.tagValue || el.textContent || el.getAttribute('data-value');
+                    }).filter(Boolean);
+                }
+
+                return {
+                    title: title,
+                    artist: artist,
+                    album: 'Unknown Album',
+                    tags: tags
+                };
+            }
+        } catch (error) {
+            console.warn('Error extracting track data from node:', error);
+        }
+        
+        return null;
+    }
+
 
     /**
      * Position track node tooltip
@@ -1438,175 +1203,6 @@ class UIService extends ServiceBase {
         return colors[type] || 'rgba(99, 102, 241, 0.7)';
     }
 
-    /**
-     * Fix tag attributes in tooltip to ensure they work with Tags.toggleSelection
-     */
-    fixTooltipTagAttributes(tooltip) {
-        const tagElements = tooltip.querySelectorAll('.tag, .tooltip-tag');
-        tagElements.forEach(tagElement => {
-            // If tag doesn't have data-tag-value, create it from textContent
-            if (!tagElement.dataset.tagValue) {
-                const tagText = tagElement.textContent || tagElement.getAttribute('data-tag');
-                if (tagText) {
-                    // Try to parse as category:value or use as-is
-                    if (tagText.includes(':')) {
-                        tagElement.dataset.tagValue = tagText;
-                    } else {
-                        // Try to find the full tag from the track's tags
-                        const trackData = this.getTrackDataFromTooltipContext(tooltip);
-                        if (trackData && trackData.tags) {
-                            const fullTag = trackData.tags.find(tag => 
-                                tag.includes(':') && tag.split(':')[1] === tagText
-                            );
-                            if (fullTag) {
-                                tagElement.dataset.tagValue = fullTag;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Get track data context for tooltip
-     */
-    getTrackDataFromTooltipContext(tooltip) {
-        // Find the current node being displayed
-        const allNodes = document.querySelectorAll('.track-node');
-        for (const node of allNodes) {
-            if (node.dataset.track) {
-                try {
-                    return JSON.parse(node.dataset.track);
-                } catch (e) {
-                    continue;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Attach event listeners to tags and input in external tooltip
-     */
-    attachTooltipEventListeners(tooltip, trackNode) {
-        // Get track data from node's dataset (same as original system)
-        let trackData = null;
-        try {
-            if (trackNode.dataset.track) {
-                trackData = JSON.parse(trackNode.dataset.track);
-            }
-        } catch (error) {
-            console.warn('Error parsing track data from node:', error);
-            return;
-        }
-        
-        if (!trackData) {
-            console.warn('No track data found in node');
-            return;
-        }
-        
-        // Add click listeners to tags
-        const tagElements = tooltip.querySelectorAll('.tag, .tooltip-tag');
-        
-        tagElements.forEach((tagElement, index) => {
-            
-            tagElement.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                
-                // Check if tag is inside track node (crucial for node generation)
-                const parentTrackNode = tagElement.closest('.track-node');
-                
-                // Use existing Tags.toggleSelection system
-                if (typeof Tags !== 'undefined' && Tags.toggleSelection) {
-                    // IMPORTANT: The tag needs to be inside a track-node for branch creation
-                    if (!parentTrackNode) {
-                        // Temporarily append to track node for the click
-                        trackNode.appendChild(tagElement);
-                    }
-                    
-                    await Tags.toggleSelection(tagElement);
-                }
-                
-                // Hide tooltip after click
-                tooltip.style.display = 'none';
-            });
-        });
-        
-        // Add functionality to input field if present
-        let inputElement = tooltip.querySelector('.tooltip-add-tag-input');
-        
-        // If no input field exists, create one
-        if (!inputElement) {
-            inputElement = document.createElement('input');
-            inputElement.type = 'text';
-            inputElement.placeholder = '+';
-            inputElement.className = 'tooltip-add-tag-input';
-            inputElement.style.cssText = `
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: 500;
-                color: white;
-                background: rgba(0, 100, 255, 0.8);
-                border: 2px solid rgba(255, 255, 255, 0.8);
-                outline: none;
-                transition: all 0.2s ease;
-                cursor: text;
-                text-transform: none;
-                letter-spacing: 0.02em;
-                line-height: 1.2;
-                width: 100px;
-                height: 24px;
-                margin-top: 8px;
-                display: block;
-                position: relative;
-                z-index: 999999;
-                pointer-events: auto;
-            `;
-            tooltip.appendChild(inputElement);
-        }
-        
-        if (inputElement) {
-            
-            
-            inputElement.addEventListener('keypress', async (e) => {
-                if (e.key === 'Enter') {
-                    const newTag = e.target.value.trim();
-                    if (newTag && newTag.includes(':')) {
-                        // Use existing TrackNodes.addTagToNode system
-                        if (typeof TrackNodes !== 'undefined' && TrackNodes.addTagToNode) {
-                            await TrackNodes.addTagToNode(trackNode, trackData, newTag);
-                            
-                            // Force refresh tooltip with latest track data
-                            setTimeout(() => {
-                                try {
-                                    // Get the updated track data from the node
-                                    const updatedTrackData = JSON.parse(trackNode.dataset.track);
-                                    
-                                    // Get updated tags container or recreate
-                                    const updatedTagsContainer = trackNode.querySelector('.tags-container');
-                                    if (updatedTagsContainer) {
-                                        tooltip.innerHTML = updatedTagsContainer.innerHTML;
-                                        
-                                        // Ensure all tags have proper data attributes
-                                        this.fixTooltipTagAttributes(tooltip);
-                                        
-                                        // Re-attach all event listeners with updated data
-                                        this.attachTooltipEventListeners(tooltip, trackNode);
-                                    }
-                                } catch (error) {
-                                    console.error('❌ Error refreshing tooltip:', error);
-                                }
-                            }, 100); // Small delay to ensure DOM updates are complete
-                        }
-                        
-                        e.target.value = '';
-                    }
-                }
-            });
-        }
-    }
 
 }
 

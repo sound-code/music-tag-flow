@@ -30,6 +30,8 @@ php -S localhost:8000
 
 Then open http://localhost:8000 in your browser.
 
+**No testing framework or build tools are configured** - the application runs directly in the browser without compilation or bundling.
+
 ## Architecture
 
 ### Module Structure
@@ -63,11 +65,17 @@ The application uses a modular JavaScript architecture with global namespace pat
 
 **Service-Based Architecture**: Core functionality organized into services managed by ServiceManager with dependency injection and lifecycle management.
 
-**Event-Driven Communication**: Services communicate via EventBus for loose coupling and reactive updates.
+**Event-Driven Communication**: Services communicate via EventBus for loose coupling and reactive updates. Key events include:
+- `playlist:clear` - Clear tree visualization (keeps playlist data)  
+- `playlist:track-added` - New track added to playlist
+- `node:click` - Track node clicked for playlist addition
+- `tree:cleared` - Tree visualization cleared
+- `ui:notification` - Display user notifications
 
 **State Management**: 
 - New: StateManager provides reactive state management with subscriptions
 - Legacy: Global `AppState` object (being migrated to StateManager)
+- Both systems coexist during migration period
 
 **Tree Generation**: 3-level automatic tree generation:
 - Level 0 → Level 1: 5 nodes in perfect circle (360°)  
@@ -119,6 +127,8 @@ The application uses a modular JavaScript architecture with global namespace pat
 
 **Search Implementation**: Real-time filtering with word-start matching across title/artist/album fields.
 
+**Clear Tree Functionality**: The "Clear Tree" button (`clearMindmap()`) clears the tree visualization while preserving playlist data and timer. Uses EventBus communication with fallback to direct service calls.
+
 ## Common Modification Patterns
 
 **Service Configuration**: Modify service-specific configs in service constructors - timing, delays, limits, visual settings.
@@ -139,6 +149,8 @@ The application uses a modular JavaScript architecture with global namespace pat
 
 **State Management**: Use `StateManager.setState()` and `StateManager.getState()` for reactive updates.
 
+**Event System Integration**: When connecting UI actions to services, emit events via `EventBus.emit()` rather than direct method calls. Services subscribe to events in their `initialize()` method using `this.subscribeToEvent()`.
+
 ## Architecture Migration Notes
 
 The codebase is currently transitioning from a monolithic approach to a service-based architecture:
@@ -150,3 +162,12 @@ The codebase is currently transitioning from a monolithic approach to a service-
 - When modifying existing features, consider migrating to services
 
 The codebase emphasizes smooth user experience with staggered animations, collision-free positioning, and intuitive drag-and-drop interactions.
+
+## Critical Bug Fix Patterns
+
+**EventBus Communication Issues**: If UI actions don't trigger expected service responses, check that:
+1. Events are properly emitted with correct event names
+2. Services are initialized and subscribing to events in `initialize()` method  
+3. Event handlers call the correct service methods (e.g., `playlist:clear` should call `clearPlaylistAndTree()` not `clearPlaylist()`)
+
+**Service Initialization**: Services must extend `ServiceBase` and be registered in `ServiceManager` via `main.js`. The initialization order is handled automatically by dependency resolution.
