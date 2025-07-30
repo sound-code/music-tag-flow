@@ -35,32 +35,61 @@ Then open http://localhost:8000 in your browser.
 ### Module Structure
 The application uses a modular JavaScript architecture with global namespace pattern:
 
+**Core Services** (`js/core/`):
+- **ServiceManager.js** - Centralized service management and dependency injection
+- **StateManager.js** - Global state management with reactive updates
+- **EventBus.js** - Inter-service communication and event handling
+- **UIService.js** - Tooltip management, visual effects, and category highlighting
+- **TreeService.js** - Tree visualization, positioning algorithms, and SVG rendering
+- **DragDropService.js** - Drag & drop functionality and auto-tree generation
+- **TagService.js** - Tag selection system and multi-tag filtering
+- **SearchService.js** - Real-time search functionality across tracks/artists/albums
+- **PlaylistService.js** - Playlist management and export functionality
+
+**Legacy Modules** (being migrated):
 - **main.js** - Application entry point and module initialization coordinator
-- **state.js** - Centralized state management and DOM element caching
-- **dragDrop.js** - Drag & drop functionality and auto-tree generation logic
-- **tree.js** - Tree visualization, positioning algorithms, and SVG connection rendering
-- **trackNodes.js** - Track node creation, management, and playlist integration  
-- **tags.js** - Tag selection system and multi-tag filtering
-- **containers.js** - Dynamic container creation for tag-based track groupings
-- **search.js** - Real-time search functionality across tracks/artists/albums
-- **playlist.js** - Playlist management and display
+- **state.js** - Legacy state management (transitioning to StateManager)
+- **dragDrop.js**, **tree.js**, **trackNodes.js**, **tags.js**, **search.js**, **playlist.js** - Feature modules
 - **ui.js** - UI utilities and user interactions
 - **utils.js** - Shared utility functions and track generation
 
+**Music Library System** (`js/core/music-library/`):
+- **MusicLibraryFacade.js** - Main interface for music library operations
+- **DatabaseManager.js** - SQLite database management
+- **FileScanner.js** - File system scanning and metadata extraction
+- **TrackRepository.js** - Track data storage and retrieval
+
 ### Key Architecture Patterns
 
-**State Management**: Global `AppState` object manages all application state including nodes, containers, selected tags, and DOM references.
+**Service-Based Architecture**: Core functionality organized into services managed by ServiceManager with dependency injection and lifecycle management.
+
+**Event-Driven Communication**: Services communicate via EventBus for loose coupling and reactive updates.
+
+**State Management**: 
+- New: StateManager provides reactive state management with subscriptions
+- Legacy: Global `AppState` object (being migrated to StateManager)
 
 **Tree Generation**: 3-level automatic tree generation:
 - Level 0 → Level 1: 5 nodes in perfect circle (360°)  
 - Level 1 → Level 2: 3 nodes in semi-circle (180°) per parent
-- Configurable via `DragDrop.config` object
+- Configurable via service configuration objects
 
 **Tag System**: 10 tag categories (emotion, energy, mood, style, occasion, weather, intensity, rating, tempo, vibe) with color-coded visualization and branch connections.
 
 **Positioning Algorithm**: Tree uses collision detection with minimum safe distances, structured concentric positioning, and automatic layout updates.
 
+**Music Library Integration**: SQLite-based music library with file scanning, metadata extraction, and track enrichment services.
+
 ### Data Flow
+
+**New Service-Based Flow**:
+1. User drags track → `DragDropService.handleDrop()` → `TreeService.createAutoTree()`
+2. Auto-generation → `TreeService.buildTreeLevel()` → `TreeService.addNode()`
+3. Tree positioning → `TreeService.calculatePositions()` → `TreeService.applyPositions()`
+4. SVG connections → `TreeService.drawConnection()` with animated curves
+5. State updates → `StateManager.setState()` → Event emission → Service reactions
+
+**Legacy Flow** (being migrated):
 1. User drags track → `DragDrop.handleDrop()` → `createAutoTree()`
 2. Auto-generation → `buildTreeLevel()` → `TrackNodes.create()` → `Tree.addNode()`
 3. Tree positioning → `calculateTreePositions()` → `applyPositions()`
@@ -92,12 +121,32 @@ The application uses a modular JavaScript architecture with global namespace pat
 
 ## Common Modification Patterns
 
-**Adjusting Tree Structure**: Modify `DragDrop.config` - `maxLevels`, `branchesPerTag`, level-specific configurations.
+**Service Configuration**: Modify service-specific configs in service constructors - timing, delays, limits, visual settings.
 
-**Adding Tag Types**: Update `tagValuesByType` objects in `utils.js` and color mappings in `tree.js`.
+**Adjusting Tree Structure**: 
+- New: Modify `TreeService.config` - `maxLevels`, `branchesPerTag`, level-specific configurations
+- Legacy: Modify `DragDrop.config` (being migrated)
+
+**Adding Tag Types**: Update `tagValuesByType` objects in `utils.js` and color mappings in service configuration.
 
 **Changing Node Styling**: CSS classes follow pattern `.track-node`, `.node-tag-{category}`, `.tag.{tagtype}`.
 
-**Animation Timing**: Controlled via `animationDelay`, `branchDelay` in drag-drop config and CSS transitions.
+**Animation Timing**: 
+- New: Controlled via service configuration objects and CSS transitions
+- Legacy: Controlled via `animationDelay`, `branchDelay` in drag-drop config
+
+**Adding New Services**: Extend `ServiceBase`, register in `ServiceManager`, follow event-driven patterns.
+
+**State Management**: Use `StateManager.setState()` and `StateManager.getState()` for reactive updates.
+
+## Architecture Migration Notes
+
+The codebase is currently transitioning from a monolithic approach to a service-based architecture:
+
+- **Core services** in `js/core/` represent the new architecture
+- **Legacy modules** in `js/` root are being gradually migrated
+- Both systems coexist during the transition period
+- New features should use the service-based approach
+- When modifying existing features, consider migrating to services
 
 The codebase emphasizes smooth user experience with staggered animations, collision-free positioning, and intuitive drag-and-drop interactions.
