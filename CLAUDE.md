@@ -34,7 +34,10 @@ npm run dev        # Run Electron with devtools
 # Open http://localhost:8000 in browser for web version
 ```
 
-**No testing framework or build tools are configured** - the application runs directly without compilation or bundling.
+**Important Notes**:
+- No testing framework or build tools are configured - the application runs directly without compilation or bundling
+- No linting or type checking configured - maintain code quality manually
+- When asked to run lint/typecheck commands, ask user for the appropriate commands and suggest adding them to CLAUDE.md
 
 ## Architecture
 
@@ -63,6 +66,12 @@ The application is transitioning from a monolithic approach to a service-based a
 - **FileScanner.js** - File system scanning and metadata extraction
 - **TrackRepository.js** - Track data storage and retrieval
 
+**UI Components** (`js/ui/`):
+- **StatsComponent.js** - Real-time statistics display with live updates
+- **LibraryToggle.js** - Library visibility toggle with EventBus integration
+- **PlaylistUIHandler.js** - Playlist UI interactions and animations
+- **LegendUIHandler.js** - Tag legend UI management
+
 **Legacy Modules** (being migrated to services):
 - **main.js** - Application entry point and service initialization
 - **state.js** - Legacy AppState (use StateManager for new code)
@@ -79,6 +88,10 @@ The application is transitioning from a monolithic approach to a service-based a
 - `tree:cleared` - Tree visualization cleared
 - `ui:notification` - Display user notifications
 - `tooltip:show` / `tooltip:hide` - Tooltip management
+- `data:loading:complete` - Data source initialization complete
+- `search:query:update` - Search query initiated
+- `library:toggle` - Music library visibility toggle
+- `stats:updated` - Statistics data updated
 
 **State Management**: 
 - Use `StateManager` for new code with reactive subscriptions
@@ -216,3 +229,27 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - State: For data that components need to read/react to
 - Events: For actions/commands that trigger behavior
 - Don't use events for state synchronization
+
+## Electron-Specific Features
+
+When running in Electron:
+- SQLite database support for music library (via IPC)
+- File system scanning for music files
+- Native file dialogs for folder selection
+- Preload script provides secure IPC communication
+
+**IPC Channels**:
+- `db:executeQuery` - Execute database queries
+- `db:runQuery` - Run database modifications
+- `scan:directory` - Scan directory for music files
+- `dialog:openDirectory` - Open folder selection dialog
+
+## Data Storage
+
+**Browser Mode**: Uses `DataSourceAdapter` with hardcoded sample data
+**Electron Mode**: Uses SQLite database for persistent music library storage
+
+Database schema includes:
+- Artists, Albums, Tracks tables
+- Tag associations
+- Playlist metadata
