@@ -36,19 +36,12 @@ class DragDropService extends ServiceBase {
             dragEvent: (e) => e && e.dataTransfer
         };
         
-        // Reinitialize after properties are set up (like UIService does)
-        this.initialize();
     }
 
     /**
      * Initialize drag and drop service
      */
     initialize() {
-        // Check if properties are properly initialized (avoid double initialization)
-        if (!this.config || !this.elements || !this.validationRules) {
-            // Properties not ready yet - skip initialization
-            return;
-        }
         
         // Initialize DOM elements
         this.initializeDOMElements();
@@ -74,6 +67,9 @@ class DragDropService extends ServiceBase {
         this.subscribeToEvent('data:loading:complete', () => {
             this.setupDragListeners();
         });
+        
+        // Setup event bridges to other services
+        this.setupServiceBridges();
         
         // Setup initial drag listeners
         this.setupDragListeners();
@@ -130,7 +126,15 @@ class DragDropService extends ServiceBase {
      * Setup drop zone event listeners
      */
     setupDropZone() {
-        if (!this.elements.dropZone) return;
+        if (!this.elements.dropZone) {
+            // Try to find drop zone again in case DOM wasn't ready
+            this.initializeDOMElements();
+            if (!this.elements.dropZone) {
+                console.warn('DragDropService: Drop zone still not found, retrying...');
+                setTimeout(() => this.setupDropZone(), 100);
+                return;
+            }
+        }
 
         this.elements.dropZone.addEventListener('dragover', (e) => {
             this.handleDragOver(e);
@@ -329,24 +333,32 @@ class DragDropService extends ServiceBase {
      * @param {Object} rootTrackData - The root track data
      */
     async createAutoTree(rootTrackData) {
+        console.log('🔥 DragDropService.createAutoTree called with:', rootTrackData);
         
         if (!this.validate({ trackData: rootTrackData }, { trackData: this.validationRules.trackData })) {
+            console.log('🔥 Validation failed');
             return;
         }
+        
+        console.log('🔥 Validation passed, creating tree');
 
         const { maxLevels, animationDelay } = this.config;
+        console.log('🔥 Config:', { maxLevels, animationDelay });
         
         this.emitEvent('notification:show', {
             message: `🌱 Building your ${maxLevels}-level musical tree from "${rootTrackData.title}"...`,
             type: 'info'
         });
+        console.log('🔥 Notification emitted');
         
         // Emit event to create root node
+        console.log('🔥 Emitting tree:create-root-node event');
         this.emitEvent('tree:create-root-node', {
             trackData: rootTrackData,
             x: this.elements.canvas ? this.elements.canvas.offsetWidth / 2 : 400,
             y: this.elements.canvas ? this.elements.canvas.offsetHeight / 2 : 300
         });
+        console.log('🔥 tree:create-root-node event emitted');
         
         // Build tree levels with staggered timing for smooth animation
         setTimeout(async () => {
@@ -537,6 +549,71 @@ class DragDropService extends ServiceBase {
      */
     getConfig() {
         return { ...this.config };
+    }
+
+    /**
+     * Setup bridges between DragDropService events and other services
+     */
+    setupServiceBridges() {
+        console.log('🔥 Setting up service bridges');
+        
+        // Bridge tree:create-root-node to TrackNodesService
+        this.subscribeToEvent('tree:create-root-node', (data) => {
+            console.log('🔥 Received tree:create-root-node event:', data);
+            
+            // Get TrackNodesService
+            const trackNodesService = this.getOtherService('tracknodes');
+            if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                console.log('🔥 Creating root node via TrackNodesService');
+                const rootNode = trackNodesService.createNode(data.trackData, data.x, data.y);
+                this._currentRootNode = rootNode;
+            } else {
+                console.error('🔥 TrackNodesService not available');
+            }
+        });
+
+        // Bridge tree:create-child-node to TrackNodesService
+        this.subscribeToEvent('tree:create-child-node', (data) => {
+            console.log('🔥 Received tree:create-child-node event:', data);
+            
+            const trackNodesService = this.getOtherService('tracknodes');
+            if (trackNodesService && typeof trackNodesService.createNode === 'function') {
+                const childNode = trackNodesService.createNode(
+                    data.trackData, 
+                    0, 0, 
+                    data.parentNode || this._currentRootNode, 
+                    data.connectionTag
+                );
+                if (data.callback) {
+                    data.callback(childNode);
+                }
+            }
+        });
+
+        // Bridge data:generate-tracks-with-tag to DataLoader
+        this.subscribeToEvent('data:generate-tracks-with-tag', (data) => {
+            console.log('🔥 Received data:generate-tracks-with-tag event:', data);
+            
+            if (typeof DataLoader !== 'undefined' && DataLoader.generateTracksWithTag) {
+                DataLoader.generateTracksWithTag(data.tag, data.parentTrack).then(relatedTracks => {
+                    if (data.callback) {
+                        data.callback(relatedTracks);
+                    }
+                });
+            } else {
+                console.error('🔥 DataLoader not available');
+            }
+        });
+    }
+
+    /**
+     * Helper method to get other services
+     */
+    getOtherService(serviceName) {
+        if (window.App && window.App.getService) {
+            return window.App.getService(serviceName);
+        }
+        return null;
     }
 }
 

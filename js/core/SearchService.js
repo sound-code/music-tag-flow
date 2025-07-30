@@ -472,8 +472,11 @@ class SearchService extends ServiceBase {
         resultItem.appendChild(resultInfo);
         
         // Add drag functionality
-        if (typeof DragDrop !== 'undefined' && DragDrop.addDragToElement) {
-            DragDrop.addDragToElement(resultItem);
+        if (window.App && window.App.getService) {
+            const dragDropService = window.App.getService('dragdrop');
+            if (dragDropService && typeof dragDropService.addDragToElement === 'function') {
+                dragDropService.addDragToElement(resultItem);
+            }
         }
         
         return resultItem;

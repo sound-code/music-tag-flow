@@ -233,8 +233,11 @@ class PlaylistService extends ServiceBase {
             // Wait a moment for the clear animation
             setTimeout(() => {
                 // Create new tree with this track as root
-                if (window.DragDrop && window.DragDrop.createAutoTree) {
-                    window.DragDrop.createAutoTree(track);
+                if (window.App && window.App.getService) {
+                    const dragDropService = window.App.getService('dragdrop');
+                    if (dragDropService && typeof dragDropService.createAutoTree === 'function') {
+                        dragDropService.createAutoTree(track);
+                    }
                 }
                 
                 // Show success feedback

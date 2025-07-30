@@ -359,8 +359,11 @@ const Utils = {
             // Add drag & drop functionality
             const trackItems = musicLibrary.querySelectorAll('.track-item[draggable="true"]');
             trackItems.forEach(trackItem => {
-                if (typeof DragDrop !== 'undefined' && DragDrop.addDragToElement) {
-                    DragDrop.addDragToElement(trackItem);
+                if (window.App && window.App.getService) {
+                    const dragDropService = window.App.getService('dragdrop');
+                    if (dragDropService && typeof dragDropService.addDragToElement === 'function') {
+                        dragDropService.addDragToElement(trackItem);
+                    }
                 }
             });
 
