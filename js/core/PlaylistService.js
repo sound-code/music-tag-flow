@@ -399,6 +399,15 @@ class PlaylistService extends ServiceBase {
             window.PlaylistUIHandler.clearTreeFromDOM();
         }
         
+        // Rimuovi classe tree-active per ripristinare trasparenza
+        document.body.classList.remove('tree-active');
+        
+        // Mostra nuovamente il drop-zone
+        const dropZone = document.querySelector('.drop-zone');
+        if (dropZone) {
+            dropZone.style.display = 'flex';
+        }
+        
         // Clear search through SearchService
         const searchService = window.App?.getService('search');
         if (searchService) {

@@ -310,6 +310,9 @@ class DragDropService extends ServiceBase {
                 this.elements.dropZone.style.display = 'none';
             }
             
+            // Aggiungi classe per indicare che c'è un albero attivo
+            document.body.classList.add('tree-active');
+            
             // Reset flag after tree is built (give it time to complete)
             setTimeout(() => {
                 this.setState('dragdrop.isTreeBuilding', false);

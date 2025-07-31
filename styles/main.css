@@ -722,17 +722,6 @@ body {
     animation: nodeGrow 0.6s ease-out;
 }
 
-/* Enhanced drop zone styling for auto-tree */
-.drop-zone {
-    background: linear-gradient(45deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-    border: 2px dashed rgba(139, 92, 246, 0.3);
-    position: relative;
-}
-
-.drop-zone::before {
-    content: "";
-}
-
 .mindmap-canvas {
     position: absolute;
     left: 280px;
@@ -774,12 +763,9 @@ body {
     height: 400px;
     border: none;
     border-radius: 12px;
-    display: flex; /* Visibile inizialmente */
+    display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 16px;
-    text-align: center;
     transition: all 0.3s ease;
     background: transparent;
     overflow: hidden;
@@ -790,48 +776,15 @@ body {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    opacity: 0.8;
-    transition: all 0.3s ease;
-}
-
-.drop-zone-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-}
-
-.drop-zone-icon {
-    opacity: 0.7;
-    transition: all 0.3s ease;
-    border-radius: 12px;
-    object-fit: cover;
-    filter: brightness(0.8) contrast(1.1);
-}
-
-.drop-zone-text {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 16px;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1.4;
-}
-
-.drop-zone.drag-over {
-    background: rgba(99, 102, 241, 0.1);
-    color: #a5b4fc;
-    transform: translate(-50%, -50%) scale(1.05);
-}
-
-.drop-zone.drag-over .drop-zone-bg {
     opacity: 1;
-    transform: scale(1.02);
-    filter: brightness(1) contrast(1.2);
+    transition: all 0.3s ease;
 }
 
-.drop-zone.drag-over .drop-zone-text {
-    color: #a5b4fc;
+/* Riduce opacità quando c'è un albero attivo */
+body.tree-active .drop-zone-bg {
+    opacity: 0.05;
 }
+
 
 /* Track Node Styles */
 .track-node {
