@@ -1434,21 +1434,7 @@ body.tree-active .drop-zone-bg {
     100% { transform: scale(1); }
 } 
 
-/* Track Tooltip Styles */
-.track-tooltip {
-    background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(30, 30, 60, 0.98) 100%);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    padding: 16px;
-    max-width: 320px;
-    min-width: 200px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(99, 102, 241, 0.1);
-    pointer-events: auto; /* Permettere l'interazione con i tag */
-    transition: opacity 0.2s ease;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    z-index: 1000;
-}
+/* Track Tooltip Styles - ora gestiti da JavaScript per uniformità */
 
 .tooltip-title {
     color: #ffffff;
@@ -1599,18 +1585,7 @@ body.tree-active .drop-zone-bg {
 }
 
 /* Add subtle glow effect to tooltip */
-.track-tooltip::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
-    border-radius: 14px;
-    z-index: -1;
-    opacity: 0.5;
-} 
+/* Rimosso glow effect per uniformità */ 
 
 /* Tag-based Node Styling */
 .track-node.node-tag-emotion {
