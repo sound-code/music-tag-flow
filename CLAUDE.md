@@ -25,7 +25,7 @@ python -m http.server 8000
 # or
 npx serve .
 # or
-npm run serve
+npm run serve      # Equivalent to python -m http.server 8000
 
 # Electron development (for desktop app features)
 npm start          # Run Electron app
@@ -64,9 +64,14 @@ The application is transitioning from a monolithic approach to a service-based a
 
 **Music Library System** (`js/core/music-library/`):
 - **MusicLibraryFacade.js** - Main interface for music library operations
-- **DatabaseManager.js** - SQLite database management
-- **FileScanner.js** - File system scanning and metadata extraction
-- **TrackRepository.js** - Track data storage and retrieval
+- **components/DatabaseManager.js** - SQLite database management with connection pooling
+- **components/FileScanner.js** - File system scanning and metadata extraction
+- **components/TrackRepository.js** - Track data storage and retrieval with caching
+- **components/MetadataExtractor.js** - Audio file metadata parsing
+- **services/TagGenerationService.js** - Automatic tag generation from metadata
+- **services/TrackEnrichmentService.js** - Track data enrichment and normalization
+- **container/DIContainer.js** - Dependency injection for music library components
+- **interfaces/** - TypeScript-style interfaces for consistency
 
 **UI Components** (`js/ui/`):
 - **StatsComponent.js** - Real-time statistics display with live updates
@@ -279,6 +284,8 @@ Database schema includes:
 - **Nodes Positioning Incorrectly**: Verify TreeService positioning logic and collision detection
 - **Service Not Found**: Ensure service is registered in main.js and ServiceManager has initialized
 - **Events Not Firing**: Check EventBus subscriptions and service initialization order
+- **Tooltip Issues**: All tooltips centralized in UIService with unified gray styling - avoid creating standalone tooltip elements
+- **Tree Transparency**: Drop-zone transparency managed by `tree-active` class on body, set after first tree creation
 
 **Manual Testing Workflow**:
 1. Start local server: `python -m http.server 8000`
@@ -287,3 +294,29 @@ Database schema includes:
 4. Test drag & drop from library to center canvas
 5. Verify tree generation and node positioning
 6. Test search, playlist, and other interactive features
+7. Verify tooltip behavior consistency between library and nodes
+
+**Critical Visual States**:
+- Initial state: Drop-zone fully opaque, no `tree-active` class
+- After first tree: Drop-zone at 0.05 opacity, `tree-active` class added to body
+- Clear tree: Drop-zone returns to full opacity, `tree-active` class removed
+
+## Recent Architecture Improvements
+
+**Tooltip System Unification (Latest)**:
+- All tooltips now centralized in UIService with consistent gray styling
+- Unified positioning system for both library and node tooltips
+- Removed CSS overrides that caused visual inconsistencies
+- Simplified event handling to prevent tooltip stickiness issues
+
+**Progressive Transparency System**:
+- Drop-zone starts fully opaque for clear user guidance
+- Automatically transitions to 0.05 opacity after first tree creation
+- `tree-active` class on body element manages this state transition
+- Proper cleanup when clearing trees to restore initial state
+
+**Service Architecture Maturity**:
+- All major components migrated to service-based architecture
+- EventBus communication patterns established throughout
+- Dependency injection via ServiceManager
+- Legacy compatibility maintained during transition
