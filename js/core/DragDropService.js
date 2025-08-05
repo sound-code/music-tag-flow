@@ -421,6 +421,12 @@ class DragDropService extends ServiceBase {
                                     return; // Skip this track
                                 }
                                 
+                                // RULE ENFORCEMENT: Never create a node that already exists in tree or playlist
+                                // (This is handled by DataService exclusion logic, but double-check for safety)
+                                if (this._shouldExcludeTrack(childTrack)) {
+                                    return; // Skip this track
+                                }
+                                
                                 // Emit event to create child node
                                 this.emitEvent('tree:create-child-node', {
                                     trackData: childTrack,
@@ -608,6 +614,27 @@ class DragDropService extends ServiceBase {
             return window.App.getService(serviceName);
         }
         return null;
+    }
+
+    /**
+     * Check if a track should be excluded (delegates to DataService centralized logic)
+     * @param {Object} track - Track to check
+     * @returns {boolean} True if track should be excluded
+     */
+    _shouldExcludeTrack(track) {
+        try {
+            const dataService = window.serviceManager?.getService('data');
+            if (dataService && typeof dataService._shouldExcludeTrack === 'function') {
+                return dataService._shouldExcludeTrack(track);
+            }
+            
+            // Fallback: if DataService not available, assume track is not excluded
+            console.warn('🔥 DataService not available for track exclusion check');
+            return false;
+        } catch (error) {
+            console.error('🔥 Error checking track exclusion:', error);
+            return false;
+        }
     }
 }
 

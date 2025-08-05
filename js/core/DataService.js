@@ -154,6 +154,9 @@ class DataService extends ServiceBase {
                 );
             }
             
+            // RULE: Exclude tracks already in playlist or tree (centralized logic)
+            matchingTracks = matchingTracks.filter(track => !this._shouldExcludeTrack(track));
+            
             const requestedCount = 7; // Default count
             
             // NO FALLBACKS - only exact tag matches
@@ -180,14 +183,18 @@ class DataService extends ServiceBase {
             const allTracks = await this._getFlattenedTracks();
             
             // Find tracks that have ALL the requested tags
-            const exactMatches = allTracks.filter(track => 
+            let exactMatches = allTracks.filter(track => 
                 track.tags && selectedTagsArray.every(tag => track.tags.includes(tag))
             );
             
             // Find tracks that have SOME of the requested tags
-            const partialMatches = allTracks.filter(track => 
+            let partialMatches = allTracks.filter(track => 
                 track.tags && selectedTagsArray.some(tag => track.tags.includes(tag))
             );
+            
+            // RULE: Exclude tracks already in playlist or tree (centralized logic)
+            exactMatches = exactMatches.filter(track => !this._shouldExcludeTrack(track));
+            partialMatches = partialMatches.filter(track => !this._shouldExcludeTrack(track));
             
             const requestedCount = 7;
             
@@ -619,6 +626,55 @@ class DataService extends ServiceBase {
             tags: uiTags,
             source: 'database'
         };
+    }
+
+    /**
+     * CENTRALIZED EXCLUSION LOGIC
+     * Get all tracks that should be excluded from tree generation
+     * @returns {Array} Array of tracks to exclude (playlist + tree nodes)
+     */
+    _getExcludedTracks() {
+        const excludedTracks = [];
+        
+        try {
+            // Get playlist tracks
+            const playlistEntries = this.getState('playlist.entries') || [];
+            const playlistTracks = playlistEntries.map(entry => entry.track);
+            excludedTracks.push(...playlistTracks);
+            
+            // Get tree node tracks
+            const treeNodes = this.getState('tree.nodes') || [];
+            const treeTracks = treeNodes.map(node => node.track);
+            excludedTracks.push(...treeTracks);
+            
+            // Also check legacy AppState for backward compatibility
+            if (window.AppState && window.AppState.allNodes) {
+                const legacyTracks = window.AppState.allNodes.map(node => node.track);
+                excludedTracks.push(...legacyTracks);
+            }
+            
+            return excludedTracks;
+        } catch (error) {
+            console.error('Error getting excluded tracks:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Check if a track should be excluded (exists in playlist or tree)
+     * @param {Object} track - Track to check
+     * @returns {boolean} True if track should be excluded
+     */
+    _shouldExcludeTrack(track) {
+        if (!track) return true;
+        
+        const excludedTracks = this._getExcludedTracks();
+        
+        return excludedTracks.some(excludedTrack => 
+            excludedTrack.title === track.title && 
+            excludedTrack.artist === track.artist && 
+            excludedTrack.album === track.album
+        );
     }
 
 }
