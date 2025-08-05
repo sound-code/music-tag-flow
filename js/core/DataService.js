@@ -30,8 +30,7 @@ class DataService extends ServiceBase {
             throw new Error('DataService requires Electron environment for database access');
         }
 
-        // For now, work directly with Electron IPC since MusicLibraryFacade uses require()
-        // TODO: Create browser-compatible version of MusicLibraryFacade
+        // Work directly with Electron IPC since MusicLibraryFacade uses require()
         this.useDirectIPC = true;
 
         // Subscribe to database update events
@@ -39,7 +38,6 @@ class DataService extends ServiceBase {
         this.subscribeToEvent('scan:complete', () => this.clearCache());
 
         this.initialized = true;
-        console.log('✅ DataService initialized');
         
         // Emit initialization complete event
         this.events.emit('data:loading:complete');
@@ -59,11 +57,9 @@ class DataService extends ServiceBase {
 
         try {
             const tracks = await window.electronAPI.getAllTracks(limit);
-            console.log('🎵 DataService getAllTracks raw:', tracks?.length || 0, 'tracks');
             
             // NO FALLBACKS - only database data
             if (!tracks || tracks.length === 0) {
-                console.log('⚠️ No tracks found in database - returning empty');
                 const emptyData = { artists: [] };
                 
                 this.cache.tracks = {
@@ -74,7 +70,6 @@ class DataService extends ServiceBase {
             }
             
             const organizedData = this._organizeTracksIntoStructure(tracks);
-            console.log('🗂️ DataService organized:', organizedData?.artists?.length || 0, 'artists');
             
             this.cache.tracks = {
                 data: organizedData,
@@ -141,17 +136,14 @@ class DataService extends ServiceBase {
     async generateTracksWithTag(tagValue, excludeTrack = null) {
         this._ensureInitialized();
         
-        console.log('🎯 DataService generateTracksWithTag called:', tagValue, excludeTrack?.title);
         
         try {
             const allTracks = await this._getFlattenedTracks();
-            console.log('📋 Total flattened tracks:', allTracks?.length || 0);
             
             // Find tracks with the requested tag
             let matchingTracks = allTracks.filter(track => 
                 track.tags && track.tags.includes(tagValue)
             );
-            console.log('🎯 Matching tracks for', tagValue, ':', matchingTracks?.length || 0);
             
             // Exclude parent track if specified
             if (excludeTrack) {
@@ -166,7 +158,6 @@ class DataService extends ServiceBase {
             
             // NO FALLBACKS - only exact tag matches
             if (matchingTracks.length === 0) {
-                console.log(`⚠️ No tracks found with tag ${tagValue}`);
                 return [];
             }
             
@@ -212,7 +203,6 @@ class DataService extends ServiceBase {
                 return [...result, ...additionalTracks];
             } else {
                 // NO FALLBACKS - return empty if no matches
-                console.log(`⚠️ No tracks found with any of the requested tags:`, selectedTagsArray);
                 return [];
             }
         } catch (error) {
@@ -300,13 +290,10 @@ class DataService extends ServiceBase {
 
         try {
             const stats = await window.electronAPI.getStats();
-            console.log('📊 DataService getTagsByCategory stats:', stats);
             const allTags = stats.uniqueTags || [];
-            console.log('🏷️ DataService allTags:', allTags);
             
             // NO FALLBACKS - only database data
             if (allTags.length === 0) {
-                console.log('⚠️ No tags found in database - returning empty');
                 this.cache.tags = {
                     data: {},
                     timestamp: Date.now()
@@ -324,7 +311,6 @@ class DataService extends ServiceBase {
                 grouped[category].push(tag);
             });
             
-            console.log('📂 DataService grouped tags:', grouped);
             
             this.cache.tags = {
                 data: grouped,
@@ -400,7 +386,6 @@ class DataService extends ServiceBase {
         this.cache.structure = null;
         this.cache.stats = null;
         this.cache.tags = null;
-        console.log('🗑️ DataService cache cleared');
     }
 
     // Private helper methods

@@ -102,18 +102,6 @@ const UI = {
         // Bridge state properties
         this.highlightedCategories = uiService.highlightedCategories;
         
-        // Bridge missing methods for backward compatibility
-        this.initializeTooltips = () => {
-            // Handled by UIService
-        };
-        
-        this.initializeLegendPopups = () => {
-            // Handled by UIService  
-        };
-        
-        this.initializeVisualEffects = () => {
-            // Handled by UIService
-        };
         
         this.handleNotificationVisualEffects = (data) => {
             return uiService.handleNotificationVisualEffects(data);

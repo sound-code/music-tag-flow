@@ -902,7 +902,6 @@ class TrackNodesService extends ServiceBase {
         }
         
         // Log success (no notification)
-        console.log(`✅ Tag "${newTag}" added to "${track.title}"`);
         
         // Still emit event for other systems that might need it
         if (this.eventBus && typeof this.eventBus.emit === 'function') {
@@ -966,7 +965,6 @@ class TrackNodesService extends ServiceBase {
             
             // Log creation (no notification)
             const tagDisplayValue = this.parseTag(tagValue).value;
-            console.log(`🌿 Created ${tracksToCreate.length} branches for ${tagDisplayValue}`);
             
             // Emit evento per statistiche
             if (this.eventBus && typeof this.eventBus.emit === 'function') {

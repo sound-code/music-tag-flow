@@ -38,7 +38,6 @@ class Application {
             
             this.isInitialized = true;
             
-            console.log('🎵 Tree Playlist App loaded with Service Architecture!');
             
             // Statistics are now handled by StatsService automatically
             
@@ -245,20 +244,16 @@ class Application {
      */
     async preloadAppData() {
         try {
-            console.log('🚀 Preloading app data...');
             
             // Preload tags for legend
             const dataService = this.serviceManager?.getService('data');
             if (dataService) {
-                console.log('📂 Preloading tags by category...');
                 const tags = await dataService.getTagsByCategory();
-                console.log('✅ Tags preloaded:', Object.keys(tags).length, 'categories');
                 
                 // Emit event to trigger legend refresh with preloaded data
                 this.eventBus.emit('data:loading:complete');
             }
             
-            console.log('✅ App data preloading complete');
         } catch (error) {
             console.warn('⚠️ Error preloading app data:', error);
             // Don't throw - app can still work
@@ -279,17 +274,14 @@ class Application {
         
         // Legacy bridge events - NOTIFICATIONS DISABLED
         this.eventBus.on('legacy:notification', (data) => {
-            console.log('📢 [LEGACY]', data.message);
         });
         
         // UI notification events from services - NOTIFICATIONS DISABLED
         this.eventBus.on('ui:notification', (data) => {
-            console.log('📢 [UI]', data.message);
         });
         
         // Notification events from TagService - NOTIFICATIONS DISABLED
         this.eventBus.on('notification:show', (data) => {
-            console.log('📢 [TAG]', data.message);
         });
         
         // State synchronization events (bridge AppState to StateManager)

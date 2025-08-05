@@ -26,15 +26,17 @@ const Utils = {
     },
 
     /**
-     * Show a notification message to the user (Enhanced with EventBus)
+     * Show a notification message to the user (via EventBus)
      * @param {string} message - The message to display
      * @param {string} type - Notification type ('success', 'error', 'warning', 'info')
      * @param {number} duration - Display duration in milliseconds
      */
     showNotification(message, type = 'info', duration = 3000) {
-        // NOTIFICATIONS DISABLED - only log to console
-        console.log(`📢 [${type.toUpperCase()}] ${message}`);
-        return;
+        if (window.EventBus) {
+            window.EventBus.emit('ui:notification', { message, type, duration });
+        } else {
+            console.log(`📢 [${type.toUpperCase()}] ${message}`);
+        }
     },
 
     /**
@@ -360,16 +362,6 @@ const Utils = {
         return await dataService.generateTracksWithTag(tagValue, excludeTrack);
     },
 
-    /**
-     * Debug helper to show application state
-     */
-    debugAppState() {
-        if (window.App && window.App.getStats) {
-            
-        } else {
-            
-        }
-    }
 };
 
 // Auto-initialize Utils when EventBus is available

@@ -266,18 +266,6 @@ class LegendService extends ServiceBase {
         }
     }
 
-    /**
-     * Get user-friendly display name for category
-     * @param {string} category - Category key
-     * @returns {string} Display name  
-     * @deprecated Use LegendUIHandler.getCategoryDisplayName instead
-     */
-    getCategoryDisplayName(category) {
-        if (window.LegendUIHandler) {
-            return window.LegendUIHandler.getCategoryDisplayName(category);
-        }
-        return category.charAt(0).toUpperCase() + category.slice(1);
-    }
 
     /**
      * Invalidate cache

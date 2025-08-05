@@ -798,10 +798,8 @@ class UIService extends ServiceBase {
         }
         
         // NO FALLBACKS - only database data
-        console.log(`🏷️ Legend popup for ${category}: ${tags.length} tags from ${tagSource}`, tags);
         
         if (!tags || tags.length === 0) {
-            console.log(`⚠️ No tags found for category ${category} - not showing popup`);
             return; // Don't show popup if no tags
         }
 

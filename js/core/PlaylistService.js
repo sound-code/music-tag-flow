@@ -340,17 +340,6 @@ class PlaylistService extends ServiceBase {
         this.emitEvent('playlist:phases-view-changed', { isActive });
     }
     
-    /**
-     * Update playlist display in the DOM
-     * @public
-     * @deprecated Use PlaylistUIHandler.updateDisplay instead
-     */
-    updatePlaylistDisplay() {
-        const entries = this.getState('playlist.entries') || [];
-        if (window.PlaylistUIHandler) {
-            window.PlaylistUIHandler.updateDisplay(entries);
-        }
-    }
     
     /**
      * Save playlist to external format
@@ -387,22 +376,6 @@ class PlaylistService extends ServiceBase {
         });
     }
     
-    /**
-     * Remove track by DOM element index (Legacy compatibility - now uses EventBus)
-     * @param {HTMLElement} element - DOM element with track info
-     * @public
-     * @deprecated Use EventBus 'playlist:remove-track-by-index' event instead
-     */
-    removeTrackByIndex(element) {
-        // Legacy compatibility - emit through EventBus
-        const trackIndex = parseInt(element.getAttribute('data-track-index'));
-        if (!isNaN(trackIndex)) {
-            this.emitEvent('playlist:remove-track-by-index', {
-                index: trackIndex,
-                element: element
-            });
-        }
-    }
     
     /**
      * Clear entire playlist and tree (extended clear functionality)
@@ -430,8 +403,11 @@ class PlaylistService extends ServiceBase {
         }
         
         // Keep playlist and clock running - don't clear playlist
-        // Just update display
-        this.updatePlaylistDisplay();
+        // Just update display through UI handler
+        const entries = this.getState('playlist.entries') || [];
+        if (window.PlaylistUIHandler) {
+            window.PlaylistUIHandler.updateDisplay(entries);
+        }
         
         this.emitEvent('ui:notification', {
             message: 'Tree cleared - playlist and timer continue',
