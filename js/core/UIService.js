@@ -9,8 +9,8 @@ class UIService extends ServiceBase {
         
         // Service-specific configuration
         this.config = {
-            tooltipDelay: 200, // ms (ridotto da 500)
-            tooltipHideDelay: 100, // ms (ridotto da 200) 
+            tooltipDelay: 100, // ms (reduced for faster response)
+            tooltipHideDelay: 250, // ms (balanced for interaction but not too slow) 
             legendPopupDelay: 150, // ms (ridotto da 300)
             notificationEffectDuration: 300, // ms
             colorFixInterval: 5000, // ms
@@ -212,8 +212,9 @@ class UIService extends ServiceBase {
         this.applyTooltipStyles(this.elements.tooltip);
         document.body.appendChild(this.elements.tooltip);
 
-        // Tooltip hover behavior
+        // Tooltip hover behavior - enable pointer events only when hovering
         this.elements.tooltip.addEventListener('mouseenter', () => {
+            this.elements.tooltip.style.pointerEvents = 'auto';
             if (this.timeouts.hide) {
                 clearTimeout(this.timeouts.hide);
                 this.timeouts.hide = null;
@@ -221,6 +222,7 @@ class UIService extends ServiceBase {
         });
 
         this.elements.tooltip.addEventListener('mouseleave', () => {
+            this.elements.tooltip.style.pointerEvents = 'none';
             this.hideTooltip();
         });
     }
@@ -282,7 +284,7 @@ class UIService extends ServiceBase {
                     this.renderTooltipContent(trackData, trackElement);
                     this.positionTooltip(trackElement);
                     this.elements.tooltip.style.display = 'block';
-                    this.elements.tooltip.style.pointerEvents = 'auto';
+                    this.elements.tooltip.style.pointerEvents = 'none';
                     setTimeout(() => {
                         if (this.elements.tooltip.style.display === 'block') {
                             this.elements.tooltip.style.opacity = '1';
@@ -358,27 +360,23 @@ class UIService extends ServiceBase {
                     
                     if (tooltipType === 'library') {
                         // For library track items, delegate to TagService
-                        if (window.App && window.App.getService) {
-                            const tagService = window.App.getService('tags');
-                            if (tagService && typeof tagService.handleTagClick === 'function') {
-                                const tempTag = document.createElement('div');
-                                tempTag.className = `tag ${tagWithValue.split(':')[0]}`;
-                                tempTag.dataset.tagValue = tagWithValue;
-                                tempTag.textContent = tagValue;
-                                
-                                trackElement.appendChild(tempTag);
-                                await tagService.handleTagClick(tempTag);
-                                tempTag.remove();
-                            }
+                        const tagService = this.getService('tags');
+                        if (tagService && typeof tagService.handleTagClick === 'function') {
+                            const tempTag = document.createElement('div');
+                            tempTag.className = `tag ${tagWithValue.split(':')[0]}`;
+                            tempTag.dataset.tagValue = tagWithValue;
+                            tempTag.textContent = tagValue;
+                            
+                            trackElement.appendChild(tempTag);
+                            await tagService.handleTagClick(tempTag);
+                            tempTag.remove();
                         }
                         this.hideTooltip();
                     } else if (tooltipType === 'node') {
                         // For tree nodes, delegate to TrackNodesService for branch creation
-                        if (window.App && window.App.getService) {
-                            const trackNodesService = window.App.getService('tracknodes');
-                            if (trackNodesService && typeof trackNodesService.handleTagElementClick === 'function') {
-                                trackNodesService.handleTagElementClick(tagWithValue, trackElement, trackData, tagElement);
-                            }
+                        const trackNodesService = this.getService('tracknodes');
+                        if (trackNodesService && typeof trackNodesService.handleTagElementClick === 'function') {
+                            trackNodesService.handleTagElementClick(tagWithValue, trackElement, trackData, tagElement);
                         }
                         this.hideTrackNodeTooltipImmediate();
                     }
@@ -422,7 +420,7 @@ class UIService extends ServiceBase {
                             trackElement.dataset.track = JSON.stringify(trackData);
                             
                             // Save to database
-                            const dataService = window.serviceManager?.getService('data');
+                            const dataService = this.getService('data');
                             if (dataService) {
                                 await dataService.addTagToTrack(trackData, newTag);
                             }
@@ -436,7 +434,7 @@ class UIService extends ServiceBase {
                                 this.hideTrackNodeTooltipImmediate();
                                 
                                 // For tree nodes, emit event for potential tree updates
-                                const eventBus = window.App?.getService('eventbus');
+                                const eventBus = this.getService('eventbus');
                                 if (eventBus && typeof eventBus.emit === 'function') {
                                     eventBus.emit('tracknode:tag-added', {
                                         node: trackElement,
@@ -499,7 +497,7 @@ class UIService extends ServiceBase {
      * Unified tooltip positioning
      * @param {HTMLElement} tooltipElement - Tooltip element to position
      * @param {HTMLElement} targetElement - Target element to position near
-     * @param {string} strategy - Positioning strategy: 'right' or 'above'
+     * @param {string} strategy - Positioning strategy: 'right', 'above', or 'left'
      */
     positionTooltipUnified(tooltipElement, targetElement, strategy = 'right') {
         if (!tooltipElement) return;
@@ -512,9 +510,14 @@ class UIService extends ServiceBase {
         let x, y;
 
         if (strategy === 'above') {
-            // Position above the element (for nodes)
+            // Position above the element (for nodes) - with more distance
             x = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
-            y = targetRect.top - tooltipRect.height - 10;
+            y = targetRect.top - tooltipRect.height - 25; // Increased gap from 10 to 25px
+        } else if (strategy === 'left') {
+            // Position to the left (for nodes to avoid play button)
+            const tooltipWidth = tooltipRect.width || 300; // Fallback width if not measured yet
+            x = targetRect.left - tooltipWidth - 8; // Reduced gap for easier mouse movement
+            y = targetRect.top;
         } else {
             // Position to the right (for library items)
             x = targetRect.right + 10;
@@ -522,17 +525,53 @@ class UIService extends ServiceBase {
         }
 
         // Adjust if tooltip goes off screen
-        if (x + tooltipRect.width > viewportWidth) {
-            x = targetRect.left - tooltipRect.width - 10;
+        if (strategy === 'left') {
+            // For left positioning, if goes off left edge, try right side
+            const tooltipWidth = tooltipRect.width || 300;
+            if (x < 15) {
+                x = targetRect.right + 15;
+                // If right side also doesn't fit, try above
+                if (x + tooltipWidth > viewportWidth) {
+                    x = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+                    y = targetRect.top - (tooltipRect.height || 200) - 15;
+                    // If above doesn't fit, go below as last resort
+                    if (y < 15) {
+                        y = targetRect.bottom + 15;
+                    }
+                }
+            }
+        } else {
+            // Original logic for other strategies
+            if (x + tooltipRect.width > viewportWidth) {
+                x = targetRect.left - tooltipRect.width - 10;
+            }
+            if (y < 15) {
+                // For nodes, prefer right side instead of below to avoid covering play button
+                if (strategy === 'above') {
+                    x = targetRect.right + 15;
+                    y = targetRect.top;
+                    // If still doesn't fit on right, try left
+                    if (x + tooltipRect.width > viewportWidth) {
+                        x = targetRect.left - tooltipRect.width - 15;
+                    }
+                    // Only go below as last resort
+                    if (x < 15) {
+                        x = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+                        y = targetRect.bottom + 25;
+                    }
+                } else {
+                    y = targetRect.bottom + 10;
+                }
+            }
+            // Final safety check for left edge
+            if (x < 15) {
+                x = 15;
+            }
         }
+        
+        // Common vertical positioning adjustments
         if (y + tooltipRect.height > viewportHeight) {
             y = viewportHeight - tooltipRect.height - 10;
-        }
-        if (y < 15) {
-            y = targetRect.bottom + 10;
-        }
-        if (x < 15) {
-            x = 15;
         }
 
         tooltipElement.style.left = `${x}px`;
@@ -781,7 +820,7 @@ class UIService extends ServiceBase {
         // Try to get tags from DataService if dataset is empty
         if (!tags || tags.length === 0) {
             try {
-                const dataService = window.serviceManager?.getService('data');
+                const dataService = this.getService('data');
                 if (dataService) {
                     const allTagsByCategory = await dataService.getTagsByCategory();
                     if (allTagsByCategory[category] && allTagsByCategory[category].length > 0) {
@@ -1194,7 +1233,7 @@ class UIService extends ServiceBase {
      */
     highlightMultipleCategoriesBranches(categories) {
         // Access connections from TreeService if available
-        const treeService = window.App?.getService('tree');
+        const treeService = this.getService('tree');
         if (treeService && treeService.connections) {
             const connections = treeService.connections;
             
@@ -1307,6 +1346,20 @@ class UIService extends ServiceBase {
     }
 
     /**
+     * Helper method to get a service from either window.App or window.serviceManager
+     * @param {string} serviceName - Name of the service to get
+     * @returns {Object|null} Service instance or null
+     */
+    getService(serviceName) {
+        if (window.App && window.App.getService) {
+            return window.App.getService(serviceName);
+        } else if (window.serviceManager && window.serviceManager.getService) {
+            return window.serviceManager.getService(serviceName);
+        }
+        return null;
+    }
+
+    /**
      * Check if category is highlighted
      * @param {string} category - Category to check
      * @returns {boolean} Is highlighted
@@ -1369,7 +1422,7 @@ class UIService extends ServiceBase {
                 if (!relatedTarget || 
                     (!trackNode.contains(relatedTarget) && 
                      !this.elements.trackNodeTooltip?.contains(relatedTarget))) {
-                    // Shorter delay for immediate feedback
+                    // Moderate delay to allow mouse movement to tooltip
                     setTimeout(() => {
                         // Double-check that mouse is still outside both elements
                         if (this.currentActiveTooltip === trackNode && 
@@ -1377,7 +1430,7 @@ class UIService extends ServiceBase {
                             !this.elements.trackNodeTooltip?.matches(':hover')) {
                             this.hideTrackNodeTooltip(trackNode);
                         }
-                    }, 50);
+                    }, 200); // Reduced from 300ms to 200ms
                 }
             }
         });
@@ -1450,12 +1503,15 @@ class UIService extends ServiceBase {
                 // Render tooltip content using centralized renderer
                 this.renderUnifiedTooltipContent(this.elements.trackNodeTooltip, trackData, trackNode, 'node');
                 
-                // Position tooltip
+                // Show tooltip first so we can get proper dimensions
+                this.elements.trackNodeTooltip.style.display = 'block';
+                this.elements.trackNodeTooltip.style.opacity = '0';
+                this.elements.trackNodeTooltip.style.pointerEvents = 'auto'; // Enable clicks immediately
+                
+                // Position tooltip after rendering
                 this.positionTrackNodeTooltip(trackNode);
                 
-                // Show tooltip
-                this.elements.trackNodeTooltip.style.display = 'block';
-                this.elements.trackNodeTooltip.style.pointerEvents = 'auto';
+                // Fade in tooltip
                 requestAnimationFrame(() => {
                     if (this.elements.trackNodeTooltip && this.elements.trackNodeTooltip.style.display === 'block') {
                         this.elements.trackNodeTooltip.style.opacity = '1';
@@ -1477,14 +1533,14 @@ class UIService extends ServiceBase {
             this.timeouts.trackNodeShow = null;
         }
 
-        // Hide tooltip with shorter delay for more responsive feel
+        // Hide tooltip with moderate delay to allow interaction
         this.timeouts.trackNodeHide = setTimeout(() => {
             // Final check: only hide if mouse is truly outside both elements
             if (!trackNode.matches(':hover') && 
                 !this.elements.trackNodeTooltip?.matches(':hover')) {
                 this.hideTrackNodeTooltipImmediate();
             }
-        }, 100); // Much shorter delay
+        }, 250); // Balanced delay for interaction without being too slow
     }
 
     /**
@@ -1503,10 +1559,10 @@ class UIService extends ServiceBase {
 
         if (this.elements.trackNodeTooltip) {
             this.elements.trackNodeTooltip.style.opacity = '0';
-            this.elements.trackNodeTooltip.style.pointerEvents = 'none';
             setTimeout(() => {
                 if (this.elements.trackNodeTooltip && this.elements.trackNodeTooltip.style.opacity === '0') {
                     this.elements.trackNodeTooltip.style.display = 'none';
+                    this.elements.trackNodeTooltip.style.pointerEvents = 'none';
                     this.elements.trackNodeTooltip.innerHTML = '';
                 }
             }, 200);
@@ -1561,7 +1617,7 @@ class UIService extends ServiceBase {
      * Position track node tooltip
      */
     positionTrackNodeTooltip(trackNode) {
-        this.positionTooltipUnified(this.elements.trackNodeTooltip, trackNode, 'above');
+        this.positionTooltipUnified(this.elements.trackNodeTooltip, trackNode, 'left');
     }
 
 
