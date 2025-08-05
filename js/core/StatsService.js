@@ -56,16 +56,14 @@ class StatsService extends ServiceBase {
      */
     async updateStats() {
         try {
-            if (!window.DataSourceAdapter) {
+            // Get DataService
+            const dataService = window.serviceManager?.getService('data');
+            if (!dataService) {
                 return;
             }
             
-            // Clear cache to ensure fresh data
-            if (window.DataSourceAdapter.clearCache) {
-                window.DataSourceAdapter.clearCache();
-            }
-            
-            const stats = await window.DataSourceAdapter.getStats();
+            dataService.clearCache();
+            const stats = await dataService.getStats();
             
             // Update all UI elements
             this.updateStatsUI(stats);
@@ -121,8 +119,9 @@ class StatsService extends ServiceBase {
      */
     async getCurrentStats() {
         try {
-            if (window.DataSourceAdapter) {
-                return await window.DataSourceAdapter.getStats();
+            const dataService = window.serviceManager?.getService('data');
+            if (dataService) {
+                return await dataService.getStats();
             }
             return { tracks: 0, artists: 0, albums: 0, categories: 0, uniqueTags: [] };
         } catch (error) {

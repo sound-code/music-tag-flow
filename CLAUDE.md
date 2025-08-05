@@ -39,6 +39,7 @@ npm run dev        # Run Electron with devtools
 - No linting or type checking configured - maintain code quality manually
 - When asked to run lint/typecheck commands, ask user for the appropriate commands and suggest adding them to CLAUDE.md
 - Manual testing files exist in `tests/` directory for specific functionality validation
+- Use `node tests/[filename].js` to run manual tests
 
 ## Architecture
 
@@ -50,6 +51,7 @@ The application is transitioning from a monolithic approach to a service-based a
 - **ServiceManager.js** - Centralized service management and dependency injection
 - **StateManager.js** - Global state management with reactive updates
 - **EventBus.js** - Inter-service communication and event handling
+- **DataService.js** - Centralized data access service using MusicLibraryFacade (database-only)
 - **UIService.js** - Tooltip management, visual effects, and category highlighting
 - **TreeService.js** - Tree visualization, positioning algorithms, and SVG rendering
 - **DragDropService.js** - Drag & drop functionality and auto-tree generation
@@ -83,7 +85,7 @@ The application is transitioning from a monolithic approach to a service-based a
 - **main.js** - Application entry point and service initialization
 - **state.js** - Legacy AppState (use StateManager for new code)
 - **ui.js** - UI utilities and user interactions
-- **utils.js** - Shared utility functions and track generation
+- **utils.js** - Shared utility functions and music library rendering
 
 ### Key Architecture Patterns
 
@@ -128,11 +130,12 @@ The application is transitioning from a monolithic approach to a service-based a
 
 ### Data Flow
 
-1. **Track Drop**: User drags track → `DragDropService.handleDrop()` → `TreeService.createAutoTree()`
-2. **Tree Building**: `TreeService.buildTreeLevel()` → `TrackNodesService.createNode()` → `TreeService.addNode()`
-3. **Positioning**: `TreeService.calculatePositions()` → Collision detection → `TreeService.applyPositions()`
-4. **Connections**: `TreeService.drawConnection()` → SVG path with curve animation
-5. **State Update**: Service methods → `StateManager.setState()` → Event emission → UI updates
+1. **Data Access**: All services use `DataService` → `MusicLibraryFacade` → SQLite database (Electron only)
+2. **Track Drop**: User drags track → `DragDropService.handleDrop()` → `TreeService.createAutoTree()`
+3. **Tree Building**: `TreeService.buildTreeLevel()` → `TrackNodesService.createNode()` → `TreeService.addNode()`
+4. **Positioning**: `TreeService.calculatePositions()` → Collision detection → `TreeService.applyPositions()`
+5. **Connections**: `TreeService.drawConnection()` → SVG path with curve animation
+6. **State Update**: Service methods → `StateManager.setState()` → Event emission → UI updates
 
 ### Critical Implementation Details
 
@@ -158,6 +161,25 @@ this.subscribeToEvent('event:name', (data) => this.handleEvent(data));
 ```
 
 **Tooltip System**: Centralized in UIService, supports both library items and track nodes with unified hover behavior and 300ms delays.
+
+**Script Loading Order** (from index.html):
+```javascript
+// 1. Core Infrastructure
+EventBus, StateManager, ServiceBase, ServiceManager, AppStateProxy
+
+// 2. Core Services (order matters for dependencies)
+DataService, UIService, TreeService, DragDropService, TrackNodesService, TagService,
+SearchService, PlaylistService, PhasesService, ClockService, StatsService, LegendService
+
+// 3. Legacy Modules
+state.js, utils.js, ui.js
+
+// 4. UI Components
+StatsComponent, LibraryToggle, PlaylistUIHandler, LegendUIHandler
+
+// 5. Main Application
+main.js
+```
 
 ## Common Modification Patterns
 
@@ -209,6 +231,8 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - ✅ DragDrop → DragDropService (dragDrop.js removed)
 - ✅ Tags → TagService (tags.js removed)
 - ✅ Tree → TreeService (tree.js completely removed)
+- ✅ DataLoader/DataSourceAdapter → DataService (dataLoader.js, dataSourceAdapter.js removed)
+- ✅ JSON data support removed - database-only architecture
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
 
@@ -262,15 +286,25 @@ When running in Electron:
 - `scan:directory` - Scan directory for music files
 - `dialog:openDirectory` - Open folder selection dialog
 
+**Security Configuration**:
+- `contextIsolation: true`
+- `nodeIntegration: false`
+- Secure IPC via preload script
+
 ## Data Storage
 
-**Browser Mode**: Uses `DataSourceAdapter` with hardcoded sample data
-**Electron Mode**: Uses SQLite database for persistent music library storage
+**Database-Only Architecture**: Application now uses SQLite database exclusively through MusicLibraryFacade.
 
 Database schema includes:
-- Artists, Albums, Tracks tables
+- Artists, Albums, Tracks tables  
 - Tag associations
 - Playlist metadata
+
+**Service Integration**:
+- `DataService` provides unified interface to all data operations
+- `MusicLibraryFacade` handles database connections and queries
+- Dependency injection ensures clean service architecture
+- Requires Electron environment for database access
 
 ## Debugging and Development Tips
 
@@ -320,3 +354,13 @@ Database schema includes:
 - EventBus communication patterns established throughout
 - Dependency injection via ServiceManager
 - Legacy compatibility maintained during transition
+
+## Italian Development Team Guidelines
+
+The project follows Italian coding standards (from claude_config.json):
+- Use ES6+ features (const/let, arrow functions, destructuring)
+- Apply Single Responsibility Principle
+- Implement proper error handling with try/catch
+- Use async/await instead of callback nesting
+- Maintain event namespace pattern (app:user:login, ui:button:click)
+- Follow refactoring triggers: functions > 20 lines, code duplicated > 3 times

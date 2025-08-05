@@ -422,10 +422,9 @@ class UIService extends ServiceBase {
                             trackElement.dataset.track = JSON.stringify(trackData);
                             
                             // Save to database
-                            if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.addTagToTrack) {
-                                await DataSourceAdapter.addTagToTrack(trackData, newTag);
-                            } else if (typeof DataLoader !== 'undefined' && DataLoader.addTagToTrack) {
-                                await DataLoader.addTagToTrack(trackData, newTag);
+                            const dataService = window.serviceManager?.getService('data');
+                            if (dataService) {
+                                await dataService.addTagToTrack(trackData, newTag);
                             }
                             
                             // Clear input and hide tooltip

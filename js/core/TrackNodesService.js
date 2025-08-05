@@ -754,8 +754,9 @@ class TrackNodesService extends ServiceBase {
         if (found) {
             // Persisti il tag nel database
             try {
-                if (typeof DataLoader !== 'undefined' && DataLoader.addTagToTrack) {
-                    await DataLoader.addTagToTrack(track, newTag);
+                const dataService = window.serviceManager?.getService('data');
+                if (dataService) {
+                    await dataService.addTagToTrack(track, newTag);
                 }
             } catch (error) {
                 // Error saving tag to database
@@ -918,10 +919,11 @@ class TrackNodesService extends ServiceBase {
             // Ottieni dati track sorgente
             const sourceTrackData = JSON.parse(sourceNode.dataset.track);
             
-            // Genera ESATTAMENTE 5 track con questo tag usando DataLoader
+            // Genera ESATTAMENTE 5 track con questo tag usando DataService
             let relatedTracks = [];
-            if (typeof DataLoader !== 'undefined' && DataLoader.generateTracksWithTag) {
-                relatedTracks = await DataLoader.generateTracksWithTag(tagValue, sourceTrackData);
+            const dataService = window.serviceManager?.getService('data');
+            if (dataService) {
+                relatedTracks = await dataService.generateTracksWithTag(tagValue, sourceTrackData);
             }
             
             if (!relatedTracks || relatedTracks.length === 0) {

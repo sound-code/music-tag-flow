@@ -157,10 +157,10 @@ class LegendService extends ServiceBase {
         try {
             let categorizedTags = {};
             
-            // Get tags from DataSourceAdapter - ONLY DATABASE CONTENT
-            if (window.DataSourceAdapter && window.DataSourceAdapter.getTagsByCategory) {
-                categorizedTags = await window.DataSourceAdapter.getTagsByCategory();
-                
+            // Get tags from DataService - ONLY DATABASE CONTENT
+            const dataService = window.serviceManager?.getService('data');
+            if (dataService) {
+                categorizedTags = await dataService.getTagsByCategory();
             } else {
                 categorizedTags = {};
             }

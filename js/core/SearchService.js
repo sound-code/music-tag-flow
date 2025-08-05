@@ -264,12 +264,13 @@ class SearchService extends ServiceBase {
     }
 
     /**
-     * Get all tracks from DataSourceAdapter (database)
+     * Get all tracks from DataService (database)
      * @returns {Promise<Array>} Array of track objects
      */
     async getAllTracks() {
-        if (typeof DataSourceAdapter !== 'undefined' && DataSourceAdapter.getAllTracks) {
-            const result = await DataSourceAdapter.getAllTracks();
+        const dataService = window.serviceManager?.getService('data');
+        if (dataService) {
+            const result = await dataService.getAllTracks();
             // Convert artist/album structure to flat track array
             const tracks = [];
             if (result && result.artists) {

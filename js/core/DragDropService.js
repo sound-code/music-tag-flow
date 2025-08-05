@@ -584,17 +584,18 @@ class DragDropService extends ServiceBase {
             }
         });
 
-        // Bridge data:generate-tracks-with-tag to DataLoader
+        // Bridge data:generate-tracks-with-tag to DataService
         this.subscribeToEvent('data:generate-tracks-with-tag', (data) => {
             
-            if (typeof DataLoader !== 'undefined' && DataLoader.generateTracksWithTag) {
-                DataLoader.generateTracksWithTag(data.tag, data.parentTrack).then(relatedTracks => {
+            const dataService = window.serviceManager?.getService('data');
+            if (dataService) {
+                dataService.generateTracksWithTag(data.tag, data.parentTrack).then(relatedTracks => {
                     if (data.callback) {
                         data.callback(relatedTracks);
                     }
                 });
             } else {
-                console.error('🔥 DataLoader not available');
+                console.error('🔥 DataService not available');
             }
         });
     }

@@ -53,7 +53,7 @@ class ScanService extends ServiceBase {
         
         // Listen for scan view being shown
         
-        this.events.on('scan:viewShown', () => {
+        this.subscribeToEvent('scan:viewShown', () => {
             this.initializeElements();
             this.setupScanButton();
             // Clear button handled by StatsComponent
@@ -111,7 +111,8 @@ class ScanService extends ServiceBase {
             return;
         }
 
-        if (window.DataSourceAdapter) {
+        const dataService = window.serviceManager?.getService('data');
+        if (dataService) {
             try {
                 this.isScanning = true;
                 
@@ -124,7 +125,7 @@ class ScanService extends ServiceBase {
                 if (progressFill) progressFill.style.width = '0%';
                 if (progressText) progressText.textContent = 'Starting scan...';
                 
-                const directory = await window.DataSourceAdapter.selectMusicDirectory();
+                const directory = await dataService.selectMusicDirectory();
                 if (directory) {
                     // Clean up existing listeners and setup new one
                     if (window.electronAPI) {
@@ -138,16 +139,10 @@ class ScanService extends ServiceBase {
                         });
                     }
                     
-                    const results = await window.DataSourceAdapter.scanDirectory(directory);
+                    const results = await dataService.scanDirectory(directory);
                     
                     // Emit event for StatsComponent to update stats
-                    this.events.emit('scan:completed', {
-                        directory,
-                        results
-                    });
-                    
-                    // Emit event for LibraryToggle to update tags list
-                    this.events.emit('scan:completed', {
+                    this.emitEvent('scan:completed', {
                         directory,
                         results
                     });
@@ -166,7 +161,7 @@ class ScanService extends ServiceBase {
                 this.isScanning = false;
             }
         } else {
-            alert('Data source not available');
+            alert('DataService not available');
         }
     }
 

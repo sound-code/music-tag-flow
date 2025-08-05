@@ -60,7 +60,13 @@ window.LibraryToggle = (() => {
     async function updateTagsList() {
         try {
             // Get only uniqueTags for tags list rendering
-            const stats = await window.DataSourceAdapter.getStats();
+            const dataService = window.serviceManager?.getService('data');
+            if (!dataService) {
+                console.error('DataService not available');
+                return;
+            }
+            
+            const stats = await dataService.getStats();
             
             if (stats.uniqueTags) {
                 uniqueTags = stats.uniqueTags;

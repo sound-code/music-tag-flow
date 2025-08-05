@@ -328,18 +328,24 @@ const Containers = {
      * @param {string} tagValue - Tag value
      */
     async refreshTracks(container, tagValue) {
+        const dataService = window.serviceManager?.getService('data');
+        if (!dataService) {
+            console.error('DataService not available');
+            return;
+        }
+        
         let newTracks;
         let notificationMessage;
         
         // Check if this is a multi-tag container
         if (container.dataset.isMultiTagContainer === 'true') {
             // Generate tracks with multiple selected tags
-            newTracks = await DataLoader.generateTracksWithMultipleTags(Array.from(AppState.selectedTags));
+            newTracks = await dataService.generateTracksWithMultipleTags(Array.from(AppState.selectedTags));
             const tagDisplays = Array.from(AppState.selectedTags).map(tag => tagUtils.getTagValue(tag)).join(' + ');
             notificationMessage = `Refreshed 7 tracks for ${tagDisplays}`;
         } else {
             // Generate new tracks with the single tag
-            newTracks = await DataLoader.generateTracksWithTag(tagValue);
+            newTracks = await dataService.generateTracksWithTag(tagValue);
             notificationMessage = `Refreshed 7 tracks for ${tagUtils.getTagValue(tagValue)}`;
         }
         

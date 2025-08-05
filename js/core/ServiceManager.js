@@ -98,6 +98,12 @@ class ServiceManager {
             // Create service instance
             const startTime = Date.now();
             const instance = new serviceConfig.serviceClass(this.state, this.events);
+            
+            // Call async initialization if available
+            if (typeof instance.initializeAsync === 'function') {
+                await instance.initializeAsync();
+            }
+            
             // Validate service instance
             this.validateServiceInstance(instance, serviceName);
             // Update service config

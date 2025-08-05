@@ -240,7 +240,13 @@ const Utils = {
      */
     async renderMusicLibrary() {
         try {
-            const libraryStructure = await DataSourceAdapter.getLibraryStructure();
+            const dataService = window.serviceManager?.getService('data');
+            if (!dataService) {
+                console.error('DataService not available');
+                return;
+            }
+            
+            const libraryStructure = await dataService.getLibraryStructure();
             const musicLibrary = document.querySelector('.music-library');
             
             if (!musicLibrary) {
@@ -379,19 +385,27 @@ const Utils = {
      * Refresh music library data
      */
     async refreshMusicLibrary() {
-        DataSourceAdapter.clearCache();
+        const dataService = window.serviceManager?.getService('data');
+        if (dataService) {
+            dataService.clearCache();
+        }
         await this.renderMusicLibrary();
         this.showNotification('Music library refreshed', 'success');
     },
 
     /**
-     * Legacy fallback for generateTracksWithTag - redirects to DataLoader
+     * Legacy fallback for generateTracksWithTag - redirects to DataService
      * @param {string} tagValue - The tag value to generate tracks for
      * @param {Object} excludeTrack - Optional track to exclude from results
      * @returns {Promise<Array>} Array of track objects
      */
     async generateTracksWithTag(tagValue, excludeTrack = null) {
-        return await DataLoader.generateTracksWithTag(tagValue, excludeTrack);
+        const dataService = window.serviceManager?.getService('data');
+        if (!dataService) {
+            console.error('DataService not available');
+            return [];
+        }
+        return await dataService.generateTracksWithTag(tagValue, excludeTrack);
     },
 
     /**

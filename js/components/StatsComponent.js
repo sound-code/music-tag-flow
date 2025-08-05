@@ -118,16 +118,15 @@ class StatsComponent {
      */
     async updateStats() {
         try {
-            if (!window.DataSourceAdapter) {
+            const dataService = window.serviceManager?.getService('data');
+            if (!dataService) {
                 return;
             }
             
             // Clear cache to ensure fresh data
-            if (window.DataSourceAdapter.clearCache) {
-                window.DataSourceAdapter.clearCache();
-            }
+            dataService.clearCache();
             
-            const stats = await window.DataSourceAdapter.getStats();
+            const stats = await dataService.getStats();
             
             // Update UI elements
             this.updateStatsUI(stats);
@@ -197,12 +196,13 @@ class StatsComponent {
         }
 
         try {
-            if (!window.DataSourceAdapter) {
-                alert('Data source not available');
+            const dataService = window.serviceManager?.getService('data');
+            if (!dataService) {
+                alert('Data service not available');
                 return;
             }
-
-            const success = await window.DataSourceAdapter.clearDatabase();
+            
+            const success = await dataService.clearDatabase();
             if (!success) {
                 throw new Error('Failed to clear database');
             }
@@ -229,8 +229,9 @@ class StatsComponent {
      */
     async getCurrentStats() {
         try {
-            if (window.DataSourceAdapter) {
-                return await window.DataSourceAdapter.getStats();
+            const dataService = window.serviceManager?.getService('data');
+            if (dataService) {
+                return await dataService.getStats();
             }
             return { tracks: 0, artists: 0, albums: 0, categories: 0, uniqueTags: [] };
         } catch (error) {

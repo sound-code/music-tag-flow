@@ -75,6 +75,9 @@ class Application {
         // Initialize ServiceManager
         this.serviceManager = new ServiceManager(this.stateManager, this.eventBus);
         
+        // Expose ServiceManager globally for external access
+        window.serviceManager = this.serviceManager;
+        
         // Make core components globally available
         window.App = this;
         window.AppStateManager = this.stateManager;
@@ -142,7 +145,12 @@ class Application {
         // Register services with database fallback support
         
         // Essential services
-        this.serviceManager.registerService('search', SearchService, [], {
+        this.serviceManager.registerService('data', DataService, [], {
+            required: true,
+            autoStart: true
+        });
+        
+        this.serviceManager.registerService('search', SearchService, ['data'], {
             required: false,
             autoStart: true
         });
@@ -182,13 +190,13 @@ class Application {
             autoStart: true
         });
         
-        this.serviceManager.registerService('scan', ScanService, [], {
+        this.serviceManager.registerService('scan', ScanService, ['data'], {
             required: false,
             autoStart: true
         });
         
         if (typeof LegendService !== 'undefined') {
-            this.serviceManager.registerService('legend', LegendService, [], {
+            this.serviceManager.registerService('legend', LegendService, ['data'], {
                 required: false,
                 autoStart: true
             });
@@ -204,6 +212,11 @@ class Application {
         // Initialize all services
         try {
             await this.serviceManager.initializeServices();
+            
+            // Render music library after DataService is initialized
+            if (typeof Utils !== 'undefined' && Utils.renderMusicLibrary) {
+                await Utils.renderMusicLibrary();
+            }
         } catch (error) {
             // Services initialization failed
         }
@@ -268,16 +281,6 @@ class Application {
             // Initialize LibraryToggle BEFORE services so EventBus subscriptions are ready
             if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {
                 LibraryToggle.init();
-            }
-            
-            // Initialize data source adapter
-            if (typeof DataSourceAdapter !== 'undefined') {
-                await DataSourceAdapter.initialize();
-            }
-            
-            // Render dynamic music library
-            if (typeof Utils !== 'undefined' && Utils.renderMusicLibrary) {
-                await Utils.renderMusicLibrary();
             }
             
             // Initialize legacy modules with error handling
@@ -426,6 +429,7 @@ const AppInstance = new Application();
 
 // Make it available globally (maintains legacy compatibility)
 window.App = AppInstance;
+
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
