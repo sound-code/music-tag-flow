@@ -29,8 +29,7 @@ class UIService extends ServiceBase {
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 backdropFilter: 'blur(10px)',
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-                transition: 'opacity 0.2s ease',
-                pointerEvents: 'none'
+                transition: 'opacity 0.2s ease'
             }
         };
         
@@ -44,7 +43,6 @@ class UIService extends ServiceBase {
         // State tracking
         this.currentHoverTarget = null;
         this.highlightedCategories = new Set();
-        this.activeTooltipType = null; // Track which tooltip is currently active
         
         // Timeout management
         this.timeouts = {
@@ -212,9 +210,8 @@ class UIService extends ServiceBase {
         this.applyTooltipStyles(this.elements.tooltip);
         document.body.appendChild(this.elements.tooltip);
 
-        // Tooltip hover behavior - enable pointer events only when hovering
+        // Tooltip hover behavior - cancel hide timeout when hovering
         this.elements.tooltip.addEventListener('mouseenter', () => {
-            this.elements.tooltip.style.pointerEvents = 'auto';
             if (this.timeouts.hide) {
                 clearTimeout(this.timeouts.hide);
                 this.timeouts.hide = null;
@@ -222,8 +219,13 @@ class UIService extends ServiceBase {
         });
 
         this.elements.tooltip.addEventListener('mouseleave', () => {
-            this.elements.tooltip.style.pointerEvents = 'none';
-            this.hideTooltip();
+            // Use delayed hide to allow user to return to tooltip
+            this.timeouts.hide = setTimeout(() => {
+                if (!this.elements.tooltip.matches(':hover') && 
+                    (!this.currentHoverTarget || !this.currentHoverTarget.matches(':hover'))) {
+                    this.hideTooltip();
+                }
+            }, 300);
         });
     }
 
@@ -284,7 +286,7 @@ class UIService extends ServiceBase {
                     this.renderTooltipContent(trackData, trackElement);
                     this.positionTooltip(trackElement);
                     this.elements.tooltip.style.display = 'block';
-                    this.elements.tooltip.style.pointerEvents = 'none';
+                    this.elements.tooltip.style.pointerEvents = 'auto';
                     setTimeout(() => {
                         if (this.elements.tooltip.style.display === 'block') {
                             this.elements.tooltip.style.opacity = '1';
@@ -371,7 +373,7 @@ class UIService extends ServiceBase {
                             await tagService.handleTagClick(tempTag);
                             tempTag.remove();
                         }
-                        this.hideTooltip();
+                        // Don't hide tooltip for library items - keep it open for tag creation
                     } else if (tooltipType === 'node') {
                         // For tree nodes, delegate to TrackNodesService for branch creation
                         const trackNodesService = this.getService('tracknodes');
