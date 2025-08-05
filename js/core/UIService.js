@@ -825,7 +825,7 @@ class UIService extends ServiceBase {
 
         tags.forEach(tag => {
             const tagElement = document.createElement('span');
-            tagElement.className = 'legend-popup-tag';
+            tagElement.className = `legend-popup-tag tag-${category}`;
             tagElement.textContent = tag;
             tagElement.style.cssText = `
                 padding: 4px 8px;
@@ -834,12 +834,9 @@ class UIService extends ServiceBase {
                 font-weight: 500;
                 color: white;
                 text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-                background: rgba(99, 102, 241, 0.7);
-                border: 1px solid rgba(99, 102, 241, 0.3);
                 cursor: pointer;
                 transition: all 0.2s ease;
             `;
-            tagElement.classList.add(`tag-${category}`);
             tagsContainer.appendChild(tagElement);
         });
 
