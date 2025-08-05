@@ -32,70 +32,9 @@ const Utils = {
      * @param {number} duration - Display duration in milliseconds
      */
     showNotification(message, type = 'info', duration = 3000) {
-        // Create notification element
-        const notification = document.createElement('div');
-        
-        // Define notification styles based on type
-        const styles = {
-            info: {
-                background: 'rgba(0, 0, 0, 0.9)',
-                color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.1)'
-            },
-            success: {
-                background: 'rgba(0, 150, 0, 0.9)',
-                color: 'white',
-                border: '1px solid rgba(0, 255, 0, 0.3)'
-            },
-            error: {
-                background: 'rgba(200, 0, 0, 0.9)',
-                color: 'white',
-                border: '1px solid rgba(255, 0, 0, 0.3)'
-            },
-            warning: {
-                background: 'rgba(255, 140, 0, 0.9)',
-                color: 'white',
-                border: '1px solid rgba(255, 165, 0, 0.3)'
-            }
-        };
-        
-        const style = styles[type] || styles.info;
-        
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: ${style.background};
-            color: ${style.color};
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 1001;
-            font-size: 14px;
-            backdrop-filter: blur(10px);
-            transition: opacity 0.3s ease;
-            border: ${style.border};
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        `;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        // Auto-remove notification
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, duration);
-        
-        // Emit event for tracking (if EventBus available)
-        if (window.EventBus) {
-            window.EventBus.emit('ui:notification:shown', { message, type, duration });
-        }
+        // NOTIFICATIONS DISABLED - only log to console
+        console.log(`📢 [${type.toUpperCase()}] ${message}`);
+        return;
     },
 
     /**
@@ -262,7 +201,20 @@ const Utils = {
 
             // Check if we have data
             if (!libraryStructure || !Array.isArray(libraryStructure) || libraryStructure.length === 0) {
-                musicLibrary.innerHTML += '<div class="no-data">No music library data available</div>';
+                musicLibrary.innerHTML += `
+                    <div class="no-data" style="
+                        color: #888;
+                        font-style: italic;
+                        text-align: center;
+                        padding: 40px 20px;
+                        margin: 20px 0;
+                        border: 2px dashed #444;
+                        border-radius: 8px;
+                    ">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🎵</div>
+                        <div style="font-size: 18px; margin-bottom: 8px;">No music library found</div>
+                        <div style="font-size: 14px; color: #666;">Scan a directory to populate your music library</div>
+                    </div>`;
                 return;
             }
 
@@ -377,7 +329,7 @@ const Utils = {
 
         } catch (error) {
             console.error('🎵 Error in renderMusicLibrary:', error);
-            this.showNotification('Error loading music library', 'error');
+            console.error('Error loading music library:', error);
         }
     },
 
@@ -390,7 +342,7 @@ const Utils = {
             dataService.clearCache();
         }
         await this.renderMusicLibrary();
-        this.showNotification('Music library refreshed', 'success');
+        console.log('Music library refreshed');
     },
 
     /**

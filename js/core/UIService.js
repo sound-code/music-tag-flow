@@ -616,6 +616,16 @@ class UIService extends ServiceBase {
         this.elements.legendPopup.addEventListener('mouseleave', () => {
             this.hideLegendPopup();
         });
+        
+        // Global click handler to hide legend popup when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (this.elements.legendPopup && 
+                this.elements.legendPopup.style.display === 'block' &&
+                !e.target.closest('.legend-item') && 
+                !e.target.closest('.legend-popup')) {
+                this.hideLegendPopup();
+            }
+        });
     }
 
     /**
@@ -681,34 +691,52 @@ class UIService extends ServiceBase {
             
             // Mouseenter handler for popup
             const mouseenterHandler = (e) => {
+                // Clear all existing timeouts first
                 if (this.timeouts.legendHide) {
                     clearTimeout(this.timeouts.legendHide);
                     this.timeouts.legendHide = null;
                 }
+                if (this.timeouts.legendShow) {
+                    clearTimeout(this.timeouts.legendShow);
+                    this.timeouts.legendShow = null;
+                }
                 
                 const category = this.getCategoryFromLegendItem(item);
                 if (category) {
-                    if (this.timeouts.legendShow) {
-                        clearTimeout(this.timeouts.legendShow);
-                    }
-                    this.timeouts.legendShow = setTimeout(() => {
-                        this.showLegendPopup(category, e, item);
-                    }, this.config.legendPopupDelay);
+                    // Shorter delay for more responsive feel
+                    this.timeouts.legendShow = setTimeout(async () => {
+                        // Double-check that mouse is still over the item
+                        if (item.matches(':hover')) {
+                            await this.showLegendPopup(category, e, item);
+                        }
+                    }, 200); // Reduced from config.legendPopupDelay
                 }
             };
             item.addEventListener('mouseenter', mouseenterHandler);
             item._uiEventListeners.push({ event: 'mouseenter', handler: mouseenterHandler });
                 
             // Mouseleave handler
-            const mouseleaveHandler = () => {
+            const mouseleaveHandler = (e) => {
+                // Clear show timeout immediately
                 if (this.timeouts.legendShow) {
                     clearTimeout(this.timeouts.legendShow);
                     this.timeouts.legendShow = null;
                 }
                 
+                // Don't hide if mouse is moving to the popup
+                const relatedTarget = e.relatedTarget;
+                if (relatedTarget && this.elements.legendPopup && 
+                    this.elements.legendPopup.contains(relatedTarget)) {
+                    return; // Mouse is moving to popup, don't hide
+                }
+                
+                // Hide with short delay
                 this.timeouts.legendHide = setTimeout(() => {
-                    this.hideLegendPopup();
-                }, 300);
+                    // Final check: hide only if mouse is not over popup
+                    if (!this.elements.legendPopup?.matches(':hover')) {
+                        this.hideLegendPopup();
+                    }
+                }, 150); // Shorter delay
             };
             item.addEventListener('mouseleave', mouseleaveHandler);
             item._uiEventListeners.push({ event: 'mouseleave', handler: mouseleaveHandler });
@@ -730,40 +758,51 @@ class UIService extends ServiceBase {
      * @param {Event} event - Mouse event for positioning
      * @param {HTMLElement} legendItem - Legend item element
      */
-    showLegendPopup(category, event, legendItem) {
+    async showLegendPopup(category, event, legendItem) {
         if (!this.elements.legendPopup) {
             this.createLegendPopupElement();
         }
 
         // Try to get real tags from the legend item's data attribute
         let tags = null;
+        let tagSource = 'none';
+        
         if (legendItem && legendItem.dataset.tags) {
             try {
                 tags = JSON.parse(legendItem.dataset.tags);
+                if (tags && tags.length > 0) {
+                    tagSource = 'database';
+                }
             } catch (e) {
                 console.warn('Failed to parse legend tags:', e);
             }
         }
         
-        // Fallback to static tags if no database tags found
+        // Try to get tags from DataService if dataset is empty
         if (!tags || tags.length === 0) {
-            const categoryTags = {
-                emotion: ['excited', 'mysterious', 'empowering', 'vulnerable', 'romantic', 'sassy'],
-                energy: ['high', 'laid-back', 'vibrant', 'intimate', 'bold', 'minimal'],
-                mood: ['confident', 'melancholic', 'euphoric', 'playful', 'smooth', 'dark'],
-                style: ['pop', 'disco', 'alternative', 'indie', 'hip-hop', 'r&b'],
-                occasion: ['dance', 'solitude', 'freedom', 'rebellion', 'self-care', 'club'],
-                weather: ['golden', 'shadow', 'clarity', 'sparkle', 'quiet', 'stormy'],
-                intensity: ['powerful', 'emotional', 'deep', 'fierce', 'determined', 'gentle'],
-                rating: ['hit', 'viral', 'beautiful', 'anthem', 'unstoppable', 'classic'],
-                tempo: ['ballad', 'anthem', 'hypnotic', 'driving', 'perfect', 'slow'],
-                vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic']
-            };
-            tags = categoryTags[category] || [];
+            try {
+                const dataService = window.serviceManager?.getService('data');
+                if (dataService) {
+                    const allTagsByCategory = await dataService.getTagsByCategory();
+                    if (allTagsByCategory[category] && allTagsByCategory[category].length > 0) {
+                        // Extract just the values from database tags
+                        tags = allTagsByCategory[category].map(tag => {
+                            return tag.includes(':') ? tag.split(':')[1] : tag;
+                        });
+                        tagSource = 'dataservice';
+                    }
+                }
+            } catch (error) {
+                console.warn('Error getting tags from DataService:', error);
+            }
         }
-
-        if (tags.length === 0) {
-            return; // No tags to show
+        
+        // NO FALLBACKS - only database data
+        console.log(`🏷️ Legend popup for ${category}: ${tags.length} tags from ${tagSource}`, tags);
+        
+        if (!tags || tags.length === 0) {
+            console.log(`⚠️ No tags found for category ${category} - not showing popup`);
+            return; // Don't show popup if no tags
         }
 
         // Create popup content
@@ -956,63 +995,6 @@ class UIService extends ServiceBase {
         return null;
     }
 
-    /**
-     * Show legend popup for category
-     * @param {string} category - Category name
-     * @param {Event} event - Mouse event
-     */
-    showLegendPopup(category, event) {
-        // Define example tags for each category (should match legacy ui.js)
-        const categoryTags = {
-            emotion: ['excited', 'mysterious', 'empowering', 'vulnerable', 'romantic', 'sassy'],
-            energy: ['high', 'laid-back', 'vibrant', 'intimate', 'bold', 'minimal'],
-            mood: ['confident', 'melancholic', 'euphoric', 'playful', 'smooth', 'dark'],
-            style: ['pop', 'disco', 'alternative', 'indie', 'hip-hop', 'r&b'],
-            occasion: ['dance', 'solitude', 'freedom', 'rebellion', 'self-care', 'club'],
-            weather: ['golden', 'shadow', 'clarity', 'sparkle', 'quiet', 'stormy'],
-            intensity: ['powerful', 'emotional', 'deep', 'fierce', 'determined', 'gentle'],
-            rating: ['hit', 'viral', 'beautiful', 'anthem', 'unstoppable', 'classic'],
-            tempo: ['ballad', 'anthem', 'hypnotic', 'driving', 'perfect', 'slow'],
-            vibe: ['edgy', 'weightless', 'growth', 'independent', 'fragile', 'cosmic']
-        };
-
-        const tags = categoryTags[category];
-        if (!tags || !this.elements.legendPopup) {
-            return;
-        }
-
-        // Create popup content
-        this.elements.legendPopup.innerHTML = '';
-        
-        const title = document.createElement('div');
-        title.style.cssText = 'font-weight: bold; margin-bottom: 8px; color: #fff;';
-        title.textContent = `${category.charAt(0).toUpperCase() + category.slice(1)} Tags`;
-
-        const tagsContainer = document.createElement('div');
-        tagsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 4px;';
-
-        tags.forEach(tag => {
-            const tagElement = document.createElement('span');
-            tagElement.textContent = tag;
-            tagElement.style.cssText = `
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                color: white;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-            `;
-            tagElement.className = `legend-popup-tag tag-${category}`;
-            tagsContainer.appendChild(tagElement);
-        });
-
-        this.elements.legendPopup.appendChild(title);
-        this.elements.legendPopup.appendChild(tagsContainer);
-
-        // Position and show popup
-        this.updateLegendPopupPosition(event);
-        this.elements.legendPopup.style.display = 'block';
-        this.elements.legendPopup.style.opacity = '1';
-    }
 
     /**
      * Hide legend popup
@@ -1388,11 +1370,19 @@ class UIService extends ServiceBase {
             const trackNode = e.target.closest('.track-node');
             if (trackNode && trackNode === this.currentActiveTooltip) {
                 const relatedTarget = e.relatedTarget;
-                // Only hide if mouse is actually leaving the node and not going to tooltip
+                // More robust check: hide tooltip unless mouse is going to tooltip or staying within node
                 if (!relatedTarget || 
                     (!trackNode.contains(relatedTarget) && 
                      !this.elements.trackNodeTooltip?.contains(relatedTarget))) {
-                    this.hideTrackNodeTooltip(trackNode);
+                    // Shorter delay for immediate feedback
+                    setTimeout(() => {
+                        // Double-check that mouse is still outside both elements
+                        if (this.currentActiveTooltip === trackNode && 
+                            !trackNode.matches(':hover') && 
+                            !this.elements.trackNodeTooltip?.matches(':hover')) {
+                            this.hideTrackNodeTooltip(trackNode);
+                        }
+                    }, 50);
                 }
             }
         });
@@ -1422,6 +1412,15 @@ class UIService extends ServiceBase {
 
         this.elements.trackNodeTooltip.addEventListener('mouseleave', () => {
             this.hideTrackNodeTooltipImmediate();
+        });
+        
+        // Global click handler to hide tooltips when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (this.currentActiveTooltip && 
+                !e.target.closest('.track-node') && 
+                !e.target.closest('.track-node-tooltip')) {
+                this.hideTrackNodeTooltipImmediate();
+            }
         });
     }
 
@@ -1483,10 +1482,14 @@ class UIService extends ServiceBase {
             this.timeouts.trackNodeShow = null;
         }
 
-        // Hide tooltip with delay
+        // Hide tooltip with shorter delay for more responsive feel
         this.timeouts.trackNodeHide = setTimeout(() => {
-            this.hideTrackNodeTooltipImmediate();
-        }, this.config.tooltipHideDelay);
+            // Final check: only hide if mouse is truly outside both elements
+            if (!trackNode.matches(':hover') && 
+                !this.elements.trackNodeTooltip?.matches(':hover')) {
+                this.hideTrackNodeTooltipImmediate();
+            }
+        }, 100); // Much shorter delay
     }
 
     /**

@@ -37,9 +37,7 @@ const UI = {
         // Subscribe to EventBus events for reactive UI
         this.initializeEventBusIntegration();
         
-        this.initializeTooltips();
-        this.initializeLegendPopups();
-        this.initializeVisualEffects();
+        // Initialize legacy-specific features only
         this.fixLegendTextColors();
     },
     
@@ -51,8 +49,8 @@ const UI = {
         // Create bridges for legacy functions that might still be called
         
         // Bridge legacy legend functions to UIService
-        this.showLegendPopup = (category, event, legendItem) => {
-            return uiService.showLegendPopup(category, event, legendItem);
+        this.showLegendPopup = async (category, event, legendItem) => {
+            return await uiService.showLegendPopup(category, event, legendItem);
         };
         
         this.hideLegendPopup = () => {
@@ -103,6 +101,23 @@ const UI = {
         
         // Bridge state properties
         this.highlightedCategories = uiService.highlightedCategories;
+        
+        // Bridge missing methods for backward compatibility
+        this.initializeTooltips = () => {
+            // Handled by UIService
+        };
+        
+        this.initializeLegendPopups = () => {
+            // Handled by UIService  
+        };
+        
+        this.initializeVisualEffects = () => {
+            // Handled by UIService
+        };
+        
+        this.handleNotificationVisualEffects = (data) => {
+            return uiService.handleNotificationVisualEffects(data);
+        };
     },
 
     /**
@@ -126,9 +141,10 @@ const UI = {
                 }, 100);
             });
             
-            // Listen for UI notification events for visual effects
+            // Listen for UI notification events for visual effects (legacy)
             window.EventBus.on('ui:notification', (data) => {
-                this.handleNotificationVisualEffects(data);
+                // Visual effects handled by UIService now
+                console.log('Legacy UI received notification:', data.message);
             });
         }
     },

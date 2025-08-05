@@ -891,12 +891,22 @@ class TrackNodesService extends ServiceBase {
             }
         }
         
-        // Mostra notifica di successo
-        const message = `✅ Tag "${newTag}" added to "${track.title}"`;
+        // Emit event per aggiornare la legenda dopo l'aggiunta del tag
         if (this.eventBus && typeof this.eventBus.emit === 'function') {
-            this.eventBus.emit('ui:notification', { message });
-        } else if (typeof Utils !== 'undefined' && Utils.showNotification) {
-            Utils.showNotification(message);
+            this.eventBus.emit('database:updated', {
+                type: 'tag_added',
+                track: track,
+                tag: newTag,
+                timestamp: Date.now()
+            });
+        }
+        
+        // Log success (no notification)
+        console.log(`✅ Tag "${newTag}" added to "${track.title}"`);
+        
+        // Still emit event for other systems that might need it
+        if (this.eventBus && typeof this.eventBus.emit === 'function') {
+            this.eventBus.emit('ui:notification', { message: `Tag "${newTag}" added to "${track.title}"` });
         }
     }
     
@@ -954,15 +964,9 @@ class TrackNodesService extends ServiceBase {
                 }, i * 300); // Delay scaglionato per animazione
             });
             
-            // Mostra notifica
+            // Log creation (no notification)
             const tagDisplayValue = this.parseTag(tagValue).value;
-            const message = `🌿 Created ${tracksToCreate.length} branches for ${tagDisplayValue}`;
-            
-            if (this.eventBus && typeof this.eventBus.emit === 'function') {
-                this.eventBus.emit('ui:notification', { message });
-            } else if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification(message);
-            }
+            console.log(`🌿 Created ${tracksToCreate.length} branches for ${tagDisplayValue}`);
             
             // Emit evento per statistiche
             if (this.eventBus && typeof this.eventBus.emit === 'function') {

@@ -61,16 +61,16 @@ class DataService extends ServiceBase {
             const tracks = await window.electronAPI.getAllTracks(limit);
             console.log('🎵 DataService getAllTracks raw:', tracks?.length || 0, 'tracks');
             
-            // If no tracks in database, provide fallback sample tracks
+            // NO FALLBACKS - only database data
             if (!tracks || tracks.length === 0) {
-                console.log('⚠️ No tracks found in database, using fallback tracks');
-                const fallbackData = this._getFallbackTracks();
+                console.log('⚠️ No tracks found in database - returning empty');
+                const emptyData = { artists: [] };
                 
                 this.cache.tracks = {
-                    data: fallbackData,
+                    data: emptyData,
                     timestamp: Date.now()
                 };
-                return fallbackData;
+                return emptyData;
             }
             
             const organizedData = this._organizeTracksIntoStructure(tracks);
@@ -83,8 +83,8 @@ class DataService extends ServiceBase {
             return organizedData;
         } catch (error) {
             console.error('Error getting all tracks:', error);
-            // Return fallback tracks on error
-            return this._getFallbackTracks();
+            // NO FALLBACKS - return empty on error
+            return { artists: [] };
         }
     }
 
@@ -164,22 +164,10 @@ class DataService extends ServiceBase {
             
             const requestedCount = 7; // Default count
             
+            // NO FALLBACKS - only exact tag matches
             if (matchingTracks.length === 0) {
-                // Fallback: find tracks with same tag category
-                const tagCategory = this._getTagCategory(tagValue);
-                let similarTracks = allTracks.filter(track => 
-                    track.tags && track.tags.some(tag => tag.startsWith(tagCategory + ':'))
-                );
-                
-                if (excludeTrack) {
-                    similarTracks = similarTracks.filter(track => 
-                        !(track.title === excludeTrack.title && 
-                          track.artist === excludeTrack.artist && 
-                          track.album === excludeTrack.album)
-                    );
-                }
-                
-                return this._selectRandomTracks(similarTracks, requestedCount);
+                console.log(`⚠️ No tracks found with tag ${tagValue}`);
+                return [];
             }
             
             return this._selectRandomTracks(matchingTracks, requestedCount);
@@ -223,7 +211,9 @@ class DataService extends ServiceBase {
                 );
                 return [...result, ...additionalTracks];
             } else {
-                return this._selectRandomTracks(allTracks, requestedCount);
+                // NO FALLBACKS - return empty if no matches
+                console.log(`⚠️ No tracks found with any of the requested tags:`, selectedTagsArray);
+                return [];
             }
         } catch (error) {
             console.error('Error generating tracks with multiple tags:', error);
@@ -314,16 +304,14 @@ class DataService extends ServiceBase {
             const allTags = stats.uniqueTags || [];
             console.log('🏷️ DataService allTags:', allTags);
             
-            // If no tags in database, provide fallback sample tags
+            // NO FALLBACKS - only database data
             if (allTags.length === 0) {
-                console.log('⚠️ No tags found in database, using fallback tags');
-                const fallbackTags = this._getFallbackTags();
-                
+                console.log('⚠️ No tags found in database - returning empty');
                 this.cache.tags = {
-                    data: fallbackTags,
+                    data: {},
                     timestamp: Date.now()
                 };
-                return fallbackTags;
+                return {};
             }
             
             // Group tags by category
@@ -345,8 +333,8 @@ class DataService extends ServiceBase {
             return grouped;
         } catch (error) {
             console.error('Error getting tags by category:', error);
-            // Return fallback tags on error
-            return this._getFallbackTags();
+            // NO FALLBACKS - return empty on error
+            return {};
         }
     }
 
@@ -648,93 +636,6 @@ class DataService extends ServiceBase {
         };
     }
 
-    /**
-     * Get fallback tracks when database is empty
-     * @returns {Object} Fallback tracks in artist/album structure
-     */
-    _getFallbackTracks() {
-        return {
-            artists: [
-                {
-                    name: "Sample Artist 1",
-                    albums: [
-                        {
-                            name: "Sample Album A",
-                            year: 2023,
-                            tracks: [
-                                {
-                                    id: "sample-track-1",
-                                    title: "Happy Song",
-                                    artist: "Sample Artist 1",
-                                    album: "Sample Album A",
-                                    duration: "3:45",
-                                    tags: ["emotion:happy", "energy:high", "mood:bright", "style:pop", "tempo:upbeat"],
-                                    source: "fallback"
-                                },
-                                {
-                                    id: "sample-track-2", 
-                                    title: "Chill Track",
-                                    artist: "Sample Artist 1",
-                                    album: "Sample Album A",
-                                    duration: "4:20",
-                                    tags: ["vibe:chill", "energy:low", "mood:neutral", "style:electronic", "tempo:slow"],
-                                    source: "fallback"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: "Sample Artist 2",
-                    albums: [
-                        {
-                            name: "Sample Album B",
-                            year: 2022,
-                            tracks: [
-                                {
-                                    id: "sample-track-3",
-                                    title: "Rock Anthem",
-                                    artist: "Sample Artist 2",
-                                    album: "Sample Album B", 
-                                    duration: "3:30",
-                                    tags: ["energy:high", "intensity:powerful", "style:rock", "emotion:energetic", "tempo:fast"],
-                                    source: "fallback"
-                                },
-                                {
-                                    id: "sample-track-4",
-                                    title: "Romantic Ballad",
-                                    artist: "Sample Artist 2", 
-                                    album: "Sample Album B",
-                                    duration: "4:15",
-                                    tags: ["emotion:romantic", "energy:low", "mood:bright", "style:pop", "tempo:ballad"],
-                                    source: "fallback"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-
-    /**
-     * Get fallback tags when database is empty
-     * @returns {Object} Fallback tags grouped by category
-     */
-    _getFallbackTags() {
-        return {
-            emotion: ['emotion:happy', 'emotion:sad', 'emotion:romantic', 'emotion:energetic', 'emotion:melancholic'],
-            energy: ['energy:high', 'energy:medium', 'energy:low', 'energy:vibrant', 'energy:calm'],
-            mood: ['mood:bright', 'mood:dark', 'mood:neutral', 'mood:cheerful', 'mood:somber'],
-            style: ['style:rock', 'style:pop', 'style:jazz', 'style:classical', 'style:electronic'],
-            occasion: ['occasion:party', 'occasion:study', 'occasion:workout', 'occasion:relaxation', 'occasion:driving'],
-            weather: ['weather:sunny', 'weather:rainy', 'weather:cloudy', 'weather:stormy', 'weather:clear'],
-            intensity: ['intensity:powerful', 'intensity:gentle', 'intensity:moderate', 'intensity:fierce', 'intensity:subtle'],
-            rating: ['rating:favorite', 'rating:liked', 'rating:discovered', 'rating:hidden-gem', 'rating:classic'],
-            tempo: ['tempo:fast', 'tempo:slow', 'tempo:medium', 'tempo:upbeat', 'tempo:ballad'],
-            vibe: ['vibe:chill', 'vibe:groovy', 'vibe:atmospheric', 'vibe:edgy', 'vibe:smooth']
-        };
-    }
 }
 
 // Make DataService available globally

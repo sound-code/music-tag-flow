@@ -32,17 +32,32 @@ window.LegendUIHandler = (() => {
         itemsContainer.className = 'legend-items';
         legendContainer.appendChild(itemsContainer);
 
-        // Render each category
-        Object.entries(categorizedTags).forEach(([category, tags]) => {
-            renderLegendItem(itemsContainer, category, tags, onCategoryClick);
-        });
+        // Check if we have any categories
+        const categoryCount = Object.keys(categorizedTags).length;
+        if (categoryCount === 0) {
+            // Show empty state message
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'legend-empty';
+            emptyMessage.textContent = 'No categories found. Scan music library to populate legend.';
+            emptyMessage.style.cssText = `
+                color: #888;
+                font-style: italic;
+                text-align: center;
+                padding: 20px;
+                margin: 10px 0;
+            `;
+            itemsContainer.appendChild(emptyMessage);
+        } else {
+            // Render each category
+            Object.entries(categorizedTags).forEach(([category, tags]) => {
+                renderLegendItem(itemsContainer, category, tags, onCategoryClick);
+            });
 
-        // Show total count
-        const totalTags = Object.values(categorizedTags).reduce((sum, tags) => sum + tags.length, 0);
-        if (totalTags > 0) {
+            // Show total count
+            const totalTags = Object.values(categorizedTags).reduce((sum, tags) => sum + tags.length, 0);
             const totalInfo = document.createElement('div');
             totalInfo.className = 'legend-total';
-            totalInfo.textContent = `${Object.keys(categorizedTags).length} categories, ${totalTags} tags`;
+            totalInfo.textContent = `${categoryCount} categories, ${totalTags} tags`;
             legendContainer.appendChild(totalInfo);
         }
         
@@ -84,8 +99,12 @@ window.LegendUIHandler = (() => {
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.dataset.category = category;
-        // Store tags in data attribute for hover popup
-        legendItem.dataset.tags = JSON.stringify(tags);
+        // Store tags in data attribute for hover popup - ensure tags are actual values, not full tag strings
+        const tagValues = Array.isArray(tags) ? tags.map(tag => {
+            // If tag contains ':', extract the value part; otherwise use the tag as-is
+            return tag.includes(':') ? tag.split(':')[1] : tag;
+        }) : [];
+        legendItem.dataset.tags = JSON.stringify(tagValues);
 
         // Color indicator with original class structure
         const colorIndicator = document.createElement('div');
@@ -100,7 +119,7 @@ window.LegendUIHandler = (() => {
         // The onCategoryClick is only used as a fallback if ui.js is not available
         if (onCategoryClick && (!window.UI || !window.UI.attachLegendEventHandlers)) {
             legendItem.addEventListener('click', () => {
-                onCategoryClick(legendItem, category, tags);
+                onCategoryClick(legendItem, category, tagValues);
             });
         }
         

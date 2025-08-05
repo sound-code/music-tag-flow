@@ -124,7 +124,7 @@ class MetadataExtractor {
             year: null,
             genre: null,
             track_number: trackNumber,
-            tags: JSON.stringify(['source:filename', 'quality:unknown'])
+            tags: JSON.stringify([])
         };
     }
 

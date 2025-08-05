@@ -38,20 +38,12 @@ class Application {
             
             this.isInitialized = true;
             
-            // Show success notification via EventBus
-            this.eventBus.emit('ui:notification', {
-                message: 'Tree Playlist App loaded with Service Architecture! 🎵',
-                type: 'success'
-            });
+            console.log('🎵 Tree Playlist App loaded with Service Architecture!');
             
             // Statistics are now handled by StatsService automatically
             
         } catch (error) {
-            
-            // Fallback to legacy notification
-            if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification('Error loading application.');
-            }
+            console.error('Error loading application:', error);
             
             throw error;
         }
@@ -175,37 +167,60 @@ class Application {
             autoStart: true
         });
         
-        this.serviceManager.registerService('ui', UIService, [], {
-            required: false,
-            autoStart: true
-        });
+        // Check if UIService is available before registering
+        if (typeof UIService !== 'undefined') {
+            this.serviceManager.registerService('ui', UIService, [], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('UIService not found - skipping registration');
+        }
         
-        this.serviceManager.registerService('dragdrop', DragDropService, [], {
-            required: false,
-            autoStart: true
-        });
+        if (typeof DragDropService !== 'undefined') {
+            this.serviceManager.registerService('dragdrop', DragDropService, [], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('DragDropService not found - skipping registration');
+        }
         
-        this.serviceManager.registerService('tracknodes', TrackNodesService, [], {
-            required: false,
-            autoStart: true
-        });
+        if (typeof TrackNodesService !== 'undefined') {
+            this.serviceManager.registerService('tracknodes', TrackNodesService, [], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('TrackNodesService not found - skipping registration');
+        }
         
-        this.serviceManager.registerService('scan', ScanService, ['data'], {
-            required: false,
-            autoStart: true
-        });
+        if (typeof ScanService !== 'undefined') {
+            this.serviceManager.registerService('scan', ScanService, ['data'], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('ScanService not found - skipping registration');
+        }
         
         if (typeof LegendService !== 'undefined') {
             this.serviceManager.registerService('legend', LegendService, ['data'], {
                 required: false,
                 autoStart: true
             });
+        } else {
+            console.warn('LegendService not found - skipping registration');
         }
         
-        this.serviceManager.registerService('clock', ClockService, [], {
-            required: false,
-            autoStart: true
-        });
+        if (typeof ClockService !== 'undefined') {
+            this.serviceManager.registerService('clock', ClockService, [], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('ClockService not found - skipping registration');
+        }
         
         // StatsService replaced by StatsComponent
         
@@ -213,12 +228,40 @@ class Application {
         try {
             await this.serviceManager.initializeServices();
             
+            // Preload tags at startup for better performance
+            await this.preloadAppData();
+            
             // Render music library after DataService is initialized
             if (typeof Utils !== 'undefined' && Utils.renderMusicLibrary) {
                 await Utils.renderMusicLibrary();
             }
         } catch (error) {
             // Services initialization failed
+        }
+    }
+
+    /**
+     * Preload essential app data at startup
+     */
+    async preloadAppData() {
+        try {
+            console.log('🚀 Preloading app data...');
+            
+            // Preload tags for legend
+            const dataService = this.serviceManager?.getService('data');
+            if (dataService) {
+                console.log('📂 Preloading tags by category...');
+                const tags = await dataService.getTagsByCategory();
+                console.log('✅ Tags preloaded:', Object.keys(tags).length, 'categories');
+                
+                // Emit event to trigger legend refresh with preloaded data
+                this.eventBus.emit('data:loading:complete');
+            }
+            
+            console.log('✅ App data preloading complete');
+        } catch (error) {
+            console.warn('⚠️ Error preloading app data:', error);
+            // Don't throw - app can still work
         }
     }
 
@@ -234,26 +277,19 @@ class Application {
         
         // Statistics updates are now handled by StatsService
         
-        // Legacy bridge events
+        // Legacy bridge events - NOTIFICATIONS DISABLED
         this.eventBus.on('legacy:notification', (data) => {
-            // Bridge legacy Utils.showNotification calls to EventBus
-            if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification(data.message);
-            }
+            console.log('📢 [LEGACY]', data.message);
         });
         
-        // UI notification events from services
+        // UI notification events from services - NOTIFICATIONS DISABLED
         this.eventBus.on('ui:notification', (data) => {
-            if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification(data.message);
-            }
+            console.log('📢 [UI]', data.message);
         });
         
-        // Notification events from TagService
+        // Notification events from TagService - NOTIFICATIONS DISABLED
         this.eventBus.on('notification:show', (data) => {
-            if (typeof Utils !== 'undefined' && Utils.showNotification) {
-                Utils.showNotification(data.message, data.type);
-            }
+            console.log('📢 [TAG]', data.message);
         });
         
         // State synchronization events (bridge AppState to StateManager)
@@ -433,9 +469,21 @@ window.App = AppInstance;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => AppInstance.initialize());
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            await AppInstance.initialize();
+        } catch (error) {
+            console.error('Failed to initialize application:', error);
+        }
+    });
 } else {
-    AppInstance.initialize();
+    (async () => {
+        try {
+            await AppInstance.initialize();
+        } catch (error) {
+            console.error('Failed to initialize application:', error);
+        }
+    })();
 }
 
 // Export for modules (if needed)
