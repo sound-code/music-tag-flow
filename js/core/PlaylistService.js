@@ -90,6 +90,9 @@ class PlaylistService extends ServiceBase {
         // Add to playlist
         const newPlaylist = [...currentPlaylist, playlistEntry];
         this.setState('playlist.entries', newPlaylist);
+        // Update visual highlighting for the track
+        this.updateTrackHighlighting(track, true);
+        
         // Emit events
         this.emitEvent('playlist:track-added', {
             entry: playlistEntry,
@@ -122,6 +125,10 @@ class PlaylistService extends ServiceBase {
         newPlaylist.forEach((entry, i) => {
             entry.order = i;
         });
+        
+        // Remove visual highlighting from the removed track
+        this.updateTrackHighlighting(removedEntry.track, false);
+        
         this.setState('playlist.entries', newPlaylist);
         // Emit events
         this.emitEvent('playlist:track-removed', {
@@ -138,6 +145,11 @@ class PlaylistService extends ServiceBase {
         const currentPlaylist = this.getState('playlist.entries') || [];
         const wasEmpty = currentPlaylist.length === 0;
         if (!wasEmpty) {
+            // Remove highlighting from all tracks in playlist
+            currentPlaylist.forEach(entry => {
+                this.updateTrackHighlighting(entry.track, false);
+            });
+            
             this.setState('playlist.entries', []);
             this.emitEvent('playlist:cleared', { previousSize: currentPlaylist.length });
         }
@@ -295,6 +307,9 @@ class PlaylistService extends ServiceBase {
         const totalDuration = entries.reduce((sum, entry) => sum + (entry.duration || 180), 0);
         this.setState('playlist.totalDuration', totalDuration);
         
+        // Update highlighting for all tracks - first clear all, then add current ones
+        this.updateAllTrackHighlighting(entries);
+        
         // Emit event for AppState sync (instead of direct manipulation)
         this.emitEvent('playlist:entries-sync', {
             entries: entries.map(entry => ({
@@ -436,6 +451,71 @@ class PlaylistService extends ServiceBase {
         const treeRootFromAppState = window.AppState && window.AppState.allNodes && window.AppState.allNodes.length > 0;
         
         return treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromAppState;
+    }
+    
+    /**
+     * Update visual highlighting for track nodes in the tree
+     * @param {Object} track - Track data
+     * @param {boolean} inPlaylist - Whether track is in playlist
+     */
+    updateTrackHighlighting(track, inPlaylist) {
+        if (!track) return;
+        
+        // Find all nodes in the tree that match this track
+        const trackNodes = this.findTrackNodes(track);
+        
+        trackNodes.forEach(node => {
+            if (inPlaylist) {
+                node.classList.add('in-playlist');
+            } else {
+                node.classList.remove('in-playlist');
+            }
+        });
+    }
+    
+    /**
+     * Find all DOM nodes that represent a specific track
+     * @param {Object} track - Track data to find
+     * @returns {Array} Array of DOM nodes
+     */
+    findTrackNodes(track) {
+        if (!track || !track.title || !track.artist) return [];
+        
+        const allTrackNodes = document.querySelectorAll('.track-node');
+        const matchingNodes = [];
+        
+        allTrackNodes.forEach(node => {
+            const titleElement = node.querySelector('.title');
+            const artistElement = node.querySelector('.artist');
+            
+            if (titleElement && artistElement) {
+                const nodeTitle = titleElement.textContent?.trim();
+                const nodeArtist = artistElement.textContent?.trim();
+                
+                if (nodeTitle === track.title && nodeArtist === track.artist) {
+                    matchingNodes.push(node);
+                }
+            }
+        });
+        
+        return matchingNodes;
+    }
+    
+    /**
+     * Update highlighting for all tracks based on current playlist
+     * @param {Array} playlistEntries - Current playlist entries
+     */
+    updateAllTrackHighlighting(playlistEntries) {
+        // First, remove highlighting from all nodes
+        const allTrackNodes = document.querySelectorAll('.track-node');
+        allTrackNodes.forEach(node => {
+            node.classList.remove('in-playlist');
+        });
+        
+        // Then, add highlighting for tracks in the playlist
+        playlistEntries.forEach(entry => {
+            this.updateTrackHighlighting(entry.track, true);
+        });
     }
 }
 // Make available globally
