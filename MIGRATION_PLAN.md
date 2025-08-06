@@ -321,5 +321,25 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 
 ---
 
+### ✅ 2.2.1 **Dead Code Cleanup Post-Migration** (Completata: 2025-01-06)
+**Status**: ✅ COMPLETATA
+
+**Dead code identificato e rimosso**:
+- ✅ **ServiceBase.js**: Rimossi 3 metodi morti (updateState, serviceName getter, log method)
+- ✅ **utils.js**: Rimossa funzione scrollToNode mai utilizzata
+- ✅ **TagUtils.js**: Rimosse 2 funzioni helper mai referenziate
+- ✅ **TreeService.js**: Corretto uso di updateState rimosso da ServiceBase
+
+**Bug fix**:
+- ✅ TreeService.clearTree() → Corretto da updateState() a singole chiamate setState()
+
+**Risultato**:
+- **50+ linee di codice morto rimosse**
+- **3 metodi difettosi eliminati** (incluso updateState con riferimento inesistente)
+- **Codebase più pulito e manutenibile**
+- **Zero errori di sintassi** - tutti i file validati
+
+---
+
 **Ultimo aggiornamento**: 2025-01-06  
-**Status**: 🎉 **FASE 1 + 2.1 COMPLETATE AL 100%** - Architettura service-based pura con DI completo! Ready per Fase 2.2 (Event Communication)
+**Status**: 🎉 **FASE 1 + 2.1 + 2.2 COMPLETATE AL 100%** - Architettura service-based pura, EventBus completo, dead code ripulito! Ready per Fase 2.3 (Service Architecture Cleanup)

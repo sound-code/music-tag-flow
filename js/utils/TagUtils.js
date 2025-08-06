@@ -231,26 +231,6 @@ class TagUtils {
         return tags.filter(tag => this.getTagType(tag) === category);
     }
 
-    /**
-     * Trova tags che iniziano con una categoria specifica
-     * @param {Array<string>} tags - Array di tags
-     * @param {string} categoryPrefix - Prefisso categoria (es. "mood:")
-     * @returns {Array<string>} Tags che corrispondono
-     */
-    findTagsWithCategoryPrefix(tags, categoryPrefix) {
-        const prefix = categoryPrefix.endsWith(':') ? categoryPrefix : categoryPrefix + ':';
-        return tags.filter(tag => tag.startsWith(prefix));
-    }
-
-    /**
-     * Verifica se due tags appartengono alla stessa categoria
-     * @param {string} tag1 - Primo tag
-     * @param {string} tag2 - Secondo tag
-     * @returns {boolean} True se stessa categoria
-     */
-    isSameCategory(tag1, tag2) {
-        return this.getTagType(tag1) === this.getTagType(tag2);
-    }
 }
 
 // Crea istanza globale

@@ -222,12 +222,10 @@ class TreeService extends ServiceBase {
         const currentNodes = this.getState('tree.nodes') || [];
         const wasEmpty = currentNodes.length === 0;
         if (!wasEmpty) {
-            this.updateState([
-                { path: 'tree.nodes', value: [] },
-                { path: 'tree.connections', value: [] },
-                { path: 'tree.rootNode', value: null },
-                { path: 'tree.nodeCounter', value: 0 }
-            ]);
+            this.setState('tree.nodes', []);
+            this.setState('tree.connections', []);
+            this.setState('tree.rootNode', null);
+            this.setState('tree.nodeCounter', 0);
             this.emitEvent('tree:cleared', { previousNodeCount: currentNodes.length });
         }
     }

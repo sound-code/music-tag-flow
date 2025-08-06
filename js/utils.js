@@ -165,20 +165,6 @@ const Utils = {
         return element;
     },
 
-    /**
-     * Scroll to a specific node and highlight it
-     * @param {string} nodeId - The ID of the node to scroll to
-     */
-    scrollToNode(nodeId) {
-        const node = document.getElementById(nodeId);
-        if (node) {
-            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            node.style.animation = 'pulse 1s ease-in-out';
-            setTimeout(() => {
-                node.style.animation = '';
-            }, 1000);
-        }
-    },
 
 
 

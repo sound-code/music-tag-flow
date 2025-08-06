@@ -86,13 +86,6 @@ class ServiceBase {
         this.stateManager.set(path, value, options);
     }
     /**
-     * Update multiple state values atomically
-     * @param {Array} updates - Array of {path, value} objects
-     */
-    updateState(updates) {
-        this.state.transaction(updates);
-    }
-    /**
      * Validate data against rules
      * @param {*} data - Data to validate
      * @param {Object} rules - Validation rules
@@ -118,22 +111,6 @@ class ServiceBase {
             }
         });
         this.subscriptions = [];
-    }
-    /**
-     * Get service name for debugging
-     * @returns {string} Service name
-     */
-    get serviceName() {
-        return this.constructor.name;
-    }
-    /**
-     * Log with service name prefix
-     * @param {string} level - Log level
-     * @param {string} message - Log message
-     * @param {*} data - Optional data
-     */
-    log(level, message, data = null) {
-        // Logging disabled for production
     }
 }
 // Make available globally
