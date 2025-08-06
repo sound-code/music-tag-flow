@@ -377,4 +377,70 @@ if (window.EventBus) {
 }
 
 // Make Utils available globally
-window.Utils = Utils; 
+window.Utils = Utils;
+
+// Legacy UI functions moved from ui.js
+/**
+ * Toggle artist folder expansion
+ * @param {HTMLElement} header - Artist header element
+ */
+window.toggleArtist = function(header) {
+    const artistFolder = header.parentElement;
+    const icon = header.querySelector('.artist-icon');
+    artistFolder.classList.toggle('expanded');
+    
+    // Update icon text
+    if (artistFolder.classList.contains('expanded')) {
+        icon.textContent = '−';
+    } else {
+        icon.textContent = '+';
+    }
+};
+
+/**
+ * Toggle album folder expansion
+ * @param {HTMLElement} header - Album header element
+ */
+window.toggleAlbum = function(header) {
+    const albumFolder = header.parentElement;
+    const icon = header.querySelector('.album-icon');
+    albumFolder.classList.toggle('expanded');
+    
+    // Update icon text
+    if (albumFolder.classList.contains('expanded')) {
+        icon.textContent = '−';
+    } else {
+        icon.textContent = '+';
+    }
+};
+
+/**
+ * Clear mindmap tree
+ */
+window.clearMindmap = function() {
+    // Clear via EventBus or direct service call
+    if (window.EventBus) {
+        window.EventBus.emit('playlist:clear');
+    } else if (window.App && window.App.getService) {
+        const playlistService = window.App.getService('playlist');
+        if (playlistService && typeof playlistService.clearPlaylistAndTree === 'function') {
+            playlistService.clearPlaylistAndTree();
+        }
+    }
+};
+
+/**
+ * Save playlist
+ */
+window.savePlaylist = function() {
+    // Save via direct service call
+    if (window.App && window.App.getService) {
+        const playlistService = window.App.getService('playlist');
+        if (playlistService && typeof playlistService.savePlaylist === 'function') {
+            playlistService.savePlaylist();
+        }
+    }
+};
+
+// Export scrollToNode for backward compatibility
+window.scrollToNode = Utils.scrollToNode; 

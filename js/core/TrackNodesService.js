@@ -881,14 +881,10 @@ class TrackNodesService extends ServiceBase {
         // Aggiorna il dataset del nodo con i nuovi dati track
         node.dataset.track = JSON.stringify(track);
         
-        // Forza refresh di eventuali tooltip aperti
-        if (typeof UI !== 'undefined') {
-            if (UI.tooltip && UI.tooltip.style.display === 'block') {
-                UI.tooltip.style.display = 'none';
-            }
-            if (UI.currentHoverTarget) {
-                UI.currentHoverTarget = null;
-            }
+        // Forza refresh di eventuali tooltip aperti usando UIService
+        const uiService = this.getService('ui');
+        if (uiService) {
+            uiService.hideTooltip();
         }
         
         // Emit event per aggiornare la legenda dopo l'aggiunta del tag

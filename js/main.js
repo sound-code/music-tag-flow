@@ -9,7 +9,7 @@ class Application {
         this.eventBus = null;
         this.serviceManager = null;
         this.isInitialized = false;
-        this.legacyModules = ['UI'];
+        this.legacyModules = [];
     }
 
     /**

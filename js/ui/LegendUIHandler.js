@@ -61,7 +61,7 @@ window.LegendUIHandler = (() => {
             legendContainer.appendChild(totalInfo);
         }
         
-        // Emit rendered event for UI.js compatibility (multiple EventBus instances)
+        // Emit rendered event for UIService compatibility
         if (typeof window !== 'undefined') {
             // Try global EventBus first
             if (window.EventBus && window.EventBus.emit) {
@@ -80,10 +80,13 @@ window.LegendUIHandler = (() => {
             }
         }
         
-        // Direct fallback - call UI.js directly if available
+        // Use UIService to attach event handlers
         setTimeout(() => {
-            if (typeof window !== 'undefined' && window.UI && window.UI.attachLegendEventHandlers) {
-                window.UI.attachLegendEventHandlers();
+            if (typeof window !== 'undefined' && window.App && window.App.getService) {
+                const uiService = window.App.getService('ui');
+                if (uiService && uiService.attachLegendEventHandlers) {
+                    uiService.attachLegendEventHandlers();
+                }
             }
         }, 100);
     }
@@ -115,9 +118,10 @@ window.LegendUIHandler = (() => {
         categoryName.textContent = getCategoryDisplayName(category);
         
         // Add click handler if provided
-        // NOTE: We let ui.js handle the click events through attachLegendEventHandlers
-        // The onCategoryClick is only used as a fallback if ui.js is not available
-        if (onCategoryClick && (!window.UI || !window.UI.attachLegendEventHandlers)) {
+        // NOTE: We let UIService handle the click events through attachLegendEventHandlers
+        // The onCategoryClick is only used as a fallback if UIService is not available
+        const uiService = window.App && window.App.getService ? window.App.getService('ui') : null;
+        if (onCategoryClick && (!uiService || !uiService.attachLegendEventHandlers)) {
             legendItem.addEventListener('click', () => {
                 onCategoryClick(legendItem, category, tagValues);
             });
@@ -139,7 +143,7 @@ window.LegendUIHandler = (() => {
      * @param {Function} onCategoryDeselected - Deselection callback
      */
     function handleCategoryClick(legendItem, category, tags, onCategorySelected, onCategoryDeselected) {
-        // Simple toggle of individual item only (let ui.js handle multi-selection)
+        // Simple toggle of individual item only (let UIService handle multi-selection)
         const isActive = legendItem.classList.contains('legend-active');
         
         if (!isActive) {
