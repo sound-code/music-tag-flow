@@ -201,17 +201,22 @@ class TrackNodesService extends ServiceBase {
             node.style.left = `${x}px`;
             node.style.top = `${y}px`;
             
-            // Crea elementi figlio
+            // Create child elements and assemble using DocumentFragment for better performance
+            const fragment = document.createDocumentFragment();
+            
             const playBtn = this.createPlayButton(track);
             const title = this.createTextElement('div', 'title', track.title);
             const artist = this.createTextElement('div', 'artist', track.artist);
             const tagsContainer = this.createTagsContainer(track, node);
             
-            // Assembla nodo
-            node.appendChild(playBtn);
-            node.appendChild(title);
-            node.appendChild(artist);
-            node.appendChild(tagsContainer);
+            // Batch append to fragment
+            fragment.appendChild(playBtn);
+            fragment.appendChild(title);
+            fragment.appendChild(artist);
+            fragment.appendChild(tagsContainer);
+            
+            // Single append to node
+            node.appendChild(fragment);
             
             // Setup click handler
             this.attachClickHandler(node, track, connectionTag);
@@ -905,6 +910,48 @@ class TrackNodesService extends ServiceBase {
     }
     
     /**
+     * Create multiple nodes in batch with staggered animation
+     * @param {Array} tracks - Array of tracks to create nodes for
+     * @param {HTMLElement} sourceNode - Source node for positioning
+     * @param {string} tagValue - Tag value for connection
+     */
+    createNodesBatch(tracks, sourceNode, tagValue) {
+        // Create all nodes at once, then animate them in
+        const createdNodes = [];
+        
+        // First pass: create all DOM elements in batch
+        const fragment = document.createDocumentFragment();
+        
+        tracks.forEach((track) => {
+            try {
+                const newNode = this.createNode(track, 0, 0, sourceNode, tagValue);
+                if (newNode) {
+                    createdNodes.push(newNode);
+                    // Note: createNode already adds to DOM, so we don't use fragment here
+                }
+            } catch (error) {
+                console.error('Error creating batch node:', error);
+            }
+        });
+        
+        // Second pass: animate nodes in with staggered timing
+        createdNodes.forEach((node, i) => {
+            // Start invisible
+            node.style.opacity = '0';
+            node.style.transform = 'scale(0.5)';
+            
+            // Animate in with delay
+            setTimeout(() => {
+                node.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                node.style.opacity = '1';
+                node.style.transform = 'scale(1)';
+            }, i * 150); // Reduced delay for faster completion
+        });
+        
+        return createdNodes;
+    }
+    
+    /**
      * Crea branch direttamente per un tag - bypassa tutti i sistemi esistenti (migrato da trackNodes.js)
      * @param {string} tagValue - Valore del tag (es. "mood:confident")
      * @param {HTMLElement} sourceNode - Nodo sorgente per il branching
@@ -941,22 +988,8 @@ class TrackNodesService extends ServiceBase {
             
             const tracksToCreate = filteredTracks.slice(0, 5);
             
-            // Crea ogni nodo con delay appropriato
-            tracksToCreate.forEach((track, i) => {
-                setTimeout(() => {
-                    try {
-                        // Crea nuovo nodo posizionato attorno al sorgente
-                        const newNode = this.createNode(track, 0, 0, sourceNode, tagValue);
-                        
-                        // I nodi creati tramite branching non dovrebbero scatenare eventi node:click
-                        // perché sono nodi automatici, non click dell'utente
-                        // Basta che esistano nel DOM e nel Tree - fine
-                        
-                    } catch (error) {
-                        // Error creating branch node
-                    }
-                }, i * 300); // Delay scaglionato per animazione
-            });
+            // Create nodes in batch for better performance
+            this.createNodesBatch(tracksToCreate, sourceNode, tagValue);
             
             // Log creation (no notification)
             const tagDisplayValue = this.parseTag(tagValue).value;

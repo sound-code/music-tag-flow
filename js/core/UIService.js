@@ -48,6 +48,13 @@ class UIService extends ServiceBase {
         this.domCache = new Map();
         this.domCacheTimeout = null;
         
+        // Performance optimization properties
+        this.highlightUpdateFrame = null;
+        
+        // Cleanup tracking
+        this.colorFixInterval = null;
+        this.documentListeners = [];
+        
         // Timeout management
         this.timeouts = {
             show: null,
@@ -125,6 +132,17 @@ class UIService extends ServiceBase {
                 }
             }
         }
+    }
+    
+    /**
+     * Add document listener with cleanup tracking
+     * @param {string} event - Event type
+     * @param {Function} handler - Event handler
+     * @param {Object} options - Event options
+     */
+    addDocumentListener(event, handler, options = false) {
+        document.addEventListener(event, handler, options);
+        this.documentListeners.push({ event, handler, options });
     }
 
     /**
@@ -308,7 +326,7 @@ class UIService extends ServiceBase {
      * Setup tooltip event listeners
      */
     setupTooltipEventListeners() {
-        document.addEventListener('mouseover', (e) => {
+        this.addDocumentListener('mouseover', (e) => {
             // Solo per elementi della libreria, NON per track-node
             const trackElement = e.target.closest('.track-item, .track-list-item');
             if (trackElement && !e.target.closest('.track-node') && trackElement !== this.currentHoverTarget && trackElement.dataset.track) {
@@ -317,7 +335,7 @@ class UIService extends ServiceBase {
             }
         });
 
-        document.addEventListener('mouseout', (e) => {
+        this.addDocumentListener('mouseout', (e) => {
             // Solo per elementi della libreria, NON per track-node
             const trackElement = e.target.closest('.track-item, .track-list-item');
             if (trackElement && !e.target.closest('.track-node') && trackElement === this.currentHoverTarget) {
@@ -734,7 +752,7 @@ class UIService extends ServiceBase {
         });
         
         // Global click handler to hide legend popup when clicking elsewhere
-        document.addEventListener('click', (e) => {
+        this.addDocumentListener('click', (e) => {
             if (this.elements.legendPopup && 
                 this.elements.legendPopup.style.display === 'block' &&
                 !e.target.closest('.legend-item') && 
@@ -761,14 +779,14 @@ class UIService extends ServiceBase {
         }, 100);
         
         // Global escape key handler for clearing highlights
-        document.addEventListener('keydown', (e) => {
+        this.addDocumentListener('keydown', (e) => {
             if (e.key === 'Escape' && this.highlightedCategories.size > 0) {
                 this.clearCategoryHighlight();
             }
         });
 
         // Global click handler for clearing highlights when clicking outside legend
-        document.addEventListener('click', (e) => {
+        this.addDocumentListener('click', (e) => {
             const legendItem = e.target.closest('.legend-item');
             if (!legendItem && this.highlightedCategories.size > 0) {
                 this.clearCategoryHighlight();
@@ -1049,7 +1067,7 @@ class UIService extends ServiceBase {
         fixColors();
         setTimeout(fixColors, 1000);
         setTimeout(fixColors, 3000);
-        setInterval(fixColors, this.config.colorFixInterval);
+        this.colorFixInterval = setInterval(fixColors, this.config.colorFixInterval);
     }
 
     /**
@@ -1261,38 +1279,61 @@ class UIService extends ServiceBase {
             return;
         }
 
-        // First remove all existing highlighting
-        const allNodes = this.queryDOM('.track-node', true, true); // noCache for accurate highlighting
-        allNodes.forEach(node => {
-            node.classList.remove('category-highlighted', 'category-dimmed');
-        });
-        
-        // Clear branch highlighting
+        // Clear branch highlighting first
         this.clearBranchHighlight();
-
-        // Find all nodes that belong to selected categories
-        const selectedNodes = new Set();
-        categories.forEach(category => {
-            const categoryNodes = this.queryDOM(`.track-node.node-tag-${category}`, true, true); // noCache for dynamic classes
-            categoryNodes.forEach(node => selectedNodes.add(node));
-        });
         
         // Highlight branches for ALL selected categories
         this.highlightMultipleCategoriesBranches(categories);
-
-        // Apply highlighting to selected nodes
-        selectedNodes.forEach(node => {
-            node.classList.add('category-highlighted');
-        });
-
-        // Dim all other nodes
-        allNodes.forEach(node => {
-            if (!selectedNodes.has(node)) {
-                node.classList.add('category-dimmed');
-            }
-        });
+        
+        // Single-pass batched DOM updates
+        this.batchHighlightUpdate(categories);
     }
 
+    /**
+     * Batch highlight update for optimal performance
+     * @param {Set} categories - Selected categories
+     */
+    batchHighlightUpdate(categories) {
+        // Cancel any pending highlight update
+        if (this.highlightUpdateFrame) {
+            cancelAnimationFrame(this.highlightUpdateFrame);
+        }
+        
+        this.highlightUpdateFrame = requestAnimationFrame(() => {
+            const perfId = window.PerformanceMonitor?.start('UIService.batchHighlightUpdate');
+            
+            const allNodes = this.queryDOM('.track-node', true, true);
+            const selectedNodes = new Set();
+            
+            // Build selected nodes set
+            categories.forEach(category => {
+                const categoryNodes = this.queryDOM(`.track-node.node-tag-${category}`, true, true);
+                categoryNodes.forEach(node => selectedNodes.add(node));
+            });
+            
+            // Single pass through all nodes - batch all DOM operations
+            allNodes.forEach(node => {
+                // Remove old classes first
+                node.classList.remove('category-highlighted', 'category-dimmed');
+                
+                // Add appropriate new class
+                if (selectedNodes.has(node)) {
+                    node.classList.add('category-highlighted');
+                } else {
+                    node.classList.add('category-dimmed');
+                }
+            });
+            
+            window.PerformanceMonitor?.end(perfId, {
+                categoriesCount: categories.size,
+                totalNodes: allNodes.length,
+                selectedNodes: selectedNodes.size
+            });
+            
+            this.highlightUpdateFrame = null;
+        });
+    }
+    
     /**
      * Update legend multi-selection styles
      * @param {Set} categories - Selected categories
@@ -1485,14 +1526,14 @@ class UIService extends ServiceBase {
         this.currentActiveTooltip = null;
 
         // Add event delegation for track nodes
-        document.addEventListener('mouseover', (e) => {
+        this.addDocumentListener('mouseover', (e) => {
             const trackNode = e.target.closest('.track-node');
             if (trackNode && trackNode !== this.currentActiveTooltip) {
                 this.showTrackNodeTooltip(trackNode);
             }
         });
 
-        document.addEventListener('mouseout', (e) => {
+        this.addDocumentListener('mouseout', (e) => {
             const trackNode = e.target.closest('.track-node');
             if (trackNode && trackNode === this.currentActiveTooltip) {
                 const relatedTarget = e.relatedTarget;
@@ -1541,7 +1582,7 @@ class UIService extends ServiceBase {
         });
         
         // Global click handler to hide tooltips when clicking elsewhere
-        document.addEventListener('click', (e) => {
+        this.addDocumentListener('click', (e) => {
             if (this.currentActiveTooltip && 
                 !e.target.closest('.track-node') && 
                 !e.target.closest('.track-node-tooltip')) {
@@ -1726,7 +1767,56 @@ class UIService extends ServiceBase {
         const type = tagWithValue.includes(':') ? tagWithValue.split(':')[0] : 'unknown';
         return colors[type] || 'rgba(99, 102, 241, 0.7)';
     }
-
+    
+    /**
+     * Destroy service and cleanup all resources
+     */
+    destroy() {
+        // Cancel any pending animation frames
+        if (this.highlightUpdateFrame) {
+            cancelAnimationFrame(this.highlightUpdateFrame);
+            this.highlightUpdateFrame = null;
+        }
+        
+        // Clear all intervals
+        if (this.domCacheTimeout) {
+            clearInterval(this.domCacheTimeout);
+            this.domCacheTimeout = null;
+        }
+        
+        if (this.colorFixInterval) {
+            clearInterval(this.colorFixInterval);
+            this.colorFixInterval = null;
+        }
+        
+        // Clear all timeouts
+        Object.keys(this.timeouts).forEach(key => {
+            if (this.timeouts[key]) {
+                clearTimeout(this.timeouts[key]);
+                this.timeouts[key] = null;
+            }
+        });
+        
+        // Remove all document listeners
+        this.documentListeners.forEach(({ event, handler, options }) => {
+            document.removeEventListener(event, handler, options);
+        });
+        this.documentListeners = [];
+        
+        // Clear DOM cache
+        this.domCache.clear();
+        
+        // Remove DOM elements created by this service
+        if (this.elements.tooltip && this.elements.tooltip.parentNode) {
+            this.elements.tooltip.parentNode.removeChild(this.elements.tooltip);
+        }
+        if (this.elements.legendPopup && this.elements.legendPopup.parentNode) {
+            this.elements.legendPopup.parentNode.removeChild(this.elements.legendPopup);
+        }
+        
+        // Call parent destroy
+        super.destroy();
+    }
 
 }
 

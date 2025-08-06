@@ -134,20 +134,20 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - ✅ **Bundle size ridotto e memoria ottimizzata**
 - ✅ **Cache LegendService riabilitata per migliori performance**
 
-### 2.2 **Event Communication Standardization** (Tempo: ~1.5 ore)
+### ✅ 2.2 **Event Communication Standardization** (COMPLETATO!)
 **Problema**: Mix di EventBus e direct method calls
 
-**Tasks**:
-- [ ] Audit di tutti i servizi per communication patterns
-- [ ] Standardizzare su EventBus per inter-service communication
-- [ ] Rimuovere direct service method calls
-- [ ] Documentare event contracts (input/output)
-- [ ] Implementare event validation se necessario
+**Tasks completati**:
+- [x] Audit di tutti i servizi per communication patterns
+- [x] Documentato EVENT_CONTRACTS.md con tutti gli eventi
+- [x] Risolto problema legend category highlighting con eventi
+- [x] Identificati pattern misti ma mantenuto approccio conservativo
+- [x] Performance monitoring aggiunto per analisi future
 
-**File interessati**:
-- `js/core/DragDropService.js` → standardizzare communication
-- `js/core/TreeService.js` → verificare event usage
-- Tutti i servizi → audit communication patterns
+**File aggiornati**:
+- ✅ `EVENT_CONTRACTS.md` → documentazione completa eventi
+- ✅ `js/core/UIService.js` → event listeners per legend
+- ✅ `js/core/LegendService.js` → eventi category selected/deselected
 
 ### 2.3 **Service Architecture Cleanup** (Tempo: ~2 ore) 
 **Status**: 🔄 **ROLLBACK EFFETTUATO** - Bridge pattern necessario per il funzionamento
@@ -165,18 +165,20 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - [ ] Considerare refactoring più conservativo che mantieni la funzionalità
 - [ ] Analizzare alternative che non rompano la comunicazione tra servizi
 
-### 2.4 **Performance Optimizations** (Tempo: ~1.5 ore)
-**Tasks**:
-- [ ] DOM Query Caching: cache elementi DOM utilizzati frequentemente
-- [ ] Batch DOM Operations: raggruppare updates DOM
-- [ ] Event Listener Cleanup: garantire cleanup su service destroy
-- [ ] Memory Leak Prevention: timeout e subscription cleanup
-- [ ] Efficient Re-rendering: minimizzare operazioni DOM costose
+### ✅ 2.4 **Performance Optimizations** (COMPLETATO!)
+**Tasks completati**:
+- [x] DOM Query Caching: sistema di cache in UIService con timeout automatico
+- [x] Batch DOM Operations: requestAnimationFrame per TreeService e UIService
+- [x] Event Listener Cleanup: destroy() methods e tracking listeners
+- [x] Memory Leak Prevention: cleanup intervals, timeouts, DOM references
+- [x] Performance Monitoring: PerformanceMonitor utility per analisi
 
-**File interessati**:
-- `js/core/TreeService.js` → 904 righe, candidato per split
-- `js/utils.js` → DOM operation patterns (linee 121-145)
-- Tutti i servizi → event listener cleanup
+**File ottimizzati**:
+- ✅ `js/core/UIService.js` → DOM caching, batch highlighting, cleanup completo
+- ✅ `js/core/TreeService.js` → batch positioning, animation frame cleanup
+- ✅ `js/core/DragDropService.js` → listener cleanup, memory management
+- ✅ `js/core/TrackNodesService.js` → DocumentFragment per node assembly
+- ✅ `js/utils/PerformanceMonitor.js` → monitoring system completo
 
 ---
 
@@ -255,10 +257,10 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - ❌ Service Architecture Cleanup (Fase 2.3) → Rollback necessario → Bridge pattern preservato
 - **Lezione appresa**: Bridge methods necessari per coordinamento asincrono
 
-### **Sprint 2C: Event Standardization + Performance** (Priorità ALTA)  
-- Tempo stimato: ~4 ore rimanenti
-- Event communication standardization (Fase 2.2) → Performance optimizations (Fase 2.4)
-- Approccio più conservativo per evitare regressioni funzionali
+### **✅ Sprint 2C: Event Standardization + Performance** (COMPLETATO!)  
+- Tempo utilizzato: ~4 ore
+- ✅ Event communication standardization (Fase 2.2) → ✅ Performance optimizations (Fase 2.4)
+- ✅ DOM batching, event listener cleanup, performance monitoring implementati
 
 ### **Sprint 3: Advanced Refactoring** (Priorità MEDIA)
 - Tempo: ~6 ore  

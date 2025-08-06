@@ -420,4 +420,23 @@ window.savePlaylist = function() {
     }
 };
 
+/**
+ * Performance debugging functions
+ */
+window.showPerformanceReport = function() {
+    if (window.PerformanceMonitor) {
+        window.PerformanceMonitor.report();
+    } else {
+        console.log('Performance monitoring not available');
+    }
+};
+
+window.clearPerformanceMetrics = function() {
+    if (window.PerformanceMonitor) {
+        window.PerformanceMonitor.clear();
+    } else {
+        console.log('Performance monitoring not available');
+    }
+};
+
  

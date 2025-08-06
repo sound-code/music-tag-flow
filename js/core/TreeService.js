@@ -38,6 +38,12 @@ class TreeService extends ServiceBase {
             track: (track) => track && typeof track === 'object' && track.title,
             level: (level) => typeof level === 'number' && level >= 0 && level < this.config.maxLevels
         };
+        
+        // Performance optimization properties
+        this.positionUpdateFrame = null;
+        
+        // Initialize immediately
+        this.initialize();
     }
     
     /**
@@ -612,20 +618,47 @@ class TreeService extends ServiceBase {
     }
 
     /**
-     * Apply calculated positions to DOM elements
+     * Apply calculated positions to DOM elements with batched updates
      */
     applyTreePositions() {
         if (!this.nodes) return;
         
-        this.nodes.forEach((nodeData, nodeId) => {
-            const { element, position } = nodeData;
-            if (element && position) {
-                // Center the node on its position
-                const nodeRadius = 40; // Standard node radius
-                element.style.left = `${position.x - nodeRadius}px`;
-                element.style.top = `${position.y - nodeRadius}px`;
+        // Cancel any pending position update
+        if (this.positionUpdateFrame) {
+            cancelAnimationFrame(this.positionUpdateFrame);
+        }
+        
+        // Batch all position updates in single animation frame
+        this.positionUpdateFrame = requestAnimationFrame(() => {
+            const perfId = window.PerformanceMonitor?.start('TreeService.applyTreePositions');
+            
+            // Collect all position updates first
+            const updates = [];
+            this.nodes.forEach((nodeData, nodeId) => {
+                const { element, position } = nodeData;
+                if (element && position) {
+                    const nodeRadius = 40; // Standard node radius
+                    updates.push({
+                        element,
+                        left: `${position.x - nodeRadius}px`,
+                        top: `${position.y - nodeRadius}px`
+                    });
+                }
+            });
+            
+            // Apply all updates in single batch to minimize reflows
+            updates.forEach(({ element, left, top }) => {
+                element.style.left = left;
+                element.style.top = top;
                 element.style.position = 'absolute';
-            }
+            });
+            
+            window.PerformanceMonitor?.end(perfId, {
+                nodeCount: this.nodes.size,
+                updatesApplied: updates.length
+            });
+            
+            this.positionUpdateFrame = null;
         });
     }
 
@@ -895,6 +928,23 @@ class TreeService extends ServiceBase {
         if (this.nodes) this.nodes.clear();
         if (this.connections) this.connections.clear();
         this.rootNode = null;
+    }
+    
+    /**
+     * Destroy service and cleanup all resources
+     */
+    destroy() {
+        // Cancel any pending position updates
+        if (this.positionUpdateFrame) {
+            cancelAnimationFrame(this.positionUpdateFrame);
+            this.positionUpdateFrame = null;
+        }
+        
+        // Clear tree structure
+        this.clearTreeStructure();
+        
+        // Call parent destroy
+        super.destroy();
     }
 }
 // Make available globally

@@ -24,6 +24,9 @@ class DragDropService extends ServiceBase {
         this.isDragActive = false;
         this.currentDragData = null;
         
+        // Cleanup tracking
+        this.documentListeners = [];
+        
         // DOM element references
         this.elements = {
             dropZone: null,
@@ -106,24 +109,38 @@ class DragDropService extends ServiceBase {
     }
 
     /**
+     * Add document listener with cleanup tracking
+     * @param {string} event - Event type
+     * @param {Function} handler - Event handler
+     * @param {Object} options - Event options
+     */
+    addDocumentListener(event, handler, options = false) {
+        document.addEventListener(event, handler, options);
+        this.documentListeners.push({ event, handler, options });
+    }
+    
+    /**
      * Setup drag listeners for track items
      */
     setupDragListeners() {
         
         // Use event delegation for dynamically added track items
-        document.addEventListener('dragstart', (e) => {
+        const dragStartHandler = (e) => {
             const trackItem = e.target.closest('.track-item, .track-list-item, .search-result-item');
             if (trackItem && trackItem.dataset.track) {
                 this.handleDragStart(e, trackItem);
             }
-        });
-
-        document.addEventListener('dragend', (e) => {
+        };
+        
+        const dragEndHandler = (e) => {
             const trackItem = e.target.closest('.track-item, .track-list-item, .search-result-item');
             if (trackItem) {
                 this.handleDragEnd(e, trackItem);
             }
-        });
+        };
+
+        this.addDocumentListener('dragstart', dragStartHandler);
+        this.addDocumentListener('dragend', dragEndHandler);
         
     }
 
@@ -165,7 +182,7 @@ class DragDropService extends ServiceBase {
      */
     handleDragStart(e, element) {
         
-        if (!this.validate({ dragEvent: e }, { dragEvent: this.validationRules.dragEvent })) {
+        if (!e || !e.dataTransfer) {
             return;
         }
 
@@ -621,6 +638,24 @@ class DragDropService extends ServiceBase {
 
 
     // _shouldExcludeTrack wrapper method removed - using DataService directly to reduce indirection
+    
+    /**
+     * Destroy service and cleanup all resources
+     */
+    destroy() {
+        // Remove all document listeners
+        this.documentListeners.forEach(({ event, handler, options }) => {
+            document.removeEventListener(event, handler, options);
+        });
+        this.documentListeners = [];
+        
+        // Clear state
+        this.isDragActive = false;
+        this.currentDragData = null;
+        
+        // Call parent destroy
+        super.destroy();
+    }
 }
 
 // Make available globally
