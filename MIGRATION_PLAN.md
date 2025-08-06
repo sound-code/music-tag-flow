@@ -149,14 +149,21 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - `js/core/TreeService.js` → verificare event usage
 - Tutti i servizi → audit communication patterns
 
-### 2.3 **Service Architecture Cleanup** (Tempo: ~2 ore)
-**Problema**: Service bridge pattern overuse, complex indirection
+### 2.3 **Service Architecture Cleanup** (Tempo: ~2 ore) 
+**Status**: 🔄 **ROLLBACK EFFETTUATO** - Bridge pattern necessario per il funzionamento
 
-**Tasks**:
-- [ ] Rimuovere unnecessary bridge methods da DragDropService (linee 561-607)
-- [ ] Semplificare service initialization order
-- [ ] Migliorare service cohesion (single responsibility)
-- [ ] Rimuovere tight coupling tra servizi
+**Problema identificato**: I bridge methods in DragDropService sono necessari per il corretto coordinamento tra servizi. La loro rimozione ha causato il malfunzionamento del drag & drop.
+
+**Analisi**: 
+- I bridge methods non sono anti-pattern in questo contesto specifico
+- Servono per coordinare eventi asincroni tra DragDropService, TrackNodesService e TreeService
+- Il positioning corretto dei nodi dipende da questa coordinazione
+- EventBus puro ha causato problemi di timing e stato condiviso
+
+**Tasks** (da rivalutare):
+- [ ] Rivedere approccio: i bridge potrebbero essere il pattern corretto per questo use case
+- [ ] Considerare refactoring più conservativo che mantieni la funzionalità
+- [ ] Analizzare alternative che non rompano la comunicazione tra servizi
 
 ### 2.4 **Performance Optimizations** (Tempo: ~1.5 ore)
 **Tasks**:
@@ -243,9 +250,15 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - ✅ Service Dependency Injection (Fase 2.1) → ✅ Dead Code Cleanup (Fase 2.1.1)
 - **FASE 2.1 + 2.1.1 COMPLETATE AL 100%**
 
-### **Sprint 2B: Service Architecture** (Priorità ALTA)  
+### **🔄 Sprint 2B: Service Architecture Cleanup** (ROLLBACK)  
+- Tentativo: ~2 ore
+- ❌ Service Architecture Cleanup (Fase 2.3) → Rollback necessario → Bridge pattern preservato
+- **Lezione appresa**: Bridge methods necessari per coordinamento asincrono
+
+### **Sprint 2C: Event Standardization + Performance** (Priorità ALTA)  
 - Tempo stimato: ~4 ore rimanenti
-- Event standardization → Performance opts → Service cleanup
+- Event communication standardization (Fase 2.2) → Performance optimizations (Fase 2.4)
+- Approccio più conservativo per evitare regressioni funzionali
 
 ### **Sprint 3: Advanced Refactoring** (Priorità MEDIA)
 - Tempo: ~6 ore  
@@ -291,6 +304,14 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - **✅ Performance Migliorata**: Cache LegendService riabilitata, bundle ridotto
 - **✅ Code Quality**: 8 servizi aggiornati, dependencies registration ottimizzata
 - **✅ Architecture Purity**: 13+ fallback patterns eliminati, DI pattern consistente
+
+### **🎓 FASE 2.3 - LEZIONI APPRESE**:
+- **🔍 Bridge Pattern Analysis**: Bridge methods sono necessari per coordinamento asincrono complesso
+- **✅ Code Quality Migliorata**: Wrapper method `_shouldExcludeTrack` eliminato (20+ linee)
+- **✅ Documentazione Migliorata**: Bridge methods ora documentati con design rationale
+- **📚 Architettura Compresa**: TrackNodesService → TreeService.addNodeWithPositioning() coordinazione
+- **⚠️ Rollback Necessario**: Tentativi di rimozione bridge hanno causato malfunzionamenti
+- **💡 Approccio Conservativo**: Code quality improvements > invasive refactoring
 
 ---
 

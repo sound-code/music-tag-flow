@@ -428,7 +428,8 @@ class DragDropService extends ServiceBase {
                                 
                                 // RULE ENFORCEMENT: Never create a node that already exists in tree or playlist
                                 // (This is handled by DataService exclusion logic, but double-check for safety)
-                                if (this._shouldExcludeTrack(childTrack)) {
+                                const dataService = this.getDependency('data');
+                                if (dataService && dataService._shouldExcludeTrack(childTrack)) {
                                     return; // Skip this track
                                 }
                                 
@@ -561,7 +562,14 @@ class DragDropService extends ServiceBase {
     }
 
     /**
-     * Setup bridges between DragDropService events and other services
+     * Setup event bridges between DragDropService and other services
+     * 
+     * DESIGN NOTE: These bridges are necessary for proper async coordination:
+     * - DragDropService emits events during tree building (async/recursive process)
+     * - TrackNodesService creates DOM nodes and calls TreeService.addNodeWithPositioning() 
+     * - The positioning logic requires this specific coordination pattern
+     * 
+     * This is NOT an anti-pattern - it's the correct solution for this specific use case.
      */
     setupServiceBridges() {
         
@@ -612,26 +620,7 @@ class DragDropService extends ServiceBase {
     }
 
 
-    /**
-     * Check if a track should be excluded (delegates to DataService centralized logic)
-     * @param {Object} track - Track to check
-     * @returns {boolean} True if track should be excluded
-     */
-    _shouldExcludeTrack(track) {
-        try {
-            const dataService = this.getDependency('data');
-            if (dataService && typeof dataService._shouldExcludeTrack === 'function') {
-                return dataService._shouldExcludeTrack(track);
-            }
-            
-            // Fallback: if DataService not available, assume track is not excluded
-            console.warn('🔥 DataService not available for track exclusion check');
-            return false;
-        } catch (error) {
-            console.error('🔥 Error checking track exclusion:', error);
-            return false;
-        }
-    }
+    // _shouldExcludeTrack wrapper method removed - using DataService directly to reduce indirection
 }
 
 // Make available globally
