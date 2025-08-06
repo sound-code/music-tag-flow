@@ -80,11 +80,17 @@ window.LegendUIHandler = (() => {
             }
         }
         
-        // Use EventBus to attach event handlers
+        // Use EventBus to attach event handlers with multiple attempts for reliability
         setTimeout(() => {
             if (window.EventBus) {
                 window.EventBus.emit('legend:attach-handlers');
             }
+            // Try again after a longer delay to ensure DOM is ready
+            setTimeout(() => {
+                if (window.EventBus) {
+                    window.EventBus.emit('legend:attach-handlers');
+                }
+            }, 500);
         }, 100);
     }
 

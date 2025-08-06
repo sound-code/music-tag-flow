@@ -44,6 +44,7 @@ class TagService extends ServiceBase {
         this.subscribeToEvent('tags:tag-clicked', (data) => {
             this.handleTagClick(data.element);
         });
+
     }
     /**
      * Handle tag element click with smart routing
@@ -351,6 +352,7 @@ class TagService extends ServiceBase {
             tags: trackNode.dataset.tags ? trackNode.dataset.tags.split(',') : []
         };
     }
+
     /**
      * Handle selected tags changes
      * @private

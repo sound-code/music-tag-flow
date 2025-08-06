@@ -798,7 +798,8 @@ class UIService extends ServiceBase {
      * Attach event handlers to legend items (can be called multiple times)
      */
     attachLegendEventHandlers() {
-        const legendItems = this.queryDOM('.legend-item', true);
+        // Force fresh query - don't use cache for legend items
+        const legendItems = this.queryDOM('.legend-item', true, true); // noCache = true
 
         legendItems.forEach((item) => {
             // Remove existing listeners to prevent duplicates
@@ -828,6 +829,7 @@ class UIService extends ServiceBase {
                 }
                 
                 const category = this.getCategoryFromLegendItem(item);
+                
                 if (category) {
                     // Shorter delay for more responsive feel
                     this.timeouts.legendShow = setTimeout(async () => {
