@@ -30,8 +30,7 @@ class Application {
             // 4. Setup event-driven communication
             this.setupEventIntegration();
             
-            // 4.5. Setup AppState-StateManager bridge for backward compatibility
-            this.setupAppStateBridge();
+            // 4.5. AppStateProxy handles DOM references automatically
             
             // 5. Initialize legacy modules (bridge mode)
             await this.initializeLegacyBridge();
@@ -72,6 +71,13 @@ class Application {
         // Make core components globally available
         window.App = this;
         window.AppStateManager = this.stateManager;
+        
+        // Create AppState proxy for backward compatibility
+        if (typeof AppStateProxy !== 'undefined') {
+            window.AppState = new AppStateProxy(this.stateManager);
+            // Initialize DOM references
+            window.AppState.initializeDOMReferences();
+        }
     }
 
     /**
@@ -296,15 +302,7 @@ class Application {
      */
     async initializeLegacyBridge() {
         try {
-            // Initialize phases DOM elements first (legacy requirement)
-            if (typeof AppState !== 'undefined' && AppState.initializePhasesElements) {
-                AppState.initializePhasesElements();
-            }
-            
-            // Initialize AppState EventBus listeners
-            if (typeof AppState !== 'undefined' && AppState.initializeEventBusListeners) {
-                AppState.initializeEventBusListeners();
-            }
+            // AppState is now handled by AppStateProxy automatically
             
             // Initialize LibraryToggle BEFORE services so EventBus subscriptions are ready
             if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {
@@ -336,72 +334,6 @@ class Application {
         }
     }
 
-    /**
-     * Setup bridge between AppState and StateManager for backward compatibility
-     */
-    setupAppStateBridge() {
-        if (!window.AppState || !this.stateManager) return;
-
-        // Sync essential DOM elements from AppState to StateManager if they exist
-        const domElements = ['canvas', 'canvasContent', 'dropZone', 'breadcrumb'];
-        domElements.forEach(element => {
-            if (window.AppState[element]) {
-                this.stateManager.set(`dom.${element}`, window.AppState[element]);
-            }
-        });
-
-        // Sync essential state from AppState to StateManager
-        if (window.AppState.allNodes) {
-            this.stateManager.set('dom.allNodes', window.AppState.allNodes);
-        }
-        if (window.AppState.allContainers) {
-            this.stateManager.set('dom.allContainers', window.AppState.allContainers);
-        }
-        if (window.AppState.selectedTags) {
-            this.stateManager.set('ui.selectedTags', window.AppState.selectedTags);
-        }
-        if (window.AppState.playlistEntries) {
-            this.stateManager.set('playlist.entries', window.AppState.playlistEntries);
-        }
-
-        // Create proxy for AppState setters to update StateManager
-        const originalSetters = {
-            setHasUsedDropZone: window.AppState.setHasUsedDropZone,
-            setCurrentMultiTagContainer: window.AppState.setCurrentMultiTagContainer,
-            setCurrentTagSourceTrack: window.AppState.setCurrentTagSourceTrack,
-            clearState: window.AppState.clearState,
-            clearTreeState: window.AppState.clearTreeState
-        };
-
-        // Bridge AppState setters to StateManager
-        if (originalSetters.setHasUsedDropZone) {
-            window.AppState.setHasUsedDropZone = (value) => {
-                this.stateManager.set('app.hasUsedDropZone', value);
-                originalSetters.setHasUsedDropZone.call(window.AppState, value);
-            };
-        }
-
-        if (originalSetters.setCurrentMultiTagContainer) {
-            window.AppState.setCurrentMultiTagContainer = (container) => {
-                this.stateManager.set('app.currentMultiTagContainer', container);
-                originalSetters.setCurrentMultiTagContainer.call(window.AppState, container);
-            };
-        }
-
-        if (originalSetters.clearTreeState) {
-            window.AppState.clearTreeState = () => {
-                // Clear tree state in StateManager
-                this.stateManager.set('dom.allNodes', []);
-                this.stateManager.set('dom.allContainers', []);
-                this.stateManager.set('tree.nodes', []);
-                this.stateManager.set('tree.connections', []);
-                this.stateManager.set('ui.selectedTags', new Set());
-                
-                // Call original AppState function
-                originalSetters.clearTreeState.call(window.AppState);
-            };
-        }
-    }
 
     /**
      * Get a service instance

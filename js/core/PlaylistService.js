@@ -220,24 +220,34 @@ class PlaylistService extends ServiceBase {
             savedPlaylistEntries.push(newEntry);
             
             // Clear the existing tree elements from DOM
-            if (window.AppState) {
-                window.AppState.allNodes.forEach(nodeData => {
-                    if (nodeData.element) {
-                        nodeData.element.remove();
-                    }
-                });
-                
-                window.AppState.allContainers.forEach(container => container.remove());
-                
-                // Clear tree state
-                const treeService = window.App?.getService('tree');
-                if (treeService) {
-                    treeService.clearTreeStructure();
+            const allNodes = this.getState('dom.allNodes') || [];
+            allNodes.forEach(nodeData => {
+                if (nodeData.element) {
+                    nodeData.element.remove();
                 }
-                
-                // Clear state completely
-                window.AppState.clearTreeState();
+            });
+            
+            const allContainers = this.getState('dom.allContainers') || [];
+            allContainers.forEach(container => container.remove());
+            
+            // Clear tree state
+            const treeService = window.App?.getService('tree');
+            if (treeService) {
+                treeService.clearTreeStructure();
             }
+            
+            // Clear state completely via StateManager
+            this.setState('dom.allNodes', []);
+            this.setState('dom.allContainers', []);
+            this.setState('ui.selectedTags', new Set());
+            this.setState('app.nodeCounter', 0);
+            this.setState('app.selectedTagForNextNode', null);
+            this.setState('app.currentMultiTagContainer', null);
+            this.setState('app.currentTagSourceTrack', null);
+            this.setState('app.hasUsedDropZone', false);
+            this.setState('app.rootNodeColor', null);
+            this.setState('tree.nodes', []);
+            this.setState('tree.connections', []);
             
             // Clear and restore playlist entries
             this.setState('playlist.entries', []);
@@ -424,7 +434,7 @@ class PlaylistService extends ServiceBase {
         const treeRootFromState = this.getState('tree.rootNode');
         const treeService = window.App?.getService('tree');
         const treeRootFromLegacy = treeService ? treeService.rootNode : null;
-        const treeRootFromAppState = window.AppState && window.AppState.allNodes && window.AppState.allNodes.length > 0;
+        const treeRootFromAppState = (this.getState('dom.allNodes') || []).length > 0;
         
         return treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromAppState;
     }

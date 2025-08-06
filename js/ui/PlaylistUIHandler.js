@@ -13,16 +13,8 @@ window.PlaylistUIHandler = (() => {
         let breadcrumb = document.getElementById('breadcrumb');
         
         if (!breadcrumb) {
-            // Try StateManager if available - StateManager is not registered as a service
-            const stateManager = window.App?.stateManager || window.AppStateManager || window.StateManager;
-            if (stateManager) {
-                breadcrumb = stateManager.get('dom.breadcrumb');
-            }
-            
-            // Fallback to AppState for backward compatibility
-            if (!breadcrumb && window.AppState) {
-                breadcrumb = window.AppState.breadcrumb;
-            }
+            // Get breadcrumb from AppState (powered by StateManager)
+            breadcrumb = window.AppState?.breadcrumb;
         }
         
         if (!breadcrumb) return;
@@ -89,28 +81,10 @@ window.PlaylistUIHandler = (() => {
      * Clear tree elements from DOM
      */
     function clearTreeFromDOM() {
-        // Get StateManager instance - StateManager is not registered as a service
-        const stateManager = window.App?.stateManager || window.AppStateManager || window.StateManager;
-        
-        // Clear tree elements from DOM - prefer StateManager, fallback to AppState
-        let allNodes = [];
-        let allContainers = [];
-        let dropZone = null;
-        
-        if (stateManager) {
-            allNodes = stateManager.get('dom.allNodes') || [];
-            allContainers = stateManager.get('dom.allContainers') || [];
-            dropZone = stateManager.get('dom.dropZone');
-            
-            // StateManager data retrieved
-        }
-        
-        // Fallback to AppState if StateManager doesn't have data or doesn't exist
-        if ((!allNodes || allNodes.length === 0) && window.AppState) {
-            allNodes = window.AppState.allNodes || [];
-            allContainers = window.AppState.allContainers || [];
-            dropZone = dropZone || window.AppState.dropZone;
-        }
+        // Get elements from AppState (powered by StateManager)
+        const allNodes = window.AppState?.allNodes || [];
+        const allContainers = window.AppState?.allContainers || [];
+        const dropZone = window.AppState?.dropZone;
         
         // Clear tree elements
         allNodes.forEach(nodeData => {
@@ -132,15 +106,8 @@ window.PlaylistUIHandler = (() => {
             tag.classList.remove('selected');
         });
         
-        // Clear tree state - prefer StateManager
-        if (stateManager) {
-            // Reset tree state in StateManager
-            stateManager.set('dom.allNodes', []);
-            stateManager.set('dom.allContainers', []);
-            stateManager.set('tree.nodes', []);
-            stateManager.set('tree.connections', []);
-        } else if (window.AppState && window.AppState.clearTreeState) {
-            // Fallback to AppState for backward compatibility
+        // Clear tree state via AppState
+        if (window.AppState?.clearTreeState) {
             window.AppState.clearTreeState();
         }
         

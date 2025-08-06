@@ -174,7 +174,6 @@ class TrackNodesService extends ServiceBase {
         try {
             // Ottieni riferimenti dal state
             const canvasContent = this.getCanvasContentElement();
-            const appState = this.getAppState();
             
             // Clona template base nodo
             const nodeTemplate = this.templates && this.templates.get('node');
@@ -244,8 +243,9 @@ class TrackNodesService extends ServiceBase {
      * @returns {number} ID nodo
      */
     generateNodeId() {
-        const appState = this.getAppState();
-        return appState.incrementNodeCounter();
+        const current = this.getState('app.nodeCounter') || 0;
+        this.setState('app.nodeCounter', current + 1);
+        return current + 1;
     }
     
     /**
@@ -286,7 +286,7 @@ class TrackNodesService extends ServiceBase {
      */
     getCanvasElement() {
         return document.querySelector('.mindmap-canvas') || 
-               this.getAppState().canvas;
+               this.getState('dom.canvas');
     }
     
     /**
@@ -295,15 +295,18 @@ class TrackNodesService extends ServiceBase {
      */
     getCanvasContentElement() {
         return document.querySelector('.canvas-content') || 
-               this.getAppState().canvasContent;
+               this.getState('dom.canvasContent');
     }
     
     /**
-     * Ottieni AppState (legacy compatibility)
-     * @returns {Object} AppState object
+     * Update node arrays in state
+     * @param {HTMLElement} node - Node element
+     * @param {Object} track - Track data
      */
-    getAppState() {
-        return window.AppState || {};
+    updateNodeArrays(node, track) {
+        const allNodes = this.getState('dom.allNodes') || [];
+        allNodes.push({ element: node, track });
+        this.setState('dom.allNodes', allNodes);
     }
     
     /**
@@ -362,21 +365,17 @@ class TrackNodesService extends ServiceBase {
     }
     
     /**
-     * Aggiorna AppState con nuovo nodo (legacy compatibility)
-     * @param {HTMLElement} node - Elemento nodo
+     * Aggiorna state con nuovo nodo
+     * @param {HTMLElement} node - Elemento nodo  
      * @param {Object} track - Dati track
      */
     updateAppState(node, track) {
-        const appState = this.getAppState();
-        if (appState.allNodes) {
-            const nodeData = { element: node, track: track };
-            
-            if (appState.selectedTagForNextNode) {
-                nodeData.selectedTag = appState.selectedTagForNextNode;
-                appState.setSelectedTagForNextNode(null);
-            }
-            
-            appState.allNodes.push(nodeData);
+        this.updateNodeArrays(node, track);
+        
+        // Clear selected tag for next node
+        const selectedTag = this.getState('app.selectedTagForNextNode');
+        if (selectedTag) {
+            this.setState('app.selectedTagForNextNode', null);
         }
     }
     

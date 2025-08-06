@@ -30,8 +30,8 @@ class AppStateProxy {
     }
     // Legacy methods that need to be preserved
     incrementNodeCounter() {
-        const current = this.stateManager.get('tree.nodeCounter') || 0;
-        this.stateManager.set('tree.nodeCounter', current + 1);
+        const current = this.stateManager.get('app.nodeCounter') || 0;
+        this.stateManager.set('app.nodeCounter', current + 1);
         return current + 1;
     }
     setSelectedTagForNextNode(tag) {
@@ -45,7 +45,7 @@ class AppStateProxy {
             { path: 'dom.allNodes', value: [] },
             { path: 'dom.allContainers', value: [] },
             { path: 'ui.selectedTags', value: new Set() },
-            { path: 'tree.nodeCounter', value: 0 },
+            { path: 'app.nodeCounter', value: 0 },
             { path: 'app.selectedTagForNextNode', value: null },
             { path: 'app.currentMultiTagContainer', value: null },
             { path: 'app.currentTagSourceTrack', value: null }
@@ -56,7 +56,7 @@ class AppStateProxy {
             { path: 'dom.allNodes', value: [] },
             { path: 'dom.allContainers', value: [] },
             { path: 'ui.selectedTags', value: new Set() },
-            { path: 'tree.nodeCounter', value: 0 },
+            { path: 'app.nodeCounter', value: 0 },
             { path: 'app.selectedTagForNextNode', value: null },
             { path: 'app.currentMultiTagContainer', value: null },
             { path: 'app.currentTagSourceTrack', value: null },
@@ -68,10 +68,10 @@ class AppStateProxy {
     // DOM initialization method
     initializeDOMReferences() {
         const domMappings = {
-            'dom.canvas': document.getElementById('canvas'),
-            'dom.canvasContent': document.getElementById('canvas-content'),
+            'dom.canvas': document.querySelector('.mindmap-canvas'),
+            'dom.canvasContent': document.querySelector('.canvas-content'),
             'dom.breadcrumb': document.getElementById('breadcrumb'),
-            'dom.dropZone': document.getElementById('drop-zone')
+            'dom.dropZone': document.querySelector('.drop-zone')
         };
         this.stateManager.transaction(
             Object.entries(domMappings).map(([path, element]) => ({
@@ -112,10 +112,10 @@ class AppStateProxy {
     }
     // Other properties
     get nodeCounter() { 
-        return this.stateManager.get('tree.nodeCounter') || 0; 
+        return this.stateManager.get('app.nodeCounter') || 0; 
     }
     set nodeCounter(value) { 
-        this.stateManager.set('tree.nodeCounter', value); 
+        this.stateManager.set('app.nodeCounter', value); 
     }
     get hasUsedDropZone() { 
         return this.stateManager.get('app.hasUsedDropZone') || false; 
@@ -147,6 +147,45 @@ class AppStateProxy {
     set selectedTagForNextNode(value) { 
         this.stateManager.set('app.selectedTagForNextNode', value); 
     }
+    
+    // Additional methods that were in state.js
+    setNodeCounter(value) {
+        this.stateManager.set('app.nodeCounter', value);
+    }
+    
+    setHasUsedDropZone(value) {
+        this.stateManager.set('app.hasUsedDropZone', value);
+    }
+    
+    setIsPhasesViewActive(value) {
+        this.stateManager.set('phases.isActive', value);
+    }
+    
+    setCurrentPlaylistTime(time) {
+        this.stateManager.set('playlist.currentTime', time);
+    }
+    
+    setRootNodeColor(color) {
+        this.stateManager.set('app.rootNodeColor', color);
+    }
+    
+    setCurrentTagSourceTrack(track) {
+        this.stateManager.set('app.currentTagSourceTrack', track);
+    }
+    
+    // Add missing getters
+    get currentPlaylistTime() {
+        return this.stateManager.get('playlist.currentTime') || 0;
+    }
+    
+    get rootNodeColor() {
+        return this.stateManager.get('app.rootNodeColor');
+    }
+    
+    // Add alias for clearTreeState (for backward compatibility)  
+    clearState() {
+        this.clearAll();
+    }
 }
-// Export for use in state.js
+// Export for use globally
 window.AppStateProxy = AppStateProxy;

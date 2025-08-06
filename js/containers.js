@@ -100,7 +100,8 @@ const Containers = {
             // For multi-tag containers, pass the actual selected tags instead of the display string
             let effectiveSelectedTag = tagValue;
             if (container.dataset.isMultiTagContainer === 'true') {
-                effectiveSelectedTag = Array.from(AppState.selectedTags).join(', ');
+                const selectedTags = window.AppState?.selectedTags || new Set();
+                effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
             const trackItem = this.createTrackListItem(track, effectiveSelectedTag, effectiveSourceNode);
@@ -178,7 +179,8 @@ const Containers = {
             // For multi-tag containers, use the selected tags as the selectedTag
             let effectiveSelectedTag = selectedTag;
             if (parentContainer && parentContainer.dataset.isMultiTagContainer === 'true') {
-                effectiveSelectedTag = Array.from(AppState.selectedTags).join(', ');
+                const selectedTags = window.AppState?.selectedTags || new Set();
+                effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
             // Use services directly instead of TrackNodes facade
@@ -187,10 +189,10 @@ const Containers = {
                 const treeService = window.App.getService('tree');
                 if (treeService) {
                     let position = { x: 400, y: 300 }; // Default center
-                    if (!sourceNode && AppState && AppState.canvas) {
+                    if (!sourceNode && window.AppState?.canvas) {
                         position = { 
-                            x: AppState.canvas.offsetWidth / 2, 
-                            y: AppState.canvas.offsetHeight / 2 
+                            x: window.AppState.canvas.offsetWidth / 2, 
+                            y: window.AppState.canvas.offsetHeight / 2 
                         };
                     }
                     treeService.addNode(track, position, sourceNode, effectiveSelectedTag);
@@ -204,12 +206,13 @@ const Containers = {
                 
                 // 3. Handle container cleanup
                 if (parentContainer) {
-                    const containerIndex = AppState.allContainers.indexOf(parentContainer);
+                    const allContainers = window.AppState?.allContainers || [];
+                    const containerIndex = allContainers.indexOf(parentContainer);
                     if (containerIndex > -1) {
-                        AppState.allContainers.splice(containerIndex, 1);
+                        allContainers.splice(containerIndex, 1);
                     }
-                    if (parentContainer === AppState.currentMultiTagContainer) {
-                        AppState.setCurrentMultiTagContainer(null);
+                    if (parentContainer === window.AppState?.currentMultiTagContainer) {
+                        window.AppState?.setCurrentMultiTagContainer?.(null);
                         if (window.App && window.App.getService) {
                             const tagService = window.App.getService('tags');
                             if (tagService && typeof tagService.clearSelection === 'function') {
@@ -340,8 +343,9 @@ const Containers = {
         // Check if this is a multi-tag container
         if (container.dataset.isMultiTagContainer === 'true') {
             // Generate tracks with multiple selected tags
-            newTracks = await dataService.generateTracksWithMultipleTags(Array.from(AppState.selectedTags));
-            const tagDisplays = Array.from(AppState.selectedTags).map(tag => tagUtils.getTagValue(tag)).join(' + ');
+            const selectedTags = window.AppState?.selectedTags || new Set();
+            newTracks = await dataService.generateTracksWithMultipleTags(Array.from(selectedTags));
+            const tagDisplays = Array.from(selectedTags).map(tag => tagUtils.getTagValue(tag)).join(' + ');
             notificationMessage = `Refreshed 7 tracks for ${tagDisplays}`;
         } else {
             // Generate new tracks with the single tag
@@ -362,7 +366,8 @@ const Containers = {
             // For multi-tag containers, use the selected tags as the effective tag
             let effectiveSelectedTag = tagValue;
             if (container.dataset.isMultiTagContainer === 'true') {
-                effectiveSelectedTag = Array.from(AppState.selectedTags).join(', ');
+                const selectedTags = window.AppState?.selectedTags || new Set();
+                effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
             const trackItem = this.createTrackListItem(track, effectiveSelectedTag, sourceNode);
@@ -379,9 +384,10 @@ const Containers = {
      */
     remove(container) {
         // Remove container from array
-        const containerIndex = AppState.allContainers.indexOf(container);
+        const allContainers = window.AppState?.allContainers || [];
+        const containerIndex = allContainers.indexOf(container);
         if (containerIndex > -1) {
-            AppState.allContainers.splice(containerIndex, 1);
+            allContainers.splice(containerIndex, 1);
         }
         
         // Remove from DOM
@@ -395,7 +401,8 @@ const Containers = {
      * Reposition all containers
      */
     repositionAll() {
-        AppState.allContainers.forEach((container, index) => {
+        const allContainers = window.AppState?.allContainers || [];
+        allContainers.forEach((container, index) => {
             // Skip manually positioned containers (those created from other containers)
             if (container.dataset.manuallyPositioned === 'true') {
                 return;
@@ -412,7 +419,7 @@ const Containers = {
                 }
             } else {
                 // Fallback positioning for containers without source nodes
-                const canvasWidth = AppState.canvas.offsetWidth;
+                const canvasWidth = window.AppState?.canvas?.offsetWidth || 800;
                 const newLeft = canvasWidth - 400 + (index * 50);
                 container.style.left = `${Math.max(50, newLeft)}px`;
             }

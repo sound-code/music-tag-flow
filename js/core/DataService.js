@@ -647,11 +647,10 @@ class DataService extends ServiceBase {
             const treeTracks = treeNodes.map(node => node.track);
             excludedTracks.push(...treeTracks);
             
-            // Also check legacy AppState for backward compatibility
-            if (window.AppState && window.AppState.allNodes) {
-                const legacyTracks = window.AppState.allNodes.map(node => node.track);
-                excludedTracks.push(...legacyTracks);
-            }
+            // Also check legacy DOM nodes from StateManager
+            const domNodes = this.getState('dom.allNodes') || [];
+            const legacyTracks = domNodes.map(node => node.track);
+            excludedTracks.push(...legacyTracks);
             
             return excludedTracks;
         } catch (error) {
