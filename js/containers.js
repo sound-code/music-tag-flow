@@ -187,49 +187,45 @@ const Containers = {
                 effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
-            // Use services directly instead of TrackNodes facade
-            if (window.App && window.App.getService) {
-                // 1. Create node via TreeService
-                const treeService = window.App.getService('tree');
-                if (treeService) {
-                    let position = { x: 400, y: 300 }; // Default center
-                    const canvas = window.App?.stateManager?.get('dom.canvas');
-                    if (!sourceNode && canvas) {
-                        position = { 
-                            x: canvas.offsetWidth / 2, 
-                            y: canvas.offsetHeight / 2 
-                        };
-                    }
-                    treeService.addNode(track, position, sourceNode, effectiveSelectedTag);
+            // Use EventBus for service coordination
+            if (window.EventBus) {
+                // Calculate position for new node
+                let position = { x: 400, y: 300 }; // Default center
+                const canvas = window.App?.stateManager?.get('dom.canvas');
+                if (!sourceNode && canvas) {
+                    position = { 
+                        x: canvas.offsetWidth / 2, 
+                        y: canvas.offsetHeight / 2 
+                    };
                 }
                 
-                // 2. Add to playlist via PlaylistService
-                const playlistService = window.App.getService('playlist');
-                if (playlistService && typeof playlistService.addTrack === 'function') {
-                    playlistService.addTrack(track, effectiveSelectedTag);
-                }
+                // Emit coordinated event to add track to both tree and playlist
+                window.EventBus.emit('container:track-added', {
+                    track: track,
+                    position: position,
+                    sourceNode: sourceNode,
+                    connectionTag: effectiveSelectedTag
+                });
+            }
                 
-                // 3. Handle container cleanup
-                if (parentContainer) {
-                    const allContainers = window.App?.stateManager?.get('dom.allContainers') || [];
-                    const containerIndex = allContainers.indexOf(parentContainer);
-                    if (containerIndex > -1) {
-                        allContainers.splice(containerIndex, 1);
+            // 3. Handle container cleanup
+            if (parentContainer) {
+                const allContainers = window.App?.stateManager?.get('dom.allContainers') || [];
+                const containerIndex = allContainers.indexOf(parentContainer);
+                if (containerIndex > -1) {
+                    allContainers.splice(containerIndex, 1);
+                }
+                const currentContainer = window.App?.stateManager?.get('app.currentMultiTagContainer');
+                if (parentContainer === currentContainer) {
+                    window.App?.stateManager?.set('app.currentMultiTagContainer', null);
+                    // Clear tag selection via EventBus
+                    if (window.EventBus) {
+                        window.EventBus.emit('tags:clear');
                     }
-                    const currentContainer = window.App?.stateManager?.get('app.currentMultiTagContainer');
-                    if (parentContainer === currentContainer) {
-                        window.App?.stateManager?.set('app.currentMultiTagContainer', null);
-                        if (window.App && window.App.getService) {
-                            const tagService = window.App.getService('tags');
-                            if (tagService && typeof tagService.clearSelection === 'function') {
-                                tagService.clearSelection();
-                            }
-                        }
-                    }
-                    parentContainer.remove();
-                    if (typeof Utils !== 'undefined' && Utils.updateCanvasSize) {
-                        Utils.updateCanvasSize();
-                    }
+                }
+                parentContainer.remove();
+                if (typeof Utils !== 'undefined' && Utils.updateCanvasSize) {
+                    Utils.updateCanvasSize();
                 }
             }
         });
@@ -283,11 +279,9 @@ const Containers = {
             tag.dataset.tagValue = tagWithValue;
             tag.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if (window.App && window.App.getService) {
-                    const tagService = window.App.getService('tags');
-                    if (tagService && typeof tagService.handleTagClick === 'function') {
-                        await tagService.handleTagClick(tag);
-                    }
+                // Handle tag click via EventBus
+                if (window.EventBus) {
+                    window.EventBus.emit('tags:tag-clicked', { element: tag });
                 }
             });
             tagsContainer.appendChild(tag);

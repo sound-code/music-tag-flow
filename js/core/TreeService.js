@@ -117,6 +117,9 @@ class TreeService extends ServiceBase {
         this.subscribeToEvent('tree:auto-generate', (data) => {
             this.generateAutoTree(data.track, data.dropPosition);
         });
+        this.subscribeToEvent('container:track-added', (data) => {
+            this.addNode(data.track, data.position, data.sourceNode, data.connectionTag);
+        });
     }
     /**
      * Add a node to the tree

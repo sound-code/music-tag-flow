@@ -167,6 +167,9 @@ class UIService extends ServiceBase {
         this.subscribeToEvent('ui:notification', (data) => {
             this.handleNotificationVisualEffects(data);
         });
+        this.subscribeToEvent('legend:attach-handlers', () => {
+            this.attachLegendEventHandlers();
+        });
 
         // Initialize UI components
         this.initializeTooltips();

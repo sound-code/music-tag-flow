@@ -323,16 +323,11 @@ const Utils = {
                 }
             }
 
-            // Add drag & drop functionality
-            const trackItems = musicLibrary.querySelectorAll('.track-item[draggable="true"]');
-            trackItems.forEach(trackItem => {
-                if (window.App && window.App.getService) {
-                    const dragDropService = window.App.getService('dragdrop');
-                    if (dragDropService && typeof dragDropService.addDragToElement === 'function') {
-                        dragDropService.addDragToElement(trackItem);
-                    }
-                }
-            });
+            // Add drag & drop functionality via EventBus
+            const trackItems = Array.from(musicLibrary.querySelectorAll('.track-item[draggable="true"]'));
+            if (trackItems.length > 0 && window.EventBus) {
+                window.EventBus.emit('dragdrop:add-elements', { elements: trackItems });
+            }
 
 
         } catch (error) {
@@ -423,14 +418,9 @@ window.toggleAlbum = function(header) {
  * Clear mindmap tree
  */
 window.clearMindmap = function() {
-    // Clear via EventBus or direct service call
+    // Clear via EventBus only
     if (window.EventBus) {
         window.EventBus.emit('playlist:clear');
-    } else if (window.App && window.App.getService) {
-        const playlistService = window.App.getService('playlist');
-        if (playlistService && typeof playlistService.clearPlaylistAndTree === 'function') {
-            playlistService.clearPlaylistAndTree();
-        }
     }
 };
 
@@ -438,12 +428,9 @@ window.clearMindmap = function() {
  * Save playlist
  */
 window.savePlaylist = function() {
-    // Save via direct service call
-    if (window.App && window.App.getService) {
-        const playlistService = window.App.getService('playlist');
-        if (playlistService && typeof playlistService.savePlaylist === 'function') {
-            playlistService.savePlaylist();
-        }
+    // Save via EventBus only
+    if (window.EventBus) {
+        window.EventBus.emit('playlist:save');
     }
 };
 

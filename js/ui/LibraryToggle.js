@@ -69,13 +69,23 @@ window.LibraryToggle = (() => {
                 return;
             }
             
-            const dataService = window.App.getService('data');
-            if (!dataService) {
-                console.error('DataService not available');
+            // Get stats via EventBus with callback pattern
+            if (!window.EventBus) {
+                console.error('EventBus not available');
                 return;
             }
             
-            const stats = await dataService.getStats();
+            const stats = await new Promise((resolve) => {
+                // Setup one-time listener for response
+                const responseHandler = (data) => {
+                    window.EventBus.off('data:stats-response', responseHandler);
+                    resolve(data.stats);
+                };
+                window.EventBus.on('data:stats-response', responseHandler);
+                
+                // Request stats
+                window.EventBus.emit('data:get-stats', { requestId: 'library-toggle' });
+            });
             
             if (stats.uniqueTags) {
                 uniqueTags = stats.uniqueTags;

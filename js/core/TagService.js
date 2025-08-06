@@ -41,6 +41,9 @@ class TagService extends ServiceBase {
         this.subscribeToEvent('container:open', (data) => {
             this.handleContainerOpen(data.tagValue, data.sourceTrack, data.container);
         });
+        this.subscribeToEvent('tags:tag-clicked', (data) => {
+            this.handleTagClick(data.element);
+        });
     }
     /**
      * Handle tag element click with smart routing

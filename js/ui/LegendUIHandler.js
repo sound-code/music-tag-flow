@@ -80,13 +80,10 @@ window.LegendUIHandler = (() => {
             }
         }
         
-        // Use UIService to attach event handlers
+        // Use EventBus to attach event handlers
         setTimeout(() => {
-            if (typeof window !== 'undefined' && window.App && window.App.getService) {
-                const uiService = window.App.getService('ui');
-                if (uiService && uiService.attachLegendEventHandlers) {
-                    uiService.attachLegendEventHandlers();
-                }
+            if (window.EventBus) {
+                window.EventBus.emit('legend:attach-handlers');
             }
         }, 100);
     }
@@ -120,8 +117,8 @@ window.LegendUIHandler = (() => {
         // Add click handler if provided
         // NOTE: We let UIService handle the click events through attachLegendEventHandlers
         // The onCategoryClick is only used as a fallback if UIService is not available
-        const uiService = window.App && window.App.getService ? window.App.getService('ui') : null;
-        if (onCategoryClick && (!uiService || !uiService.attachLegendEventHandlers)) {
+        // Use direct callback if provided (legacy support)
+        if (onCategoryClick) {
             legendItem.addEventListener('click', () => {
                 onCategoryClick(legendItem, category, tagValues);
             });

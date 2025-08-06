@@ -67,6 +67,11 @@ class DragDropService extends ServiceBase {
         this.subscribeToEvent('data:loading:complete', () => {
             this.setupDragListeners();
         });
+        this.subscribeToEvent('dragdrop:add-elements', (data) => {
+            if (data.elements && Array.isArray(data.elements)) {
+                data.elements.forEach(element => this.addDragToElement(element));
+            }
+        });
         
         // Setup event bridges to other services
         this.setupServiceBridges();

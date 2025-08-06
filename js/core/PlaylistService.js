@@ -42,6 +42,9 @@ class PlaylistService extends ServiceBase {
         this.subscribeToEvent('playlist:clear', () => {
             this.clearPlaylistAndTree();
         });
+        this.subscribeToEvent('playlist:save', () => {
+            this.savePlaylist();
+        });
         this.subscribeToEvent('playlist:remove', (data) => {
             this.removeTrack(data.index);
         });
@@ -51,6 +54,9 @@ class PlaylistService extends ServiceBase {
             if (window.PlaylistUIHandler) {
                 window.PlaylistUIHandler.updateDisplay(this.getState('playlist.entries') || []);
             }
+        });
+        this.subscribeToEvent('container:track-added', (data) => {
+            this.addTrack(data.track, data.connectionTag);
         });
         
         // Set up DOM event listeners through UI handler

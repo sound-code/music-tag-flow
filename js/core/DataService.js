@@ -36,6 +36,12 @@ class DataService extends ServiceBase {
         // Subscribe to database update events
         this.subscribeToEvent('database:updated', () => this.clearCache());
         this.subscribeToEvent('scan:complete', () => this.clearCache());
+        
+        // Handle stats requests
+        this.subscribeToEvent('data:get-stats', async (data) => {
+            const stats = await this.getStats();
+            this.eventBus.emit('data:stats-response', { stats, requestId: data.requestId });
+        });
 
         this.initialized = true;
         
