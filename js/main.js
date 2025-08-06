@@ -9,7 +9,6 @@ class Application {
         this.eventBus = null;
         this.serviceManager = null;
         this.isInitialized = false;
-        this.legacyModules = [];
     }
 
     /**
@@ -37,7 +36,7 @@ class Application {
             this.isInitialized = true;
             
             
-            // Statistics are now handled by StatsService automatically
+            // Statistics are now handled by StatsComponent automatically
             
         } catch (error) {
             console.error('Error loading application:', error);
@@ -240,7 +239,6 @@ class Application {
             console.warn('ClockService not found - skipping registration');
         }
         
-        // StatsService replaced by StatsComponent
         
         // Initialize all services
         try {
@@ -289,19 +287,6 @@ class Application {
             this.shutdown();
         });
         
-        // Statistics updates are now handled by StatsService
-        
-        // Legacy bridge events - NOTIFICATIONS DISABLED
-        this.eventBus.on('legacy:notification', (data) => {
-        });
-        
-        // UI notification events from services - NOTIFICATIONS DISABLED
-        this.eventBus.on('ui:notification', (data) => {
-        });
-        
-        // Notification events from TagService - NOTIFICATIONS DISABLED
-        this.eventBus.on('notification:show', (data) => {
-        });
         
         // State synchronization events
         this.eventBus.on('state:sync', (data) => {
@@ -319,18 +304,6 @@ class Application {
             // Initialize LibraryToggle BEFORE services so EventBus subscriptions are ready
             if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {
                 LibraryToggle.init();
-            }
-            
-            // Initialize legacy modules with error handling
-            for (const moduleName of this.legacyModules) {
-                if (typeof window[moduleName] !== 'undefined' && window[moduleName].initialize) {
-                    try {
-                        window[moduleName].initialize();
-                    } catch (error) {
-                        console.error(`Error initializing ${moduleName}:`, error);
-                        // Continue with other modules - non-blocking
-                    }
-                }
             }
             
             // LibraryToggle already initialized above

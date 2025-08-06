@@ -146,13 +146,12 @@ class LegendService extends ServiceBase {
     async getCategorizedTags() {
         const now = Date.now();
         
-        // DEBUG: Always fetch fresh data for now to debug the issue
         // Return cached data if still valid and not empty
-        // if (this.categoryCache && 
-        //     (now - this.lastCacheUpdate) < this.cacheTimeout &&
-        //     Object.keys(this.categoryCache).length > 0) {
-        //     return this.categoryCache;
-        // }
+        if (this.categoryCache && 
+            (now - this.lastCacheUpdate) < this.cacheTimeout &&
+            Object.keys(this.categoryCache).length > 0) {
+            return this.categoryCache;
+        }
 
         try {
             let categorizedTags = {};

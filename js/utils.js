@@ -350,7 +350,6 @@ const Utils = {
             dataService.clearCache();
         }
         await this.renderMusicLibrary();
-        console.log('Music library refreshed');
     },
 
     /**
