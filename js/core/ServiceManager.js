@@ -95,9 +95,10 @@ class ServiceManager {
         try {
             // Check dependencies
             await this.checkServiceDependencies(serviceName);
-            // Create service instance
+            // Create service instance with dependency injection
             const startTime = Date.now();
-            const instance = new serviceConfig.serviceClass(this.state, this.events);
+            const dependencies = this.resolveDependencies(serviceName);
+            const instance = new serviceConfig.serviceClass(this.state, this.events, dependencies);
             
             // Call async initialization if available
             if (typeof instance.initializeAsync === 'function') {
@@ -231,6 +232,33 @@ class ServiceManager {
             });
         }
     }
+    /**
+     * Resolve dependencies for a service
+     * @param {string} serviceName - Service name
+     * @returns {Object} Object with dependency service instances
+     * @private
+     */
+    resolveDependencies(serviceName) {
+        const serviceConfig = this.services.get(serviceName);
+        if (!serviceConfig || !serviceConfig.dependencies.length) {
+            return {};
+        }
+        
+        const dependencies = {};
+        for (const depName of serviceConfig.dependencies) {
+            const depConfig = this.services.get(depName);
+            if (!depConfig) {
+                throw new Error(`Dependency '${depName}' not found for service '${serviceName}'`);
+            }
+            if (depConfig.status !== 'initialized') {
+                throw new Error(`Dependency '${depName}' not initialized for service '${serviceName}'`);
+            }
+            dependencies[depName] = depConfig.instance;
+        }
+        
+        return dependencies;
+    }
+
     /**
      * Calculate service initialization order based on dependencies
      * @private

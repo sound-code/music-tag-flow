@@ -3,13 +3,19 @@
  * Provides common functionality for state management and event handling
  */
 class ServiceBase {
-    constructor(stateManager, eventBus) {
+    constructor(stateManager, eventBus, dependencies = {}) {
         if (!stateManager || !eventBus) {
             throw new Error('ServiceBase requires StateManager and EventBus instances');
         }
+        this.stateManager = stateManager;
+        this.eventBus = eventBus;
+        this.dependencies = dependencies;
+        this.subscriptions = [];
+        
+        // Backward compatibility - deprecated
         this.state = stateManager;
         this.events = eventBus;
-        this.subscriptions = [];
+        
         // Initialize service after construction
         this.initialize();
     }
@@ -18,6 +24,24 @@ class ServiceBase {
      */
     initialize() {
         // Override in subclasses
+    }
+
+    /**
+     * Get an injected dependency service
+     * @param {string} serviceName - Name of the dependency service
+     * @returns {Object|null} Service instance or null if not found
+     */
+    getDependency(serviceName) {
+        return this.dependencies[serviceName] || null;
+    }
+
+    /**
+     * Check if a dependency is available
+     * @param {string} serviceName - Name of the dependency service
+     * @returns {boolean} True if dependency is available
+     */
+    hasDependency(serviceName) {
+        return serviceName in this.dependencies;
     }
     /**
      * Subscribe to state changes with automatic cleanup

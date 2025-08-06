@@ -195,15 +195,6 @@ class Application {
             console.warn('UIService not found - skipping registration');
         }
         
-        if (typeof DragDropService !== 'undefined') {
-            this.serviceManager.registerService('dragdrop', DragDropService, [], {
-                required: false,
-                autoStart: true
-            });
-        } else {
-            console.warn('DragDropService not found - skipping registration');
-        }
-        
         if (typeof TrackNodesService !== 'undefined') {
             this.serviceManager.registerService('tracknodes', TrackNodesService, [], {
                 required: false,
@@ -211,6 +202,15 @@ class Application {
             });
         } else {
             console.warn('TrackNodesService not found - skipping registration');
+        }
+        
+        if (typeof DragDropService !== 'undefined') {
+            this.serviceManager.registerService('dragdrop', DragDropService, ['data', 'tracknodes'], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('DragDropService not found - skipping registration');
         }
         
         if (typeof ScanService !== 'undefined') {
