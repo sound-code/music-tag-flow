@@ -22,8 +22,9 @@ class TagService extends ServiceBase {
      * Initialize service and set up event listeners
      */
     initialize() {
-        // Ensure tag state exists
-        if (!this.getState('ui.selectedTags')) {
+        // Ensure tag state exists - but DON'T reset if it already exists
+        const existingState = this.getState('ui.selectedTags');
+        if (existingState === null || existingState === undefined) {
             this.setState('ui.selectedTags', new Set());
         }
         // Subscribe to tag state changes
@@ -44,6 +45,9 @@ class TagService extends ServiceBase {
         this.subscribeToEvent('tags:tag-clicked', (data) => {
             this.handleTagClick(data.element);
         });
+        
+        // Visual sync is now handled directly by LegendService
+        // Removed auto-subscription to prevent loops
 
     }
     /**
@@ -340,6 +344,43 @@ class TagService extends ServiceBase {
         const selectedElements = document.querySelectorAll('.tag.selected');
         selectedElements.forEach(element => {
             element.classList.remove('selected');
+        });
+        
+        // Also clear legend active states
+        const legendItems = document.querySelectorAll('.legend-item.legend-active');
+        legendItems.forEach(item => {
+            item.classList.remove('legend-active');
+        });
+    }
+    
+    /**
+     * Update legend visual state to match selected tags
+     */
+    updateLegendVisualState() {
+        const selectedTags = this.getSelectedTags();
+        const tagsByCategory = {};
+        
+        // Group selected tags by category
+        selectedTags.forEach(tagValue => {
+            const category = tagValue.split(':')[0];
+            if (!tagsByCategory[category]) {
+                tagsByCategory[category] = [];
+            }
+            tagsByCategory[category].push(tagValue);
+        });
+        
+        // Update legend items visual state
+        const legendItems = document.querySelectorAll('.legend-item');
+        legendItems.forEach(item => {
+            const category = item.dataset.category;
+            
+            if (category && tagsByCategory[category] && tagsByCategory[category].length > 0) {
+                // This category has selected tags
+                item.classList.add('legend-active');
+            } else {
+                // This category has no selected tags
+                item.classList.remove('legend-active');
+            }
         });
     }
     extractTrackDataFromNode(trackNode) {

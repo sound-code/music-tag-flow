@@ -7,9 +7,9 @@ window.LegendUIHandler = (() => {
     /**
      * Render legend in the DOM
      * @param {Object} categorizedTags - Tags grouped by category
-     * @param {Function} onCategoryClick - Callback when category is clicked
+     * @param {Function} onCategoryClick - Optional callback (deprecated - use UIService events instead)
      */
-    function renderLegend(categorizedTags, onCategoryClick) {
+    function renderLegend(categorizedTags, onCategoryClick = null) {
         const legendContainer = document.querySelector('.color-legend');
         if (!legendContainer) {
             return;
@@ -99,9 +99,9 @@ window.LegendUIHandler = (() => {
      * @param {HTMLElement} container - Container element
      * @param {string} category - Category name
      * @param {Array} tags - Array of tag values
-     * @param {Function} onCategoryClick - Click handler
+     * @param {Function} onCategoryClick - Optional click handler (deprecated)
      */
-    function renderLegendItem(container, category, tags, onCategoryClick) {
+    function renderLegendItem(container, category, tags, onCategoryClick = null) {
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.dataset.category = category;
@@ -120,15 +120,9 @@ window.LegendUIHandler = (() => {
         const categoryName = document.createElement('span');
         categoryName.textContent = getCategoryDisplayName(category);
         
-        // Add click handler if provided
-        // NOTE: We let UIService handle the click events through attachLegendEventHandlers
-        // The onCategoryClick is only used as a fallback if UIService is not available
-        // Use direct callback if provided (legacy support)
-        if (onCategoryClick) {
-            legendItem.addEventListener('click', () => {
-                onCategoryClick(legendItem, category, tagValues);
-            });
-        }
+        // Click events are now handled by UIService through attachLegendEventHandlers
+        // UIService will emit events that LegendService listens to
+        // No direct event listeners needed here
         
         // Append to item
         legendItem.appendChild(colorIndicator);

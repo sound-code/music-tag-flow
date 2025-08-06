@@ -94,6 +94,11 @@ class LegendService extends ServiceBase {
                 this.invalidateCache();
                 this.refreshLegend();
             });
+            
+            // Listen for legend item clicks from UIService
+            this.subscribeToEvent('legend:item-clicked', (data) => {
+                this.handleCategoryClick(data.legendItem, data.category, data.tags);
+            });
 
             // Auto-refresh legend
             if (this.config.refreshInterval > 0) {
@@ -120,11 +125,9 @@ class LegendService extends ServiceBase {
             const categorizedTags = await this.getCategorizedTags();
             this.setState('legend.categories', categorizedTags);
             
-            // Update UI through UI handler
+            // Update UI through UI handler (click events handled via UIService)
             if (window.LegendUIHandler) {
-                window.LegendUIHandler.renderLegend(categorizedTags, (legendItem, category, tags) => {
-                    this.handleCategoryClick(legendItem, category, tags);
-                });
+                window.LegendUIHandler.renderLegend(categorizedTags);
             }
             
             // Emit refresh event
@@ -196,32 +199,101 @@ class LegendService extends ServiceBase {
 
 
     /**
-     * Handle category click in legend
+     * Handle category click in legend - integrated with TagService
      * @param {HTMLElement} legendItem - Clicked legend item
      * @param {string} category - Category name
      * @param {Array} tags - Tags for this category
      */
     handleCategoryClick(legendItem, category, tags) {
-        if (window.LegendUIHandler) {
-            window.LegendUIHandler.handleCategoryClick(
-                legendItem,
-                category,
-                tags,
-                (cat, tags, element) => {
-                    // Category selected
-                    this.emitEvent('legend:category-selected', {
-                        category: cat,
-                        tags: tags,
-                        element: element
-                    });
-                },
-                (cat) => {
-                    // Category deselected
-                    this.emitEvent('legend:category-deselected', {
-                        category: cat
-                    });
-                }
-            );
+        // Get TagService for multi-selection support
+        const tagService = window.serviceManager?.getService('tags');
+        
+        if (tagService && tags && tags.length > 0) {
+            // For legend clicks, we need full tag strings (category:value)
+            const fullTagStrings = tags.map(tagValue => `${category}:${tagValue}`);
+            
+            // Check if any tags from this category are already selected
+            const selectedTags = tagService.getSelectedTags();
+            const hasSelectedFromCategory = fullTagStrings.some(tag => selectedTags.has(tag));
+            
+            if (hasSelectedFromCategory) {
+                // Deselect all tags from this category WITHOUT triggering side effects
+                const updatedTags = new Set(selectedTags);
+                const deselectedTags = [];
+                
+                fullTagStrings.forEach(tagValue => {
+                    if (updatedTags.has(tagValue)) {
+                        updatedTags.delete(tagValue);
+                        deselectedTags.push(tagValue);
+                    }
+                });
+                
+                // Update state directly to avoid side effects  
+                tagService.setState('ui.selectedTags', updatedTags);
+                
+                // Update visual state manually  
+                legendItem.classList.remove('legend-active');
+                // DON'T call updateLegendVisualState() - we handle it manually here
+                
+                // Update global visual elements
+                deselectedTags.forEach(tagValue => {
+                    tagService.updateGlobalTagElements(tagValue, 'remove');
+                });
+                
+                // Emit deselection event
+                this.emitEvent('legend:category-deselected', {
+                    category: category,
+                    deselectedTags: deselectedTags
+                });
+            } else {
+                // Select all tags from this category (up to a reasonable limit) WITHOUT side effects
+                const tagsToSelect = fullTagStrings.slice(0, 5); // Limit to prevent overload
+                const updatedTags = new Set(selectedTags);
+                
+                tagsToSelect.forEach(tagValue => {
+                    updatedTags.add(tagValue);
+                });
+                
+                // Update state directly to avoid side effects
+                tagService.setState('ui.selectedTags', updatedTags);
+                
+                // Update visual state manually
+                legendItem.classList.add('legend-active');
+                // DON'T call updateLegendVisualState() - it will remove our classes!
+                
+                // Update global visual elements
+                tagsToSelect.forEach(tagValue => {
+                    tagService.updateGlobalTagElements(tagValue, 'add');
+                });
+                
+                // Emit selection event
+                this.emitEvent('legend:category-selected', {
+                    category: category,
+                    selectedTags: tagsToSelect,
+                    element: legendItem
+                });
+            }
+        } else {
+            // Fallback to original behavior if TagService not available
+            if (window.LegendUIHandler) {
+                window.LegendUIHandler.handleCategoryClick(
+                    legendItem,
+                    category,
+                    tags,
+                    (cat, tags, element) => {
+                        this.emitEvent('legend:category-selected', {
+                            category: cat,
+                            tags: tags,
+                            element: element
+                        });
+                    },
+                    (cat) => {
+                        this.emitEvent('legend:category-deselected', {
+                            category: cat
+                        });
+                    }
+                );
+            }
         }
     }
 

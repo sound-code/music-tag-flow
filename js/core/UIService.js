@@ -813,8 +813,33 @@ class UIService extends ServiceBase {
             // Create new event handlers array
             item._uiEventListeners = [];
             
-            // NOTE: Click handling is done via events from LegendService
-            // We only add hover handlers here
+            // Click handler - delegate to LegendService
+            const clickHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const category = this.getCategoryFromLegendItem(item);
+                const tagsJson = item.dataset.tags;
+                
+                if (category && tagsJson) {
+                    try {
+                        const tags = JSON.parse(tagsJson);
+                        
+                        // Emit event for LegendService to handle
+                        this.emitEvent('legend:item-clicked', {
+                            legendItem: item,
+                            category: category,
+                            tags: tags
+                        });
+                    } catch (error) {
+                        console.warn('Failed to parse tags from legend item:', error);
+                    }
+                }
+            };
+            item.addEventListener('click', clickHandler);
+            item._uiEventListeners.push({ event: 'click', handler: clickHandler });
+            
+            // Hover handlers for popup
             
             // Mouseenter handler for popup
             const mouseenterHandler = (e) => {
