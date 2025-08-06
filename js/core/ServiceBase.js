@@ -12,9 +12,6 @@ class ServiceBase {
         this.dependencies = dependencies;
         this.subscriptions = [];
         
-        // Backward compatibility - deprecated
-        this.state = stateManager;
-        this.events = eventBus;
         
         // Initialize service after construction
         this.initialize();
@@ -49,7 +46,7 @@ class ServiceBase {
      * @param {Function} callback - Change callback
      */
     subscribeToState(path, callback) {
-        const unsubscribe = this.state.subscribe(path, callback);
+        const unsubscribe = this.stateManager.subscribe(path, callback);
         this.subscriptions.push(unsubscribe);
         return unsubscribe;
     }
@@ -59,7 +56,7 @@ class ServiceBase {
      * @param {Function} callback - Event callback
      */
     subscribeToEvent(eventName, callback) {
-        const unsubscribe = this.events.on(eventName, callback);
+        const unsubscribe = this.eventBus.on(eventName, callback);
         this.subscriptions.push(unsubscribe);
         return unsubscribe;
     }
@@ -69,7 +66,7 @@ class ServiceBase {
      * @param {*} data - Event data
      */
     emitEvent(eventName, data) {
-        this.events.emit(eventName, data);
+        this.eventBus.emit(eventName, data);
     }
     /**
      * Get state value
@@ -77,7 +74,7 @@ class ServiceBase {
      * @returns {*} State value
      */
     getState(path) {
-        return this.state.get(path);
+        return this.stateManager.get(path);
     }
     /**
      * Set state value
@@ -86,7 +83,7 @@ class ServiceBase {
      * @param {Object} options - Set options
      */
     setState(path, value, options = {}) {
-        this.state.set(path, value, options);
+        this.stateManager.set(path, value, options);
     }
     /**
      * Update multiple state values atomically

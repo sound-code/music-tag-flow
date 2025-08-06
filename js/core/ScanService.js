@@ -23,7 +23,6 @@ class ScanService extends ServiceBase {
     }
 
     initialize() {
-        
         // Initialize properties
         this.isScanning = false;
         
@@ -82,8 +81,6 @@ class ScanService extends ServiceBase {
                 e.preventDefault();
                 this.handleScanClick();
             });
-            
-        } else {
         }
     }
 
@@ -111,7 +108,7 @@ class ScanService extends ServiceBase {
             return;
         }
 
-        const dataService = window.serviceManager?.getService('data');
+        const dataService = this.getDependency('data') || window.serviceManager?.getService('data');
         if (dataService) {
             try {
                 this.isScanning = true;

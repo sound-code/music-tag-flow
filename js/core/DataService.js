@@ -40,7 +40,7 @@ class DataService extends ServiceBase {
         this.initialized = true;
         
         // Emit initialization complete event
-        this.events.emit('data:loading:complete');
+        this.eventBus.emit('data:loading:complete');
     }
 
     /**
@@ -270,7 +270,7 @@ class DataService extends ServiceBase {
             const result = await window.electronAPI.addTagToTrack(track, newTag);
             if (result) {
                 this.clearCache();
-                this.events.emit('database:updated', {
+                this.eventBus.emit('database:updated', {
                     type: 'tag_added',
                     track: track,
                     tag: newTag,
@@ -341,7 +341,7 @@ class DataService extends ServiceBase {
         try {
             await window.electronAPI.clearDatabase();
             this.clearCache();
-            this.events.emit('database:cleared');
+            this.eventBus.emit('database:cleared');
             return true;
         } catch (error) {
             console.error('Error clearing database:', error);

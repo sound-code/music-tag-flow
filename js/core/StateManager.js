@@ -220,49 +220,6 @@ class StateManager {
     clearHistory() {
         this.history = [];
     }
-    /**
-     * Helper method for backward compatibility with AppState
-     * Maps common AppState properties to new state structure
-     */
-    getMappedValue(oldPath) {
-        const mappings = {
-            'allNodes': 'dom.allNodes',
-            'allContainers': 'dom.allContainers',
-            'playlistEntries': 'playlist.entries',
-            'selectedTags': 'ui.selectedTags',
-            'nodeCounter': 'tree.nodeCounter',
-            'canvas': 'dom.canvas',
-            'canvasContent': 'dom.canvasContent',
-            'breadcrumb': 'dom.breadcrumb',
-            'dropZone': 'dom.dropZone',
-            'hasUsedDropZone': 'app.hasUsedDropZone',
-            'isPhasesViewActive': 'app.isPhasesViewActive',
-            'currentMultiTagContainer': 'app.currentMultiTagContainer',
-            'currentTagSourceTrack': 'app.currentTagSourceTrack',
-            'selectedTagForNextNode': 'app.selectedTagForNextNode'
-        };
-        const newPath = mappings[oldPath] || oldPath;
-        return this.get(newPath);
-    }
-    /**
-     * Helper method for backward compatibility with AppState
-     */
-    setMappedValue(oldPath, value) {
-        const mappings = {
-            'allNodes': 'dom.allNodes',
-            'allContainers': 'dom.allContainers',
-            'playlistEntries': 'playlist.entries',
-            'selectedTags': 'ui.selectedTags',
-            'nodeCounter': 'tree.nodeCounter',
-            'hasUsedDropZone': 'app.hasUsedDropZone',
-            'isPhasesViewActive': 'app.isPhasesViewActive',
-            'currentMultiTagContainer': 'app.currentMultiTagContainer',
-            'currentTagSourceTrack': 'app.currentTagSourceTrack',
-            'selectedTagForNextNode': 'app.selectedTagForNextNode'
-        };
-        const newPath = mappings[oldPath] || oldPath;
-        this.set(newPath, value);
-    }
     // Private methods
     /**
      * Get nested property using dot notation

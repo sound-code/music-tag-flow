@@ -448,5 +448,4 @@ window.savePlaylist = function() {
     }
 };
 
-// Export scrollToNode for backward compatibility
-window.scrollToNode = Utils.scrollToNode; 
+ 

@@ -23,6 +23,10 @@ window.LibraryToggle = (() => {
             window.App.eventBus.on('database:cleared', () => {
                 updateTagsList();
             });
+            
+            window.App.eventBus.on('services:initialized', () => {
+                updateTagsList();
+            });
         }
     }
     
@@ -59,8 +63,13 @@ window.LibraryToggle = (() => {
     
     async function updateTagsList() {
         try {
-            // Get only uniqueTags for tags list rendering
-            const dataService = window.serviceManager?.getService('data');
+            // Check if services are ready
+            if (!window.App || !window.App.isReady || !window.App.isReady()) {
+                // Services not ready yet, skip silently
+                return;
+            }
+            
+            const dataService = window.App.getService('data');
             if (!dataService) {
                 console.error('DataService not available');
                 return;

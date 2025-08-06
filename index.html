@@ -76,7 +76,7 @@
 
             <!-- Playlist Phases Link -->
             <div class="playlist-phases-link">
-                <button class="phases-btn" id="playlistPhasesBtn" onclick="window.App.getService('phases').togglePhases()">
+                <button class="phases-btn" id="playlistPhasesBtn" onclick="if(window.App && window.App.getService('phases')) window.App.getService('phases').togglePhases()">
                     🕐 Playlist Phases
                 </button>
             </div>
