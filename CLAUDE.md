@@ -52,7 +52,7 @@ The application is transitioning from a monolithic approach to a service-based a
 - **StateManager.js** - Global state management with reactive updates
 - **EventBus.js** - Inter-service communication and event handling
 - **DataService.js** - Centralized data access service using MusicLibraryFacade (database-only)
-- **UIService.js** - Tooltip management, visual effects, and category highlighting
+- **UIService.js** - Tooltip management, visual effects, category highlighting, and all UI functionality
 - **TreeService.js** - Tree visualization, positioning algorithms, and SVG rendering
 - **DragDropService.js** - Drag & drop functionality and auto-tree generation
 - **TrackNodesService.js** - Track node creation, tag management, and UI interactions
@@ -84,8 +84,7 @@ The application is transitioning from a monolithic approach to a service-based a
 **Legacy Modules** (being migrated to services):
 - **main.js** - Application entry point and service initialization
 - **state.js** - Legacy AppState (use StateManager for new code)
-- **ui.js** - UI utilities and user interactions
-- **utils.js** - Shared utility functions and music library rendering
+- **utils.js** - Shared utility functions, music library rendering, and legacy UI helpers (toggleArtist, toggleAlbum, etc.)
 
 ### Key Architecture Patterns
 
@@ -172,7 +171,7 @@ DataService, UIService, TreeService, DragDropService, TrackNodesService, TagServ
 SearchService, PlaylistService, PhasesService, ClockService, StatsService, LegendService
 
 // 3. Legacy Modules
-state.js, utils.js, ui.js
+state.js, utils.js
 
 // 4. UI Components
 StatsComponent, LibraryToggle, PlaylistUIHandler, LegendUIHandler
@@ -233,11 +232,11 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - ✅ Tree → TreeService (tree.js completely removed)
 - ✅ DataLoader/DataSourceAdapter → DataService (dataLoader.js, dataSourceAdapter.js removed)
 - ✅ JSON data support removed - database-only architecture
+- ✅ UI → UIService (ui.js completely removed, legacy functions moved to utils.js)
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
 
 **In Progress**:
-- 🔄 UI → UIService migration (partially completed, legend functionality remains)
 - 🔄 AppState → StateManager migration
 
 **Migration Guidelines**:
