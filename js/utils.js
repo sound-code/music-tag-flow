@@ -434,4 +434,23 @@ window.clearPerformanceMetrics = function() {
     }
 };
 
+/**
+ * Audio player integration
+ */
+window.selectTrackForPlayback = function(trackIndex) {
+    const playlistService = window.App?.getService('playlist');
+    const audioPlayerService = window.App?.getService('audioPlayer');
+    
+    if (playlistService && audioPlayerService) {
+        const entries = playlistService.getState('playlist.entries') || [];
+        if (entries[trackIndex]) {
+            // Emit event to audio player
+            playlistService.emitEvent('playlist:track-selected', {
+                track: entries[trackIndex].track,
+                index: trackIndex
+            });
+        }
+    }
+};
+
  

@@ -239,6 +239,15 @@ class Application {
             console.warn('ClockService not found - skipping registration');
         }
         
+        if (typeof AudioPlayerService !== 'undefined') {
+            this.serviceManager.registerService('audioPlayer', AudioPlayerService, ['playlist'], {
+                required: false,
+                autoStart: true
+            });
+        } else {
+            console.warn('AudioPlayerService not found - skipping registration');
+        }
+        
         
         // Initialize all services
         try {

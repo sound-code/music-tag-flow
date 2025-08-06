@@ -9,14 +9,72 @@ window.PlaylistUIHandler = (() => {
      * @param {Array} entries - Playlist entries
      */
     function updateDisplay(entries) {
-        // Get breadcrumb element - prefer StateManager, fallback to AppState
-        let breadcrumb = document.getElementById('breadcrumb');
+        updateNewPlaylistSidebar(entries);
+        // Keep legacy breadcrumb updated for compatibility (but hidden)
+        updateLegacyBreadcrumb(entries);
+    }
+    
+    /**
+     * Update the new playlist sidebar
+     * @param {Array} entries - Playlist entries
+     */
+    function updateNewPlaylistSidebar(entries) {
+        const playlistCount = document.getElementById('playlistCount');
+        const playlistEmptyState = document.getElementById('playlistEmptyState');
+        const playlistTracks = document.getElementById('playlistTracks');
         
-        if (!breadcrumb) {
-            // Get breadcrumb from StateManager
-            breadcrumb = window.App?.stateManager?.get('dom.breadcrumb');
+        if (!playlistCount || !playlistEmptyState || !playlistTracks) return;
+        
+        // Update playlist count
+        playlistCount.textContent = `(${entries.length})`;
+        
+        if (entries.length === 0) {
+            // Show empty state
+            playlistEmptyState.style.display = 'flex';
+            playlistTracks.style.display = 'none';
+            return;
         }
         
+        // Hide empty state and show tracks
+        playlistEmptyState.style.display = 'none';
+        playlistTracks.style.display = 'block';
+        
+        // Generate tracks HTML
+        let html = '';
+        entries.forEach((entry, index) => {
+            const track = entry.track;
+            const selectedTag = entry.connectionTag;
+            
+            const tagDisplay = selectedTag && selectedTag !== 'direct-selection' ? 
+                `via ${tagUtils.getTagValue(selectedTag)}` : 'Direct selection';
+            
+            const isNowPlaying = index === 0; // First track is considered "now playing"
+            const playingClass = isNowPlaying ? ' now-playing' : '';
+            
+            html += `
+                <div class="playlist-track-item${playingClass}" data-track-index="${index}" onclick="selectTrackForPlayback(${index})">
+                    <div class="playlist-track-number">${index + 1}</div>
+                    <div class="playlist-track-info">
+                        <div class="playlist-track-title">${track.title}</div>
+                        <div class="playlist-track-artist">${track.artist}</div>
+                        <div class="playlist-track-connection">${tagDisplay}</div>
+                    </div>
+                    <div class="playlist-track-actions">
+                        ${!isNowPlaying ? `<button class="playlist-track-action remove-track" data-track-index="${index}" title="Rimuovi traccia" onclick="event.stopPropagation()">×</button>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        playlistTracks.innerHTML = html;
+    }
+    
+    /**
+     * Update legacy breadcrumb (kept for compatibility but hidden)
+     * @param {Array} entries - Playlist entries
+     */
+    function updateLegacyBreadcrumb(entries) {
+        const breadcrumb = document.getElementById('breadcrumb');
         if (!breadcrumb) return;
         
         // Only show playlist if there are manually selected tracks
@@ -50,11 +108,13 @@ window.PlaylistUIHandler = (() => {
     /**
      * Setup DOM event listeners for playlist interactions
      * @param {Function} onRemoveTrack - Callback when track removal is requested
+     * @param {Function} onClearPlaylist - Callback when clear playlist is requested
+     * @param {Function} onSavePlaylist - Callback when save playlist is requested
      */
-    function setupEventListeners(onRemoveTrack) {
-        // Use event delegation for dynamic playlist remove buttons
+    function setupEventListeners(onRemoveTrack, onClearPlaylist, onSavePlaylist) {
+        // Use event delegation for dynamic playlist interactions
         document.addEventListener('click', (e) => {
-            // Handle remove track buttons
+            // Handle remove track buttons (both legacy and new)
             if (e.target.classList.contains('remove-track')) {
                 e.stopPropagation();
                 e.preventDefault();
@@ -63,6 +123,29 @@ window.PlaylistUIHandler = (() => {
                 if (!isNaN(trackIndex) && onRemoveTrack) {
                     onRemoveTrack(trackIndex);
                 }
+                return;
+            }
+            
+            // Handle clear playlist button
+            if (e.target.closest('#clearPlaylistBtn')) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                if (onClearPlaylist) {
+                    onClearPlaylist();
+                }
+                return;
+            }
+            
+            // Handle save playlist button
+            if (e.target.closest('#savePlaylistBtn')) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                if (onSavePlaylist) {
+                    onSavePlaylist();
+                }
+                return;
             }
         });
     }

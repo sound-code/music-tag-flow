@@ -124,13 +124,111 @@
             </div>
         </div>
 
-        <div class="breadcrumb" id="breadcrumb">
+        <!-- Right Playlist Sidebar -->
+        <div class="playlist-sidebar" id="playlistSidebar">
+            <!-- Audio Player Section -->
+            <div class="audio-player-section" id="audioPlayerSection">
+                <!-- Currently Playing Track Info -->
+                <div class="now-playing-info" id="nowPlayingInfo">
+                    <div class="track-artwork" id="trackArtwork">
+                        <div class="artwork-placeholder">🎵</div>
+                    </div>
+                    <div class="track-details">
+                        <div class="track-title" id="currentTrackTitle">Nessuna traccia in riproduzione</div>
+                        <div class="track-artist" id="currentTrackArtist">Seleziona una traccia per iniziare</div>
+                    </div>
+                </div>
+                
+                <!-- Audio Controls -->
+                <div class="audio-controls">
+                    <!-- Main Controls Row -->
+                    <div class="main-controls">
+                        <button class="control-button shuffle-btn" id="shuffleBtn" title="Shuffle">
+                            <span>🔀</span>
+                        </button>
+                        <button class="control-button prev-btn" id="prevBtn" title="Previous">
+                            <span>⏮️</span>
+                        </button>
+                        <button class="control-button play-pause-btn" id="playPauseBtn" title="Play/Pause">
+                            <span class="play-icon">▶️</span>
+                            <span class="pause-icon" style="display: none;">⏸️</span>
+                        </button>
+                        <button class="control-button next-btn" id="nextBtn" title="Next">
+                            <span>⏭️</span>
+                        </button>
+                        <button class="control-button repeat-btn" id="repeatBtn" title="Repeat">
+                            <span>🔁</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress-container">
+                        <span class="time-display current-time" id="currentTime">0:00</span>
+                        <div class="progress-bar-container" id="progressBarContainer">
+                            <div class="progress-bar" id="progressBar">
+                                <div class="progress-fill" id="progressFill"></div>
+                                <div class="progress-handle" id="progressHandle"></div>
+                            </div>
+                        </div>
+                        <span class="time-display total-time" id="totalTime">0:00</span>
+                    </div>
+                    
+                    <!-- Volume Control -->
+                    <div class="volume-container">
+                        <button class="volume-btn" id="volumeBtn" title="Mute/Unmute">
+                            <span class="volume-icon">🔊</span>
+                        </button>
+                        <div class="volume-slider-container">
+                            <div class="volume-slider" id="volumeSlider">
+                                <div class="volume-fill" id="volumeFill"></div>
+                                <div class="volume-handle" id="volumeHandle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden Audio Element -->
+                <audio id="audioElement" preload="metadata"></audio>
+            </div>
+            
+            <!-- Playlist Header -->
+            <div class="playlist-header">
+                <h3 class="playlist-title">
+                    <span class="playlist-icon">🎵</span>
+                    <span class="playlist-text">Playlist</span>
+                    <span class="playlist-count" id="playlistCount">(0)</span>
+                </h3>
+                <div class="playlist-actions">
+                    <button class="playlist-action-btn clear-playlist-btn" id="clearPlaylistBtn" title="Clear Playlist">
+                        <span>🗑️</span>
+                    </button>
+                    <button class="playlist-action-btn save-playlist-btn" id="savePlaylistBtn" title="Save Playlist">
+                        <span>💾</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Playlist Content -->
+            <div class="playlist-content" id="playlistContent">
+                <div class="playlist-empty-state" id="playlistEmptyState">
+                    <div class="empty-icon">🎶</div>
+                    <div class="empty-text">La tua playlist è vuota</div>
+                    <div class="empty-hint">Trascina le tracce dalla libreria per creare il tuo albero musicale</div>
+                </div>
+                
+                <div class="playlist-tracks" id="playlistTracks" style="display: none;">
+                    <!-- Playlist tracks will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Legacy breadcrumb (hidden, kept for compatibility) -->
+        <div class="breadcrumb" id="breadcrumb" style="display: none;">
             <span class="breadcrumb-item">🎵 Playlist</span>
         </div>
 
         <div class="controls">
             <button class="control-btn" onclick="clearMindmap()">Clear Tree</button>
-            <button class="control-btn" onclick="savePlaylist()">Save Playlist</button>
         </div>
 
         <!-- Real-time Clock -->
@@ -165,6 +263,7 @@
     <script src="js/core/ScanService.js"></script>
     <script src="js/core/LegendService.js"></script>
     <script src="js/core/ClockService.js"></script>
+    <script src="js/core/AudioPlayerService.js"></script>
     <script src="js/components/StatsComponent.js"></script>
     <script src="js/core/ServiceManager.js"></script>
     
