@@ -49,7 +49,7 @@ class PhasesService extends ServiceBase {
             progressLine: document.getElementById('progressLine')
         };
         
-        // Elements must be found via DOM - no AppState fallbacks
+        // Elements must be found via DOM
         
         // Don't throw error - service can still work partially
     }

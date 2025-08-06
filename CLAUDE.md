@@ -81,10 +81,10 @@ The application is transitioning from a monolithic approach to a service-based a
 - **PlaylistUIHandler.js** - Playlist UI interactions and animations
 - **LegendUIHandler.js** - Tag legend UI management
 
-**Legacy Modules** (being migrated to services):
+**Utility Modules**:
 - **main.js** - Application entry point and service initialization
-- **state.js** - Legacy AppState (use StateManager for new code)
-- **utils.js** - Shared utility functions, music library rendering, and legacy UI helpers (toggleArtist, toggleAlbum, etc.)
+- **utils.js** - Shared utility functions, music library rendering, and UI helpers (toggleArtist, toggleAlbum, etc.)
+- **containers.js** - Track container creation and management
 
 ### Key Architecture Patterns
 
@@ -103,9 +103,10 @@ The application is transitioning from a monolithic approach to a service-based a
 - `time:elapsed` - Real-time clock updates for progress line
 
 **State Management**: 
-- Use `StateManager` for new code with reactive subscriptions
-- Legacy `AppState` remains for backward compatibility
-- State paths follow dot notation: `app.selectedTags`, `tree.nodes`, etc.
+- All state managed by `StateManager` with reactive subscriptions
+- No legacy AppState - fully migrated to service-based architecture
+- State paths follow dot notation: `app.selectedTags`, `tree.nodes`, `dom.canvas`, etc.
+- DOM elements registered in StateManager for service access
 
 **Tree Generation Configuration**:
 ```javascript
@@ -235,9 +236,10 @@ this.subscribeToEvent('playlist:clear', () => this.clearTree());
 - ✅ UI → UIService (ui.js completely removed, legacy functions moved to utils.js)
 - ✅ Centralized tooltip system in UIService
 - ✅ EventBus communication patterns
-
-**In Progress**:
-- 🔄 AppState → StateManager migration
+- ✅ **AppState → StateManager migration (COMPLETE)**
+- ✅ **state.js completely removed**
+- ✅ **AppStateProxy.js removed**
+- ✅ **100% service-based architecture achieved**
 
 **Migration Guidelines**:
 - New features use service-based architecture

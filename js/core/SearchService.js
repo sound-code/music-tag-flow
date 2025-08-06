@@ -65,7 +65,7 @@ class SearchService extends ServiceBase {
             musicLibrary: document.getElementById('musicLibrary')
         };
         
-        // Elements must be found via DOM - no AppState fallbacks
+        // Elements must be found via DOM
         
         // Validate critical elements exist (but don't fail if some are missing)
         const criticalElements = ['searchField'];

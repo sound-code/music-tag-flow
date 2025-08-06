@@ -46,7 +46,9 @@ const Utils = {
      * @returns {number} The next available X position
      */
     getNextXPositionInRow(y, excludeContainers = false) {
-        const { allNodes, allContainers } = AppState;
+        const stateManager = window.App?.stateManager;
+        const allNodes = stateManager?.get('dom.allNodes') || [];
+        const allContainers = stateManager?.get('dom.allContainers') || [];
         
         const nodesInRow = allNodes.filter(nodeData => {
             if (!nodeData.element) return false;
@@ -80,7 +82,11 @@ const Utils = {
      * Update canvas size to accommodate all content
      */
     updateCanvasSize() {
-        const { allNodes, allContainers, canvas, canvasContent } = AppState;
+        const stateManager = window.App?.stateManager;
+        const allNodes = stateManager?.get('dom.allNodes') || [];
+        const allContainers = stateManager?.get('dom.allContainers') || [];
+        const canvas = stateManager?.get('dom.canvas');
+        const canvasContent = stateManager?.get('dom.canvasContent');
         
         let maxX = 0;
         let maxY = 0;

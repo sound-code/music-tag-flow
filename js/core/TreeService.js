@@ -412,7 +412,7 @@ class TreeService extends ServiceBase {
         if (!root) return;
         
         // Position root at center for structured 3-level layout (ORIGINAL LOGIC)
-        const canvas = AppState?.canvas || document.querySelector('.mindmap-canvas');
+        const canvas = this.getState('dom.canvas') || document.querySelector('.mindmap-canvas');
         const canvasRect = canvas ? canvas.getBoundingClientRect() : { width: 800, height: 600 };
         
         // Calculate expected tree radius for 3-level structure (ORIGINAL VALUE)

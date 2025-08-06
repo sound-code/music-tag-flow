@@ -13,7 +13,7 @@ class Application {
     }
 
     /**
-     * Initialize the entire application with service architecture + legacy bridge
+     * Initialize the entire application with service architecture
      */
     async initialize() {
         try {
@@ -30,10 +30,9 @@ class Application {
             // 4. Setup event-driven communication
             this.setupEventIntegration();
             
-            // 4.5. AppStateProxy handles DOM references automatically
             
-            // 5. Initialize legacy modules (bridge mode)
-            await this.initializeLegacyBridge();
+            // 5. Initialize UI components
+            await this.initializeUIComponents();
             
             this.isInitialized = true;
             
@@ -71,6 +70,41 @@ class Application {
         // Make core components globally available
         window.App = this;
         window.AppStateManager = this.stateManager;
+        
+        // Initialize DOM references in StateManager
+        this.initializeDOMReferences();
+    }
+
+    /**
+     * Initialize DOM references in StateManager
+     * This replaces functionality previously handled by AppStateProxy
+     */
+    initializeDOMReferences() {
+        // Get DOM elements
+        const canvas = document.querySelector('.mindmap-canvas');
+        const canvasContent = document.querySelector('.canvas-content');
+        const dropZone = document.querySelector('.drop-zone');
+        const breadcrumb = document.getElementById('breadcrumb');
+        const searchField = document.getElementById('searchField');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const searchResults = document.getElementById('searchResults');
+        const searchResultsList = document.getElementById('searchResultsList');
+        const musicLibrary = document.getElementById('musicLibrary');
+
+        // Register DOM elements in StateManager
+        this.stateManager.set('dom.canvas', canvas);
+        this.stateManager.set('dom.canvasContent', canvasContent);
+        this.stateManager.set('dom.dropZone', dropZone);
+        this.stateManager.set('dom.breadcrumb', breadcrumb);
+        this.stateManager.set('dom.searchField', searchField);
+        this.stateManager.set('dom.clearSearchBtn', clearSearchBtn);
+        this.stateManager.set('dom.searchResults', searchResults);
+        this.stateManager.set('dom.searchResultsList', searchResultsList);
+        this.stateManager.set('dom.musicLibrary', musicLibrary);
+        
+        // Initialize empty arrays for dynamic elements
+        this.stateManager.set('dom.allNodes', []);
+        this.stateManager.set('dom.allContainers', []);
     }
 
     /**
@@ -78,7 +112,7 @@ class Application {
      */
     async setupReactiveState() {
         
-        // Initialize state structure that mirrors legacy AppState
+        // Initialize reactive state structure
         this.stateManager.set('app', {
             version: '2.0.0',
             isLoading: false,
@@ -104,20 +138,6 @@ class Application {
             isTreeBuilding: false
         });
         
-        // Initialize DOM elements in StateManager
-        this.stateManager.set('dom', {
-            canvas: document.querySelector('.mindmap-canvas'),
-            canvasContent: document.querySelector('.canvas-content'),
-            dropZone: document.querySelector('.drop-zone'),
-            breadcrumb: document.getElementById('breadcrumb'),
-            searchField: document.getElementById('searchField'),
-            clearSearchBtn: document.getElementById('clearSearch'),
-            searchResults: document.getElementById('searchResults'),
-            searchResultsList: document.getElementById('searchResultsList'),
-            musicLibrary: document.getElementById('musicLibrary'),
-            allNodes: [],
-            allContainers: []
-        });
         
         this.stateManager.set('ui', {
             hasUsedDropZone: false,
@@ -283,7 +303,7 @@ class Application {
         this.eventBus.on('notification:show', (data) => {
         });
         
-        // State synchronization events (bridge AppState to StateManager)
+        // State synchronization events
         this.eventBus.on('state:sync', (data) => {
             const { path, value } = data;
             this.stateManager.set(path, value);
@@ -291,11 +311,10 @@ class Application {
     }
 
     /**
-     * Initialize legacy modules with bridge compatibility
+     * Initialize UI components
      */
-    async initializeLegacyBridge() {
+    async initializeUIComponents() {
         try {
-            // AppState is now handled by AppStateProxy automatically
             
             // Initialize LibraryToggle BEFORE services so EventBus subscriptions are ready
             if (typeof LibraryToggle !== 'undefined' && LibraryToggle.init) {

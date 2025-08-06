@@ -13,7 +13,11 @@ const Containers = {
      * @returns {HTMLElement} The created container element
      */
     create(tagValue, tracks, sourceNode, sourceContainer = null) {
-        const { allNodes, allContainers, canvas, canvasContent } = AppState;
+        const stateManager = window.App?.stateManager;
+        const allNodes = stateManager?.get('dom.allNodes') || [];
+        const allContainers = stateManager?.get('dom.allContainers') || [];
+        const canvas = stateManager?.get('dom.canvas');
+        const canvasContent = stateManager?.get('dom.canvasContent');
         const container = document.createElement('div');
         container.className = 'track-list-container';
         container.dataset.tagValue = tagValue;

@@ -220,7 +220,7 @@ class TrackNodesService extends ServiceBase {
             canvasContent.appendChild(node);
             
             // Aggiorna state
-            this.updateAppState(node, track);
+            this.updateState(node, track);
             
             // Integrazione con TreeService
             this.integrateWithTreeService(node, track, parentNode, connectionTag);
@@ -369,7 +369,7 @@ class TrackNodesService extends ServiceBase {
      * @param {HTMLElement} node - Elemento nodo  
      * @param {Object} track - Dati track
      */
-    updateAppState(node, track) {
+    updateState(node, track) {
         this.updateNodeArrays(node, track);
         
         // Clear selected tag for next node

@@ -320,7 +320,7 @@ class PlaylistService extends ServiceBase {
         // Update highlighting for all tracks - first clear all, then add current ones
         this.updateAllTrackHighlighting(entries);
         
-        // Emit event for AppState sync (instead of direct manipulation)
+        // Emit event for state sync
         this.emitEvent('playlist:entries-sync', {
             entries: entries.map(entry => ({
                 element: entry.element,
@@ -434,9 +434,9 @@ class PlaylistService extends ServiceBase {
         const treeRootFromState = this.getState('tree.rootNode');
         const treeService = window.App?.getService('tree');
         const treeRootFromLegacy = treeService ? treeService.rootNode : null;
-        const treeRootFromAppState = (this.getState('dom.allNodes') || []).length > 0;
+        const treeRootFromStateNodes = (this.getState('dom.allNodes') || []).length > 0;
         
-        return treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromAppState;
+        return treeRootFromState !== null || treeRootFromLegacy !== null || treeRootFromStateNodes;
     }
     
     /**
