@@ -24,8 +24,6 @@ class DragDropService extends ServiceBase {
         this.isDragActive = false;
         this.currentDragData = null;
         
-        // Cleanup tracking
-        this.documentListeners = [];
         
         // DOM element references
         this.elements = {
@@ -76,6 +74,9 @@ class DragDropService extends ServiceBase {
             }
         });
         
+        // Initialize DOM elements first
+        this.initializeDOMElements();
+        
         // Setup event bridges to other services
         this.setupServiceBridges();
         
@@ -109,17 +110,6 @@ class DragDropService extends ServiceBase {
     }
 
     /**
-     * Add document listener with cleanup tracking
-     * @param {string} event - Event type
-     * @param {Function} handler - Event handler
-     * @param {Object} options - Event options
-     */
-    addDocumentListener(event, handler, options = false) {
-        document.addEventListener(event, handler, options);
-        this.documentListeners.push({ event, handler, options });
-    }
-    
-    /**
      * Setup drag listeners for track items
      */
     setupDragListeners() {
@@ -139,8 +129,12 @@ class DragDropService extends ServiceBase {
             }
         };
 
-        this.addDocumentListener('dragstart', dragStartHandler);
-        this.addDocumentListener('dragend', dragEndHandler);
+        document.addEventListener('dragstart', dragStartHandler);
+        document.addEventListener('dragend', dragEndHandler);
+        
+        // Store handlers for cleanup
+        this.dragStartHandler = dragStartHandler;
+        this.dragEndHandler = dragEndHandler;
         
     }
 
@@ -149,13 +143,9 @@ class DragDropService extends ServiceBase {
      */
     setupDropZone() {
         if (!this.elements.dropZone) {
-            // Try to find drop zone again in case DOM wasn't ready
-            this.initializeDOMElements();
-            if (!this.elements.dropZone) {
-                console.warn('DragDropService: Drop zone still not found, retrying...');
-                setTimeout(() => this.setupDropZone(), 100);
-                return;
-            }
+            console.warn('DragDropService: Drop zone not found, retrying...');
+            setTimeout(() => this.setupDropZone(), 100);
+            return;
         }
 
         this.elements.dropZone.addEventListener('dragover', (e) => {
@@ -643,11 +633,13 @@ class DragDropService extends ServiceBase {
      * Destroy service and cleanup all resources
      */
     destroy() {
-        // Remove all document listeners
-        this.documentListeners.forEach(({ event, handler, options }) => {
-            document.removeEventListener(event, handler, options);
-        });
-        this.documentListeners = [];
+        // Remove document listeners
+        if (this.dragStartHandler) {
+            document.removeEventListener('dragstart', this.dragStartHandler);
+        }
+        if (this.dragEndHandler) {
+            document.removeEventListener('dragend', this.dragEndHandler);
+        }
         
         // Clear state
         this.isDragActive = false;
