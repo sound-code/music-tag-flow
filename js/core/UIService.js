@@ -3,9 +3,9 @@
  * Handles tooltips, legend popups, visual effects, and category highlighting
  */
 class UIService extends ServiceBase {
-    constructor(stateManager, eventBus) {
+    constructor(stateManager, eventBus, dependencies = {}) {
         // Must call super() first in ES6+ classes
-        super(stateManager, eventBus);
+        super(stateManager, eventBus, dependencies);
         
         // Service-specific configuration
         this.config = {
@@ -1149,7 +1149,7 @@ class UIService extends ServiceBase {
         });
 
         // Remove highlighting from branches via TreeService
-        const treeService = window.App?.getService('tree');
+        const treeService = this.getService('tree');
         if (treeService && treeService.connections) {
             const connections = treeService.connections;
             connections.forEach((connection) => {
@@ -1348,17 +1348,12 @@ class UIService extends ServiceBase {
     }
 
     /**
-     * Helper method to get a service from either window.App or window.serviceManager
+     * Helper method to get a service via dependency injection
      * @param {string} serviceName - Name of the service to get
      * @returns {Object|null} Service instance or null
      */
     getService(serviceName) {
-        if (window.App && window.App.getService) {
-            return window.App.getService(serviceName);
-        } else if (window.serviceManager && window.serviceManager.getService) {
-            return window.serviceManager.getService(serviceName);
-        }
-        return null;
+        return this.getDependency(serviceName);
     }
 
     /**

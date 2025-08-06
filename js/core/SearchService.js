@@ -3,8 +3,8 @@
  * Handles search functionality for tracks, artists, and albums with EventBus integration
  */
 class SearchService extends ServiceBase {
-    constructor(stateManager, eventBus) {
-        super(stateManager, eventBus);
+    constructor(stateManager, eventBus, dependencies = {}) {
+        super(stateManager, eventBus, dependencies);
         
         // Service configuration
         this.config = {
@@ -474,12 +474,10 @@ class SearchService extends ServiceBase {
         resultInfo.appendChild(meta);
         resultItem.appendChild(resultInfo);
         
-        // Add drag functionality
-        if (window.App && window.App.getService) {
-            const dragDropService = window.App.getService('dragdrop');
-            if (dragDropService && typeof dragDropService.addDragToElement === 'function') {
-                dragDropService.addDragToElement(resultItem);
-            }
+        // Add drag functionality via dependency injection
+        const dragDropService = this.getDependency('dragdrop');
+        if (dragDropService && typeof dragDropService.addDragToElement === 'function') {
+            dragDropService.addDragToElement(resultItem);
         }
         
         return resultItem;

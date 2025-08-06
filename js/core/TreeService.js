@@ -3,8 +3,8 @@
  * Handles node creation, positioning, connections, and tree operations
  */
 class TreeService extends ServiceBase {
-    constructor(stateManager, eventBus) {
-        super(stateManager, eventBus);
+    constructor(stateManager, eventBus, dependencies = {}) {
+        super(stateManager, eventBus, dependencies);
         // Service-specific configuration (distances reduced to keep nodes on screen)
         this.config = {
             rootPosition: this.getResponsiveRootPosition(), // Dynamic root position

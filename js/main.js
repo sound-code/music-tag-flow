@@ -160,12 +160,12 @@ class Application {
             autoStart: true
         });
         
-        this.serviceManager.registerService('search', SearchService, ['data'], {
+        this.serviceManager.registerService('search', SearchService, ['data', 'dragdrop'], {
             required: false,
             autoStart: true
         });
         
-        this.serviceManager.registerService('playlist', PlaylistService, [], {
+        this.serviceManager.registerService('playlist', PlaylistService, ['dragdrop'], {
             required: false,
             autoStart: true
         });
@@ -187,7 +187,7 @@ class Application {
         
         // Check if UIService is available before registering
         if (typeof UIService !== 'undefined') {
-            this.serviceManager.registerService('ui', UIService, [], {
+            this.serviceManager.registerService('ui', UIService, ['tags', 'tracknodes', 'data', 'tree'], {
                 required: false,
                 autoStart: true
             });
@@ -196,7 +196,7 @@ class Application {
         }
         
         if (typeof TrackNodesService !== 'undefined') {
-            this.serviceManager.registerService('tracknodes', TrackNodesService, [], {
+            this.serviceManager.registerService('tracknodes', TrackNodesService, ['data'], {
                 required: false,
                 autoStart: true
             });

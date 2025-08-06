@@ -4,9 +4,9 @@
  */
 
 class TrackNodesService extends ServiceBase {
-    constructor(stateManager, eventBus) {
+    constructor(stateManager, eventBus, dependencies = {}) {
         try {
-            super(stateManager, eventBus);
+            super(stateManager, eventBus, dependencies);
         } catch (error) {
             console.error('TrackNodesService: Constructor error:', error);
             throw error;
@@ -923,9 +923,9 @@ class TrackNodesService extends ServiceBase {
             // Ottieni dati track sorgente
             const sourceTrackData = JSON.parse(sourceNode.dataset.track);
             
-            // Genera ESATTAMENTE 5 track con questo tag usando DataService
+            // Genera ESATTAMENTE 5 track con questo tag usando DataService via DI
             let relatedTracks = [];
-            const dataService = window.serviceManager?.getService('data');
+            const dataService = this.getDependency('data');
             if (dataService) {
                 relatedTracks = await dataService.generateTracksWithTag(tagValue, sourceTrackData);
             }

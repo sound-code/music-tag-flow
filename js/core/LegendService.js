@@ -3,9 +3,9 @@
  * Handles dynamic category display and tag interaction from database data
  */
 class LegendService extends ServiceBase {
-    constructor(stateManager, eventBus) {
+    constructor(stateManager, eventBus, dependencies = {}) {
         try {
-            super(stateManager, eventBus);
+            super(stateManager, eventBus, dependencies);
             
             // Service-specific configuration (MUST be set after super() call)
             this.config = {

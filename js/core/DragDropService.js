@@ -3,8 +3,8 @@
  * Handles all drag and drop operations and auto-tree generation
  */
 class DragDropService extends ServiceBase {
-    constructor(stateManager, eventBus) {
-        super(stateManager, eventBus);
+    constructor(stateManager, eventBus, dependencies = {}) {
+        super(stateManager, eventBus, dependencies);
         
         // Service-specific configuration
         this.config = {
@@ -563,9 +563,8 @@ class DragDropService extends ServiceBase {
         // Bridge tree:create-root-node to TrackNodesService
         this.subscribeToEvent('tree:create-root-node', (data) => {
             
-            // Get TrackNodesService (with fallback)
-            const trackNodesService = this.getDependency('tracknodes') || 
-                                     (window.App && window.App.getService ? window.App.getService('tracknodes') : null);
+            // Get TrackNodesService via dependency injection
+            const trackNodesService = this.getDependency('tracknodes');
             if (trackNodesService && typeof trackNodesService.createNode === 'function') {
                 const rootNode = trackNodesService.createNode(data.trackData, data.x, data.y);
                 this._currentRootNode = rootNode;
@@ -577,8 +576,7 @@ class DragDropService extends ServiceBase {
         // Bridge tree:create-child-node to TrackNodesService
         this.subscribeToEvent('tree:create-child-node', (data) => {
             
-            const trackNodesService = this.getDependency('tracknodes') || 
-                                     (window.App && window.App.getService ? window.App.getService('tracknodes') : null);
+            const trackNodesService = this.getDependency('tracknodes');
             if (trackNodesService && typeof trackNodesService.createNode === 'function') {
                 const childNode = trackNodesService.createNode(
                     data.trackData, 
@@ -595,8 +593,7 @@ class DragDropService extends ServiceBase {
         // Bridge data:generate-tracks-with-tag to DataService
         this.subscribeToEvent('data:generate-tracks-with-tag', (data) => {
             
-            const dataService = this.getDependency('data') || 
-                               (window.serviceManager && window.serviceManager.getService ? window.serviceManager.getService('data') : null);
+            const dataService = this.getDependency('data');
             if (dataService) {
                 dataService.generateTracksWithTag(data.tag, data.parentTrack).then(relatedTracks => {
                     if (data.callback) {
@@ -617,8 +614,7 @@ class DragDropService extends ServiceBase {
      */
     _shouldExcludeTrack(track) {
         try {
-            const dataService = this.getDependency('data') || 
-                               (window.serviceManager && window.serviceManager.getService ? window.serviceManager.getService('data') : null);
+            const dataService = this.getDependency('data');
             if (dataService && typeof dataService._shouldExcludeTrack === 'function') {
                 return dataService._shouldExcludeTrack(track);
             }

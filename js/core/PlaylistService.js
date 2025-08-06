@@ -3,8 +3,8 @@
  * Handles playlist entries, phases view, and timeline coordination
  */
 class PlaylistService extends ServiceBase {
-    constructor(stateManager, eventBus) {
-        super(stateManager, eventBus);
+    constructor(stateManager, eventBus, dependencies = {}) {
+        super(stateManager, eventBus, dependencies);
         // Service-specific configuration
         this.config = {
             maxPlaylistSize: 100,
@@ -255,12 +255,10 @@ class PlaylistService extends ServiceBase {
             
             // Wait a moment for the clear animation
             setTimeout(() => {
-                // Create new tree with this track as root
-                if (window.App && window.App.getService) {
-                    const dragDropService = window.App.getService('dragdrop');
-                    if (dragDropService && typeof dragDropService.createAutoTree === 'function') {
-                        dragDropService.createAutoTree(track);
-                    }
+                // Create new tree with this track as root via dependency injection
+                const dragDropService = this.getDependency('dragdrop');
+                if (dragDropService && typeof dragDropService.createAutoTree === 'function') {
+                    dragDropService.createAutoTree(track);
                 }
                 
                 // Show success feedback
