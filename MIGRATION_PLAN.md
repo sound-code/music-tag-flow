@@ -92,20 +92,47 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 
 ## 🚀 FASE 2: OTTIMIZZAZIONI ARCHITETTURA (Priorità ALTA)
 
-### 2.1 **Service Dependency Injection** (Tempo: ~2 ore)
-**Problema**: Servizi fanno lookup manuale di altri servizi
+### ✅ 2.1 **Service Dependency Injection** (Completata: 2025-01-06)
+**Status**: ✅ COMPLETATA
 
-**Tasks**:
-- [ ] Migliorare ServiceManager per dependency resolution automatico
-- [ ] Servizi devono dichiarare dependencies esplicitamente
-- [ ] Rimuovere manual service lookups (`if (window.App.getService...)`)
-- [ ] Implementare proper constructor injection pattern
-- [ ] Gestire circular dependencies se presenti
+**Tasks completati**:
+- ✅ ServiceManager già aveva dependency resolution automatico (era già implementato!)
+- ✅ Tutti i servizi ora dichiarano dependencies esplicitamente in main.js
+- ✅ Rimossi 13+ manual service lookups (`window.App.getService`, `window.serviceManager.getService`)
+- ✅ Implementato proper constructor injection pattern per tutti i servizi
+- ✅ Nessuna circular dependency rilevata
 
-**File interessati**:
-- `js/core/ServiceManager.js` → enhancement DI
-- Tutti i servizi → dichiarazione dependencies
-- `js/core/DragDropService.js` → rimuovere manual lookups (linee 612-617)
+**File aggiornati**:
+- ✅ `js/core/DragDropService.js` → Constructor + 4 manual lookups rimossi
+- ✅ `js/core/TrackNodesService.js` → Constructor + createBranchesDirectly() fixed + dependency 'data'
+- ✅ `js/core/TreeService.js` → Constructor aggiornato
+- ✅ `js/core/SearchService.js` → Constructor + drag functionality + dependency 'dragdrop'
+- ✅ `js/core/PlaylistService.js` → Constructor + tree creation + dependency 'dragdrop'
+- ✅ `js/core/UIService.js` → Constructor + getService() method + dependencies ['tags', 'tracknodes', 'data', 'tree']
+- ✅ `js/core/LegendService.js` → Constructor aggiornato
+- ✅ `js/main.js` → Dependencies registration fixed per tutti i servizi
+
+**Risultato**:
+- ✅ **Bug critici risolti**: Click su tag nodi genera 5 nuovi nodi, click legenda evidenzia tag albero
+- ✅ **13+ manual lookups eliminati** - Architettura DI pura
+- ✅ **Code quality migliorata**: -13 linee nette, better decoupling
+
+### ✅ 2.1.1 **Dead Code Cleanup** (Completata: 2025-01-06)
+**Status**: ✅ COMPLETATA - Pulizia sistematica codice morto
+
+**Tasks completati**:
+- ✅ Rimosso StatsService.js duplicato (164 linee) - sostituito da StatsComponent
+- ✅ Pulito main.js: legacyModules array + loop inizializzazione (29 linee)
+- ✅ Rimossi 3 empty notification handlers da main.js (15 linee)
+- ✅ Eliminato debug console.log non essenziale da utils.js
+- ✅ Riabilitata cache LegendService (performance improvement)
+- ✅ Rimosso script tag obsoleto da index.html
+
+**Impatto**:
+- ✅ **200+ linee di dead code rimosse**
+- ✅ **1 file service duplicato eliminato**
+- ✅ **Bundle size ridotto e memoria ottimizzata**
+- ✅ **Cache LegendService riabilitata per migliori performance**
 
 ### 2.2 **Event Communication Standardization** (Tempo: ~1.5 ore)
 **Problema**: Mix di EventBus e direct method calls
@@ -211,9 +238,14 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - ✅ UIService migration → ✅ StateManager migration → ✅ File removal
 - **FASE 1 COMPLETATA AL 100%**
 
-### **Sprint 2: Service Architecture** (Priorità ALTA)  
-- Tempo: ~6 ore
-- DI improvements → Event standardization → Performance opts
+### **✅ Sprint 2A: Dependency Injection + Dead Code** (COMPLETATO!)
+- Tempo utilizzato: ~2.5 ore
+- ✅ Service Dependency Injection (Fase 2.1) → ✅ Dead Code Cleanup (Fase 2.1.1)
+- **FASE 2.1 + 2.1.1 COMPLETATE AL 100%**
+
+### **Sprint 2B: Service Architecture** (Priorità ALTA)  
+- Tempo stimato: ~4 ore rimanenti
+- Event standardization → Performance opts → Service cleanup
 
 ### **Sprint 3: Advanced Refactoring** (Priorità MEDIA)
 - Tempo: ~6 ore  
@@ -231,17 +263,18 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 
 ### **Architettura Target**:
 - ✅ **100% Service-Based**: RAGGIUNTO! Zero file legacy, solo servizi moderni
-- 🔄 **Proper Dependency Injection**: ServiceManager con DI automatico (Fase 2)
-- 🔄 **Consistent Communication**: EventBus pattern ovunque (Fase 2)
-- 🔄 **Optimized Performance**: DOM caching, batch operations (Fase 2)
-- 🔄 **Clean Code**: Single responsibility, proper error handling (Fase 2)
+- ✅ **Proper Dependency Injection**: RAGGIUNTO! ServiceManager con DI puro, zero manual lookups
+- 🔄 **Consistent Communication**: EventBus pattern ovunque (Fase 2.2)
+- 🔄 **Optimized Performance**: DOM caching, batch operations (Fase 2.4)
+- 🔄 **Clean Code**: Single responsibility, proper error handling (Fase 2.3)
 - 🔄 **Maintainable**: Testing, documentation, patterns consistenti (Fase 4)
 
 ### **Metriche di Successo**:
 - ✅ **Zero references a file legacy rimossi** - RAGGIUNTO!
-- 🔄 Tutti i servizi usano dependency injection (Fase 2)
-- 🔄 EventBus usage consistente (>95% inter-service communication) (Fase 2)
-- 🔄 Riduzione script loading time del 20%+ (Fase 2)
+- ✅ **Tutti i servizi usano dependency injection** - RAGGIUNTO! Zero manual lookups
+- ✅ **Dead code eliminato completamente** - RAGGIUNTO! 200+ linee rimosse
+- 🔄 EventBus usage consistente (>95% inter-service communication) (Fase 2.2)
+- 🔄 Riduzione script loading time del 20%+ (Bundle già ridotto, ulteriori ottimizzazioni in 2.4)
 - 🔄 Code coverage >80% per servizi critici (Fase 4)
 
 ### **🎉 FASE 1 - RISULTATI RAGGIUNTI**:
@@ -250,6 +283,14 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 - **100% architettura service-based** - Nessun file legacy rimanente
 - **Tutti i test funzionali passati** - Drag & drop, tree generation, UI completa
 - **Documentazione completamente aggiornata** (CLAUDE.md, MIGRATION_PLAN.md)
+
+### **🎉 FASE 2.1 - RISULTATI RAGGIUNTI**:
+- **✅ Dependency Injection Puro**: Zero manual service lookups, DI completo
+- **✅ Bug Critici Risolti**: Click tag nodi + evidenziazione legenda funzionano
+- **✅ Dead Code Cleanup**: 200+ linee rimosse, 1 file duplicato eliminato (StatsService)
+- **✅ Performance Migliorata**: Cache LegendService riabilitata, bundle ridotto
+- **✅ Code Quality**: 8 servizi aggiornati, dependencies registration ottimizzata
+- **✅ Architecture Purity**: 13+ fallback patterns eliminati, DI pattern consistente
 
 ---
 
@@ -281,4 +322,4 @@ Completare la transizione a un'architettura 100% service-based e ottimizzare il 
 ---
 
 **Ultimo aggiornamento**: 2025-01-06  
-**Status**: 🎉 **FASE 1 COMPLETATA AL 100%** - Architettura service-based completa! Ready per Fase 2 (Ottimizzazioni)
+**Status**: 🎉 **FASE 1 + 2.1 COMPLETATE AL 100%** - Architettura service-based pura con DI completo! Ready per Fase 2.2 (Event Communication)
