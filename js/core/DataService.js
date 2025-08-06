@@ -459,8 +459,7 @@ class DataService extends ServiceBase {
         }
         
         // Fallback: extract category from tag format
-        const parts = tagValue.split(':');
-        return parts[0] || 'other';
+        return tagUtils.parseTag(tagValue).type || 'other';
     }
 
     /**

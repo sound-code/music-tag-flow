@@ -109,7 +109,9 @@ class TrackEnrichmentService {
         const tagsByCategory = {};
         
         tags.forEach(tag => {
-            const [category, value] = tag.split(':');
+            const parsed = tagUtils.parseTag(tag);
+            const category = parsed.type;
+            const value = parsed.value;
             if (category && value) {
                 if (!tagsByCategory[category]) {
                     tagsByCategory[category] = [];

@@ -102,7 +102,7 @@ window.LegendUIHandler = (() => {
         // Store tags in data attribute for hover popup - ensure tags are actual values, not full tag strings
         const tagValues = Array.isArray(tags) ? tags.map(tag => {
             // If tag contains ':', extract the value part; otherwise use the tag as-is
-            return tag.includes(':') ? tag.split(':')[1] : tag;
+            return tagUtils.parseTag(tag).value;
         }) : [];
         legendItem.dataset.tags = JSON.stringify(tagValues);
 

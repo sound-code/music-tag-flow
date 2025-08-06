@@ -428,7 +428,7 @@ class UIService extends ServiceBase {
                 tagElement.dataset.tagValue = tagWithValue;
                 
                 // Get the tag display value (remove type: prefix)
-                const tagValue = tagWithValue.includes(':') ? tagWithValue.split(':')[1] : tagWithValue;
+                const tagValue = tagUtils.parseTag(tagWithValue).value;
                 
                 tagElement.style.cssText = `
                     padding: 4px 8px;
@@ -458,7 +458,7 @@ class UIService extends ServiceBase {
                         const tagService = this.getService('tags');
                         if (tagService && typeof tagService.handleTagClick === 'function') {
                             const tempTag = document.createElement('div');
-                            tempTag.className = `tag ${tagWithValue.split(':')[0]}`;
+                            tempTag.className = `tag ${tagUtils.parseTag(tagWithValue).type}`;
                             tempTag.dataset.tagValue = tagWithValue;
                             tempTag.textContent = tagValue;
                             
@@ -913,7 +913,7 @@ class UIService extends ServiceBase {
                     if (allTagsByCategory[category] && allTagsByCategory[category].length > 0) {
                         // Extract just the values from database tags
                         tags = allTagsByCategory[category].map(tag => {
-                            return tag.includes(':') ? tag.split(':')[1] : tag;
+                            return tagUtils.parseTag(tag).value;
                         });
                         tagSource = 'dataservice';
                     }
@@ -1764,7 +1764,7 @@ class UIService extends ServiceBase {
             rating: '#F8C471'
         };
         
-        const type = tagWithValue.includes(':') ? tagWithValue.split(':')[0] : 'unknown';
+        const type = tagUtils.parseTag(tagWithValue).type;
         return colors[type] || 'rgba(99, 102, 241, 0.7)';
     }
     

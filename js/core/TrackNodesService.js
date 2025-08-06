@@ -497,7 +497,7 @@ class TrackNodesService extends ServiceBase {
      */
     createTagElement(tagWithValue, track, node) {
         // Parse tag usando utility centralizzata
-        const tagInfo = this.parseTag(tagWithValue);
+        const tagInfo = tagUtils.parseTag(tagWithValue);
         const tagType = tagInfo.type;
         const tagValue = tagInfo.value;
         
@@ -615,24 +615,6 @@ class TrackNodesService extends ServiceBase {
         }
     }
     
-    /**
-     * Parse tag usando logica centralizzata
-     * @param {string} tagWithValue - Tag completo
-     * @returns {Object} {type, value}
-     */
-    parseTag(tagWithValue) {
-        // Usa tagUtils se disponibile, altrimenti fallback
-        if (typeof tagUtils !== 'undefined' && tagUtils.parseTag) {
-            return tagUtils.parseTag(tagWithValue);
-        }
-        
-        // Fallback parsing
-        const parts = tagWithValue.split(':');
-        return {
-            type: parts[0] || 'unknown',
-            value: parts[1] || tagWithValue
-        };
-    }
     
     /**
      * Assicura che esistano gli stili CSS per una categoria
@@ -691,7 +673,7 @@ class TrackNodesService extends ServiceBase {
             rating: '#F8C471'
         };
         
-        const type = this.parseTag(tag).type;
+        const type = tagUtils.parseTag(tag).type;
         return colors[type] || '#888888';
     }
     
@@ -873,7 +855,7 @@ class TrackNodesService extends ServiceBase {
         }
         
         // Assicura che esistano gli stili per la nuova categoria
-        const category = this.parseTag(newTag).type;
+        const category = tagUtils.parseTag(newTag).type;
         this.ensureCategoryStyles(category);
         
         // Il nodo mantiene sempre il colore neutrale grigio
@@ -992,7 +974,7 @@ class TrackNodesService extends ServiceBase {
             this.createNodesBatch(tracksToCreate, sourceNode, tagValue);
             
             // Log creation (no notification)
-            const tagDisplayValue = this.parseTag(tagValue).value;
+            const tagDisplayValue = tagUtils.parseTag(tagValue).value;
             
             // Emit evento per statistiche
             if (this.eventBus && typeof this.eventBus.emit === 'function') {
