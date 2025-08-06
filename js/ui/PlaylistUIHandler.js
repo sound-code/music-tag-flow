@@ -13,8 +13,8 @@ window.PlaylistUIHandler = (() => {
         let breadcrumb = document.getElementById('breadcrumb');
         
         if (!breadcrumb) {
-            // Get breadcrumb from AppState (powered by StateManager)
-            breadcrumb = window.AppState?.breadcrumb;
+            // Get breadcrumb from StateManager
+            breadcrumb = window.App?.stateManager?.get('dom.breadcrumb');
         }
         
         if (!breadcrumb) return;
@@ -81,10 +81,11 @@ window.PlaylistUIHandler = (() => {
      * Clear tree elements from DOM
      */
     function clearTreeFromDOM() {
-        // Get elements from AppState (powered by StateManager)
-        const allNodes = window.AppState?.allNodes || [];
-        const allContainers = window.AppState?.allContainers || [];
-        const dropZone = window.AppState?.dropZone;
+        // Get elements from StateManager
+        const stateManager = window.App?.stateManager;
+        const allNodes = stateManager?.get('dom.allNodes') || [];
+        const allContainers = stateManager?.get('dom.allContainers') || [];
+        const dropZone = stateManager?.get('dom.dropZone');
         
         // Clear tree elements
         allNodes.forEach(nodeData => {
@@ -106,9 +107,19 @@ window.PlaylistUIHandler = (() => {
             tag.classList.remove('selected');
         });
         
-        // Clear tree state via AppState
-        if (window.AppState?.clearTreeState) {
-            window.AppState.clearTreeState();
+        // Clear tree state via StateManager
+        if (stateManager) {
+            stateManager.set('dom.allNodes', []);
+            stateManager.set('dom.allContainers', []);
+            stateManager.set('ui.selectedTags', new Set());
+            stateManager.set('app.nodeCounter', 0);
+            stateManager.set('app.selectedTagForNextNode', null);
+            stateManager.set('app.currentMultiTagContainer', null);
+            stateManager.set('app.currentTagSourceTrack', null);
+            stateManager.set('app.hasUsedDropZone', false);
+            stateManager.set('app.rootNodeColor', null);
+            stateManager.set('tree.nodes', []);
+            stateManager.set('tree.connections', []);
         }
         
         // Show drop zone again so user can drag new tracks

@@ -100,7 +100,7 @@ const Containers = {
             // For multi-tag containers, pass the actual selected tags instead of the display string
             let effectiveSelectedTag = tagValue;
             if (container.dataset.isMultiTagContainer === 'true') {
-                const selectedTags = window.AppState?.selectedTags || new Set();
+                const selectedTags = window.App?.stateManager?.get('ui.selectedTags') || new Set();
                 effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
@@ -179,7 +179,7 @@ const Containers = {
             // For multi-tag containers, use the selected tags as the selectedTag
             let effectiveSelectedTag = selectedTag;
             if (parentContainer && parentContainer.dataset.isMultiTagContainer === 'true') {
-                const selectedTags = window.AppState?.selectedTags || new Set();
+                const selectedTags = window.App?.stateManager?.get('ui.selectedTags') || new Set();
                 effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
@@ -189,10 +189,11 @@ const Containers = {
                 const treeService = window.App.getService('tree');
                 if (treeService) {
                     let position = { x: 400, y: 300 }; // Default center
-                    if (!sourceNode && window.AppState?.canvas) {
+                    const canvas = window.App?.stateManager?.get('dom.canvas');
+                    if (!sourceNode && canvas) {
                         position = { 
-                            x: window.AppState.canvas.offsetWidth / 2, 
-                            y: window.AppState.canvas.offsetHeight / 2 
+                            x: canvas.offsetWidth / 2, 
+                            y: canvas.offsetHeight / 2 
                         };
                     }
                     treeService.addNode(track, position, sourceNode, effectiveSelectedTag);
@@ -206,13 +207,14 @@ const Containers = {
                 
                 // 3. Handle container cleanup
                 if (parentContainer) {
-                    const allContainers = window.AppState?.allContainers || [];
+                    const allContainers = window.App?.stateManager?.get('dom.allContainers') || [];
                     const containerIndex = allContainers.indexOf(parentContainer);
                     if (containerIndex > -1) {
                         allContainers.splice(containerIndex, 1);
                     }
-                    if (parentContainer === window.AppState?.currentMultiTagContainer) {
-                        window.AppState?.setCurrentMultiTagContainer?.(null);
+                    const currentContainer = window.App?.stateManager?.get('app.currentMultiTagContainer');
+                    if (parentContainer === currentContainer) {
+                        window.App?.stateManager?.set('app.currentMultiTagContainer', null);
                         if (window.App && window.App.getService) {
                             const tagService = window.App.getService('tags');
                             if (tagService && typeof tagService.clearSelection === 'function') {
@@ -343,7 +345,7 @@ const Containers = {
         // Check if this is a multi-tag container
         if (container.dataset.isMultiTagContainer === 'true') {
             // Generate tracks with multiple selected tags
-            const selectedTags = window.AppState?.selectedTags || new Set();
+            const selectedTags = window.App?.stateManager?.get('ui.selectedTags') || new Set();
             newTracks = await dataService.generateTracksWithMultipleTags(Array.from(selectedTags));
             const tagDisplays = Array.from(selectedTags).map(tag => tagUtils.getTagValue(tag)).join(' + ');
             notificationMessage = `Refreshed 7 tracks for ${tagDisplays}`;
@@ -366,7 +368,7 @@ const Containers = {
             // For multi-tag containers, use the selected tags as the effective tag
             let effectiveSelectedTag = tagValue;
             if (container.dataset.isMultiTagContainer === 'true') {
-                const selectedTags = window.AppState?.selectedTags || new Set();
+                const selectedTags = window.App?.stateManager?.get('ui.selectedTags') || new Set();
                 effectiveSelectedTag = Array.from(selectedTags).join(', ');
             }
             
@@ -384,7 +386,7 @@ const Containers = {
      */
     remove(container) {
         // Remove container from array
-        const allContainers = window.AppState?.allContainers || [];
+        const allContainers = window.App?.stateManager?.get('dom.allContainers') || [];
         const containerIndex = allContainers.indexOf(container);
         if (containerIndex > -1) {
             allContainers.splice(containerIndex, 1);
@@ -401,7 +403,7 @@ const Containers = {
      * Reposition all containers
      */
     repositionAll() {
-        const allContainers = window.AppState?.allContainers || [];
+        const allContainers = window.App?.stateManager?.get('dom.allContainers') || [];
         allContainers.forEach((container, index) => {
             // Skip manually positioned containers (those created from other containers)
             if (container.dataset.manuallyPositioned === 'true') {
@@ -419,7 +421,8 @@ const Containers = {
                 }
             } else {
                 // Fallback positioning for containers without source nodes
-                const canvasWidth = window.AppState?.canvas?.offsetWidth || 800;
+                const canvas = window.App?.stateManager?.get('dom.canvas');
+                const canvasWidth = canvas?.offsetWidth || 800;
                 const newLeft = canvasWidth - 400 + (index * 50);
                 container.style.left = `${Math.max(50, newLeft)}px`;
             }

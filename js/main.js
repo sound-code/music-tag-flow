@@ -71,13 +71,6 @@ class Application {
         // Make core components globally available
         window.App = this;
         window.AppStateManager = this.stateManager;
-        
-        // Create AppState proxy for backward compatibility
-        if (typeof AppStateProxy !== 'undefined') {
-            window.AppState = new AppStateProxy(this.stateManager);
-            // Initialize DOM references
-            window.AppState.initializeDOMReferences();
-        }
     }
 
     /**
