@@ -44,6 +44,10 @@ class UIService extends ServiceBase {
         this.currentHoverTarget = null;
         this.highlightedCategories = new Set();
         
+        // DOM Query Cache
+        this.domCache = new Map();
+        this.domCacheTimeout = null;
+        
         // Timeout management
         this.timeouts = {
             show: null,
@@ -62,6 +66,65 @@ class UIService extends ServiceBase {
         
         // Reinitialize after properties are set up
         this.initialize();
+    }
+    
+    /**
+     * Setup DOM query caching system
+     */
+    setupDOMCache() {
+        // Clear cache periodically to avoid stale references
+        this.domCacheTimeout = setInterval(() => {
+            this.clearDOMCache();
+        }, 30000); // Clear every 30 seconds
+        
+        // Clear cache on tree changes
+        this.subscribeToEvent('tree:cleared', () => this.clearDOMCache());
+        this.subscribeToEvent('tree:node-added', () => this.clearDOMCache(['track-node', 'branch']));
+    }
+    
+    /**
+     * Get DOM element(s) with caching
+     * @param {string} selector - CSS selector
+     * @param {boolean} multiple - Whether to use querySelectorAll
+     * @param {boolean} noCache - Skip caching for this query
+     * @returns {HTMLElement|NodeList|null}
+     */
+    queryDOM(selector, multiple = false, noCache = false) {
+        const cacheKey = `${selector}:${multiple}`;
+        
+        // Return cached result if available and caching is enabled
+        if (!noCache && this.domCache.has(cacheKey)) {
+            return this.domCache.get(cacheKey);
+        }
+        
+        // Perform query
+        const result = multiple ? 
+            document.querySelectorAll(selector) : 
+            document.querySelector(selector);
+        
+        // Cache result if caching is enabled
+        if (!noCache && result) {
+            this.domCache.set(cacheKey, result);
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Clear DOM cache
+     * @param {Array<string>} patterns - Optional patterns to clear (clears all if not specified)
+     */
+    clearDOMCache(patterns = null) {
+        if (!patterns) {
+            this.domCache.clear();
+        } else {
+            // Clear only cache entries matching patterns
+            for (const [key] of this.domCache) {
+                if (patterns.some(pattern => key.includes(pattern))) {
+                    this.domCache.delete(key);
+                }
+            }
+        }
     }
 
     /**
@@ -132,6 +195,9 @@ class UIService extends ServiceBase {
             return;
         }
 
+        // Setup DOM caching
+        this.setupDOMCache();
+        
         // Initialize UI state
         if (!this.getState('ui.highlightedCategories')) {
             this.setState('ui.highlightedCategories', new Set());
@@ -169,6 +235,12 @@ class UIService extends ServiceBase {
         });
         this.subscribeToEvent('legend:attach-handlers', () => {
             this.attachLegendEventHandlers();
+        });
+        this.subscribeToEvent('legend:category-selected', (data) => {
+            this.highlightCategory(data.category);
+        });
+        this.subscribeToEvent('legend:category-deselected', (data) => {
+            this.clearCategoryHighlight();
         });
 
         // Initialize UI components
@@ -708,7 +780,7 @@ class UIService extends ServiceBase {
      * Attach event handlers to legend items (can be called multiple times)
      */
     attachLegendEventHandlers() {
-        const legendItems = document.querySelectorAll('.legend-item');
+        const legendItems = this.queryDOM('.legend-item', true);
 
         legendItems.forEach((item) => {
             // Remove existing listeners to prevent duplicates
@@ -722,16 +794,8 @@ class UIService extends ServiceBase {
             // Create new event handlers array
             item._uiEventListeners = [];
             
-            // Click handler for category highlighting
-            const clickHandler = (e) => {
-                e.preventDefault();
-                const category = this.getCategoryFromLegendItem(item);
-                if (category) {
-                    this.toggleCategoryHighlight(category, item);
-                }
-            };
-            item.addEventListener('click', clickHandler);
-            item._uiEventListeners.push({ event: 'click', handler: clickHandler });
+            // NOTE: Click handling is done via events from LegendService
+            // We only add hover handlers here
             
             // Mouseenter handler for popup
             const mouseenterHandler = (e) => {
@@ -915,7 +979,7 @@ class UIService extends ServiceBase {
      * Add success visual effect
      */
     addSuccessEffect() {
-        const canvas = document.querySelector('.mindmap-canvas');
+        const canvas = this.queryDOM('.mindmap-canvas');
         if (canvas) {
             canvas.style.filter = 'brightness(1.1) hue-rotate(120deg)';
             setTimeout(() => {
@@ -928,7 +992,7 @@ class UIService extends ServiceBase {
      * Add error visual effect
      */
     addErrorEffect() {
-        const canvas = document.querySelector('.mindmap-canvas');
+        const canvas = this.queryDOM('.mindmap-canvas');
         if (canvas) {
             canvas.style.filter = 'brightness(1.1) hue-rotate(-30deg)';
             setTimeout(() => {
@@ -941,7 +1005,7 @@ class UIService extends ServiceBase {
      * Add warning visual effect
      */
     addWarningEffect() {
-        const canvas = document.querySelector('.mindmap-canvas');
+        const canvas = this.queryDOM('.mindmap-canvas');
         if (canvas) {
             canvas.style.filter = 'brightness(1.1) hue-rotate(30deg)';
             setTimeout(() => {
@@ -971,12 +1035,12 @@ class UIService extends ServiceBase {
      */
     setupColorFixes() {
         const fixColors = () => {
-            document.querySelectorAll('.legend-item span').forEach(span => {
+            this.queryDOM('.legend-item span', true).forEach(span => {
                 span.style.color = 'white';
                 span.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.9)';
             });
 
-            document.querySelectorAll('.legend-popup-tag').forEach(tag => {
+            this.queryDOM('.legend-popup-tag', true).forEach(tag => {
                 tag.style.color = 'white';
                 tag.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.9)';
             });
@@ -1077,6 +1141,20 @@ class UIService extends ServiceBase {
     }
 
     /**
+     * Highlight a category (wrapper for event-based activation)
+     * @param {string} category - Category to highlight
+     */
+    highlightCategory(category) {
+        // Find the legend item for this category
+        const legendItem = document.querySelector(`.legend-item[data-category="${category}"]`);
+        
+        // Always call toggleCategoryHighlight - it handles the toggle logic
+        if (legendItem) {
+            this.toggleCategoryHighlight(category, legendItem);
+        }
+    }
+    
+    /**
      * Toggle category highlight with advanced multi-selection support
      * @param {string} category - Category to toggle
      * @param {HTMLElement} legendItem - Legend item element
@@ -1098,7 +1176,7 @@ class UIService extends ServiceBase {
                 this.resetAllNodesAndBranches();
                 
                 // Remove all multi-selection styles from legend
-                const allLegendItems = document.querySelectorAll('.legend-item');
+                const allLegendItems = this.queryDOM('.legend-item', true, true); // noCache for fresh data
                 allLegendItems.forEach(item => {
                     item.classList.remove('legend-active', 'multi-selection');
                 });
@@ -1146,7 +1224,7 @@ class UIService extends ServiceBase {
      */
     resetAllNodesAndBranches() {
         // Remove ALL highlighting classes from nodes
-        const allNodes = document.querySelectorAll('.track-node');
+        const allNodes = this.queryDOM('.track-node', true, true); // noCache for accurate highlighting
         allNodes.forEach(node => {
             node.classList.remove('category-highlighted', 'category-dimmed');
         });
@@ -1166,7 +1244,7 @@ class UIService extends ServiceBase {
         }
 
         // Clean any other highlighting elements
-        const highlightedElements = document.querySelectorAll('.category-highlighted, .category-dimmed, .branch-highlighted, .branch-dimmed, .branch-text-highlighted, .branch-text-dimmed');
+        const highlightedElements = this.queryDOM('.category-highlighted, .category-dimmed, .branch-highlighted, .branch-dimmed, .branch-text-highlighted, .branch-text-dimmed', true, true); // noCache
         highlightedElements.forEach(element => {
             element.classList.remove('category-highlighted', 'category-dimmed', 'branch-highlighted', 'branch-dimmed', 'branch-text-highlighted', 'branch-text-dimmed');
         });
@@ -1184,7 +1262,7 @@ class UIService extends ServiceBase {
         }
 
         // First remove all existing highlighting
-        const allNodes = document.querySelectorAll('.track-node');
+        const allNodes = this.queryDOM('.track-node', true, true); // noCache for accurate highlighting
         allNodes.forEach(node => {
             node.classList.remove('category-highlighted', 'category-dimmed');
         });
@@ -1195,7 +1273,7 @@ class UIService extends ServiceBase {
         // Find all nodes that belong to selected categories
         const selectedNodes = new Set();
         categories.forEach(category => {
-            const categoryNodes = document.querySelectorAll(`.track-node.node-tag-${category}`);
+            const categoryNodes = this.queryDOM(`.track-node.node-tag-${category}`, true, true); // noCache for dynamic classes
             categoryNodes.forEach(node => selectedNodes.add(node));
         });
         
@@ -1220,7 +1298,7 @@ class UIService extends ServiceBase {
      * @param {Set} categories - Selected categories
      */
     updateLegendMultiSelectionStyles(categories) {
-        const activeLegendItems = document.querySelectorAll('.legend-active');
+        const activeLegendItems = this.queryDOM('.legend-active', true, true); // noCache
         const isMultiSelection = categories.size > 1;
         
         activeLegendItems.forEach(item => {
@@ -1284,23 +1362,23 @@ class UIService extends ServiceBase {
      */
     clearBranchHighlight() {
         // Remove highlighted branch classes
-        const highlightedBranches = document.querySelectorAll('.branch-highlighted');
+        const highlightedBranches = this.queryDOM('.branch-highlighted', true, true);
         highlightedBranches.forEach(branch => {
             branch.classList.remove('branch-highlighted');
         });
 
-        const dimmedBranches = document.querySelectorAll('.branch-dimmed');
+        const dimmedBranches = this.queryDOM('.branch-dimmed', true, true);
         dimmedBranches.forEach(branch => {
             branch.classList.remove('branch-dimmed');
         });
 
         // Remove highlighted branch text classes
-        const highlightedBranchTexts = document.querySelectorAll('.branch-text-highlighted');
+        const highlightedBranchTexts = this.queryDOM('.branch-text-highlighted', true, true);
         highlightedBranchTexts.forEach(text => {
             text.classList.remove('branch-text-highlighted');
         });
 
-        const dimmedBranchTexts = document.querySelectorAll('.branch-text-dimmed');
+        const dimmedBranchTexts = this.queryDOM('.branch-text-dimmed', true, true);
         dimmedBranchTexts.forEach(text => {
             text.classList.remove('branch-text-dimmed');
         });
@@ -1317,7 +1395,7 @@ class UIService extends ServiceBase {
         this.resetAllNodesAndBranches();
 
         // Remove highlighting from ALL active legend items
-        const activeLegendItems = document.querySelectorAll('.legend-active');
+        const activeLegendItems = this.queryDOM('.legend-active', true, true); // noCache
         activeLegendItems.forEach(item => {
             item.classList.remove('legend-active', 'multi-selection');
         });
